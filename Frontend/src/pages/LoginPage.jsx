@@ -9,14 +9,14 @@ const LoginPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  // const { login, isLoading, error } = useAuthStore(); // Commented out
+  const { login, isLoading, error } = useAuthStore(); 
   const navigate = useNavigate();
 
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
       await login(email, password);
-      navigate("/landing"); 
+      navigate("/admindashboard"); 
     }
     catch (err) {
       console.error("Login failed:", err);

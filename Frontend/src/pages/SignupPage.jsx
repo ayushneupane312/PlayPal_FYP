@@ -11,7 +11,7 @@ const SignUpPage = () => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [userType, setUserType] = useState("traveler");
+  const [userType, setUserType] = useState("player");
 
   const navigate = useNavigate();
   const { signup } = useAuthStore(); // 🔒 Backend authentication hook commented out
@@ -75,10 +75,10 @@ const SignUpPage = () => {
                 onChange={(e) => setUserType(e.target.value)}
                 className="w-full p-3 bg-gray-700 text-white rounded-lg"
               >
-                <option value="traveler">Traveler</option>
-                <option value="bus operator">Bus Operator</option>
-                <option value="travel agent">Travel Agent</option>
-                <option value="guesthouse owner">Guesthouse Owner</option>
+                <option value="player">Player</option>
+                <option value="futsalowner">Futsal Owner</option>
+      
+   
               </select>
             </div>
 

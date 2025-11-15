@@ -5,12 +5,14 @@ import LoginPage from "./pages/LoginPage"
 import LandingPage from "./pages/LandingPage";
 import Navbar from "./pages/Navbar.jsx";
 import SignupPage from "./pages/SignupPage.jsx";
-
-
-
-
-
-
+import AdminDashboard from "./pages/AdminDashboard.jsx";
+import FutsalCenter from "./pages/FutsalCenter.jsx";
+import SystemSetting from "./pages/SystemSetting.jsx";
+import UserDirectory from "./pages/UserDirectory.jsx";
+import NotificationsCenter from "./pages/NotificationsCenter.jsx";
+import Payment from "./pages/Payment.jsx";
+import ResetPassword from "./pages/ResetPassword.jsx";
+import ForgotPassword from "./pages/ForgetPassword.jsx";
 function App() {
   return (
 
@@ -40,6 +42,14 @@ function App() {
       <Route path="/landing" element={<LandingPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignupPage />} />
+      <Route path="/admindashboard" element={<AdminDashboard />} />
+      <Route path="/futsalcenter" element={<FutsalCenter />} />
+      <Route path="/systemsettings" element={<SystemSetting />} />
+      <Route path="/usermanagemnet" element={<UserDirectory />} />
+      <Route path="/NotificationsCenter" element={<NotificationsCenter />} />
+      <Route path="/Payment" element={<Payment />} />
+      <Route path="/ResetPassword" element={<ResetPassword />} />
+      <Route path="/ForgetPassword" element={<ForgotPassword />}/>
    
      
     
