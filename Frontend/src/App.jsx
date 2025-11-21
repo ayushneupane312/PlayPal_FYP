@@ -13,6 +13,7 @@ import NotificationsCenter from "./pages/NotificationsCenter.jsx";
 import Payment from "./pages/Payment.jsx";
 import ResetPassword from "./pages/ResetPassword.jsx";
 import ForgotPassword from "./pages/ForgetPassword.jsx";
+import EmailVerificationPage from "./pages/EmailVerificationPage.jsx";
 function App() {
   return (
 
@@ -50,6 +51,7 @@ function App() {
       <Route path="/Payment" element={<Payment />} />
       <Route path="/ResetPassword" element={<ResetPassword />} />
       <Route path="/ForgetPassword" element={<ForgotPassword />}/>
+      <Route path="/verify-email" element={<EmailVerificationPage />} />
    
      
     
@@ -57,7 +59,7 @@ function App() {
 
     </>
 
-    // <Toaster />
+
 
 
     

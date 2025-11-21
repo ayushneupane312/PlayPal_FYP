@@ -14,7 +14,7 @@ const SignUpPage = () => {
   const [userType, setUserType] = useState("player");
 
   const navigate = useNavigate();
-  const { signup } = useAuthStore(); // 🔒 Backend authentication hook commented out
+  const { signup, error, isLoading } = useAuthStore(); // Backend authentication hook commented out
 
   const handleSignUp = async (e) => {
     e.preventDefault();
@@ -23,12 +23,12 @@ const SignUpPage = () => {
     try {
       console.log(email, password, name, userType);
       await signup(email, password, name, userType);
-      navigate("/login");
+      navigate("/verify-email");
     } catch (error) {
       console.log(error);
     }
 
-    // For now, just log form data
+  
     console.log("Sign-up form submitted:", { name, email, password, userType });
   };
 
@@ -82,9 +82,13 @@ const SignUpPage = () => {
               </select>
             </div>
 
-            {/* 🔒 Backend error temporarily disabled */}
-            {/* {error && <p className="text-red-500 font-semibold mt-2">{error}</p>} */}
+            {error && (
+              <p className="text-red-500 font-semibold mt-3 text-center">
+                {error}
+              </p>
+            )}
 
+           
             <PasswordStrengthMeter password={password} />
 
             <motion.button
@@ -95,13 +99,13 @@ const SignUpPage = () => {
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               type="submit"
-              // disabled={isLoading}
+              disabled={isLoading}
             >
-              {/* {isLoading ? (
+              {isLoading ? (
                 <Loader className="animate-spin mx-auto" size={24} />
-              ) : ( */}
-                Sign Up
-              {/* )} */}
+              ) : (
+                "Sign Up"
+              )}
             </motion.button>
           </form>
         </div>
