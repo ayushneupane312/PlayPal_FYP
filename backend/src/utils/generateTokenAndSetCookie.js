@@ -19,5 +19,4 @@ const generateTokenAndSetCookie = (res, userId) => {
   return token;
 };
 
-// ✅ Changed from ES6 export to CommonJS
 module.exports = { generateTokenAndSetCookie };

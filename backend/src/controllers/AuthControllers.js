@@ -1,7 +1,7 @@
 const User = require ("../models/UserModel.js");
 const bcrypt= require ( "bcryptjs");
 const { generateTokenAndSetCookie } = require ("../utils/generateTokenAndSetCookie.js");
-//const { sendVerificationEmail, sendWelcomeEmail } = require ( "../mail/mailtrapClient.js");
+const { sendVerificationEmail, sendWelcomeEmail} = require ("../mailtrap/emails")
 
 // ------------------- SIGNUP -------------------
 const signup = async (req, res) => {
@@ -12,7 +12,7 @@ const signup = async (req, res) => {
         if (!name || !email || !password || !userType)
             return res.status(400).json({ msg: "Please fill in all fields" });
 
-        if (!["student", "teacher", "admin", "parent"].includes(userType))
+        if (!["player", "futsalowner", "admin"].includes(userType))
             return res.status(400).json({ msg: "Invalid role" });
 
         const existingUser = await User.findOne({ email: email.toLowerCase().trim() });
@@ -27,18 +27,16 @@ const signup = async (req, res) => {
             password,
             verificationToken,
             verificationTokenExpires: Date.now() + 10 * 60 * 1000, // 10 min
-            userType,
-            isVerified: false, // email verification pending
+            role:userType,
+            isVerified: false, 
         });
 
         await user.save();
 
         // JWT cookie
-        generateTokenAndSetCookie(res, user._id);
+       // generateTokenAndSetCookie(res, user._id);
         console.log("User saved to database:", user.email);
-
-        // Send verification email
-        //await sendVerificationEmail(user.email, verificationToken);
+        await sendVerificationEmail(user.email, verificationToken);
 
         res.status(201).json({
             msg: "User registered successfully. Please verify your email.",
@@ -47,7 +45,7 @@ const signup = async (req, res) => {
                 _id: user._id,
                 name: user.name,
                 email: user.email,
-                userType: user.role,
+                role: user.role,
                 isVerified: user.isVerified,
                 lastLogin: user.lastLogin,
             },
@@ -59,35 +57,35 @@ const signup = async (req, res) => {
 };
 
 // ------------------- VERIFY EMAIL -------------------
-// const verifyEmail = async (req, res) => {
-//     const { code } = req.body;
+const verifyEmail = async (req, res) => {
+    const { code } = req.body;
 
-//     try {
-//         const user = await User.findOne({
-//             verificationToken: code,
-//             verificationTokenExpires: { $gt: Date.now() },
-//         });
+    try {
+        const user = await User.findOne({
+            verificationToken: code,
+            verificationTokenExpires: { $gt: Date.now() },
+        });
 
-//         if (!user)
-//             return res.status(400).json({ success: false, message: "Invalid or expired verification code" });
+        if (!user)
+            return res.status(400).json({ success: false, message: "Invalid or expired verification code" });
 
-//         user.isVerified = true;
-//         user.verificationToken = undefined;
-//         user.verificationTokenExpires = undefined;
-//         await user.save();
+        user.isVerified = true;
+        user.verificationToken = undefined;
+        user.verificationTokenExpires = undefined;
+        await user.save();
 
-//         await sendWelcomeEmail(user.email, user.name);
+        await sendWelcomeEmail(user.email, user.name);
 
-//         res.status(200).json({
-//             success: true,
-//             message: "Email verified successfully",
-//             user: { ...user._doc, password: undefined },
-//         });
-//     } catch (error) {
-//         console.error("VerifyEmail error:", error);
-//         res.status(500).json({ success: false, message: error.message });
-//     }
-// };
+        res.status(200).json({
+            success: true,
+            message: "Email verified successfully",
+            user: { ...user._doc, password: undefined },
+        });
+    } catch (error) {
+        console.error("VerifyEmail error:", error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
 
 // ------------------- LOGIN -------------------
 const login = async (req, res) => {
@@ -95,13 +93,10 @@ const login = async (req, res) => {
         console.log("Login request body:", req.body);
 
         const { email, password } = req.body;
-
        
         if (!email || !password) {
             return res.status(400).json({ success: false, msg: "Please fill in all fields" });
         }
-
-        // 2️⃣ Check if user exists in DB
         const user = await User.findOne({ 
             email: email.toLowerCase().trim()
          });
@@ -110,29 +105,24 @@ const login = async (req, res) => {
             return res.status(400).json({ success: false, msg: "Invalid credentials. User not found." });
         }
 
-        // // 3️⃣ Check password match
-        // const isMatch = await bcrypt.compare(password, user.password);
-        // if (!isMatch) {
-        //     console.log("Password mismatch");
-        //     return res.status(400).json({ success: false, msg: "Invalid credentials. Wrong password." });
-        // }
+        //  Admin restriction
+        if (user.role !== "admin") {
+            return res.status(403).json({ message: "Access denied. Admin only." });
+        }
 
-        // // 4️⃣ Check if user verified email
-        // if (!user.isVerified) {
-        //     console.log("Email not verified");
-        //     return res.status(400).json({ success: false, msg: "Please verify your email first" });
-        // }
+
+        // Check if user verified email
+        if (!user.isVerified) {
+            console.log("Email not verified");
+            return res.status(400).json({ success: false, msg: "Please verify your email first" });
+        }
 
         const isPasswordValid = await user.matchPassword(password);
         if (!isPasswordValid) {
             console.log("Password mismatch");
             return res.status(400).json({ success: false, msg: "Invalid credentials. Wrong password." });
         }
-
-        // 5️⃣ Generate token cookie
         generateTokenAndSetCookie(res, user._id);
-
-        // 6️⃣ Update last login
         user.lastLogin = new Date();
         await user.save();
 
@@ -146,7 +136,7 @@ const login = async (req, res) => {
                         _id: user._id,
                         name: user.name,
                         email: user.email,
-                        userType: user.userType,
+                        role: user.role,
                         isVerified: user.isVerified,
                         lastLogin: user.lastLogin,
                     },
@@ -157,6 +147,24 @@ const login = async (req, res) => {
     }
 };
 
+const checkAuth = async (req, res) => {
+
+    try {
+
+        const user = await User.findById(req.userId).select("-password");
+
+        if (!user) {
+            return res.status(400).json({ success: false, message: "User not found" });
+        }
+        res.status(200).json({ success: true, user });
+
+    } catch (error) {
+        console.log("error in checkAuth ", error);
+        res.status(500).json({ success: false, message: "Server error" });
+    }
+
+}
+
 
 // ------------------- LOGOUT -------------------
 const logout = async (req, res) => {
@@ -166,7 +174,8 @@ const logout = async (req, res) => {
 
 module.exports = {
     signup,
-  //  verifyEmail,
+    verifyEmail,
     login,
     logout,
+    checkAuth,
 };

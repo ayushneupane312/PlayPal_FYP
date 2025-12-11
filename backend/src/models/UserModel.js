@@ -23,7 +23,7 @@ const userSchema = new mongoose.Schema({
     },
     isVerified: {
         type: Boolean,
-        default: true // skipping email verification
+        default: false 
     },
 
     resetPasswordToken: String,
@@ -37,8 +37,8 @@ const userSchema = new mongoose.Schema({
     },
     role: {
         type: String,
-        enum: ["student", "teacher", "admin", "parent"],
-        default: "student"
+        enum: ["player", "futsalowner", "admin"],
+        default: "player"
     }
 
 }, {
