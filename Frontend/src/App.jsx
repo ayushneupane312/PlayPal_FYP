@@ -14,6 +14,8 @@ import Payment from "./pages/Payment.jsx";
 import ResetPassword from "./pages/ResetPassword.jsx";
 import ForgotPassword from "./pages/ForgetPassword.jsx";
 import EmailVerificationPage from "./pages/EmailVerificationPage.jsx";
+import AdminSidebar from "./pages/AdminSidebar.jsx";
+import FutsalOwner from "./pages/FutsalOwner.jsx";
 function App() {
   return (
 
@@ -41,17 +43,22 @@ function App() {
       <Route path="*" element={<Navigate to="/" replace />} />
 
       <Route path="/landing" element={<LandingPage />} />
+
       <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignupPage />} />
       <Route path="/admindashboard" element={<AdminDashboard />} />
       <Route path="/futsalcenter" element={<FutsalCenter />} />
       <Route path="/systemsettings" element={<SystemSetting />} />
-      <Route path="/usermanagemnet" element={<UserDirectory />} />
+      <Route path="/usermanagement" element={<UserDirectory />} />
       <Route path="/NotificationsCenter" element={<NotificationsCenter />} />
       <Route path="/Payment" element={<Payment />} />
       <Route path="/ResetPassword" element={<ResetPassword />} />
       <Route path="/ForgetPassword" element={<ForgotPassword />}/>
       <Route path="/verify-email" element={<EmailVerificationPage />} />
+      <Route path="/AdminSidebar" element={<AdminSidebar/>} />
+      <Route path="/FutsalOwner" element={<FutsalOwner/>} />
+
+    
    
      
     

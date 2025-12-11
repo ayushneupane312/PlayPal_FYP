@@ -63,7 +63,7 @@ const EmailVerificationPage = () => {
   }, [code]);
 
   return (
-    <div className="max-w-md mt-20 w-full bg-gray-800 bg-opacity-50 backdrop-filter backdrop-blur-xl rounded-2xl shadow-xl overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center bg-gray-900">
       <motion.div
         initial={{ opacity: 0, y: -50 }}
         animate={{ opacity: 1, y: 0 }}

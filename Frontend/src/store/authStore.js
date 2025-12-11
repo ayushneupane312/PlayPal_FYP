@@ -32,7 +32,7 @@ export const useAuthStore = create((set) => ({
       });
     } catch (error) {
       set({
-        error: error.response?.data?.msg || "Error signing up",
+        error: error.response?.data?.message || "Error signing up",
         isLoading: false,
       });
       throw error;
@@ -49,9 +49,10 @@ export const useAuthStore = create((set) => ({
         error: null,
         isLoading: false,
       });
+      return response.data;
     } catch (error) {
       set({
-        error: error.response?.data?.msg || "Error logging in",
+        error: error.response?.data?.message || "Error logging in",
         isLoading: false,
       });
       throw error;
@@ -77,7 +78,7 @@ export const useAuthStore = create((set) => ({
             set({ user: response.data.user, isAuthenticated: true, isLoading: false });
             return response.data;
         } catch (error) {
-            set({ error: error.response.data.msg || "Error verifying email", isLoading: false });
+            set({ error: error.response.data.message || "Error verifying email", isLoading: false });
             throw error;
         }
     },

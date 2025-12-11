@@ -14,7 +14,6 @@ const UserDirectory = () => {
       email: 'rohit@mail.com',
       role: 'Player',
       status: 'Active',
-      verification: 'KYC',
       registered: '2024-10-12',
       avatar: 'RK',
       color: 'bg-orange-200',
@@ -30,7 +29,6 @@ const UserDirectory = () => {
       email: 'owner@cityf.com',
       role: 'Owner',
       status: 'Inactive',
-      verification: 'Pending',
       registered: '2024-11-02',
       avatar: 'CF',
       color: 'bg-blue-200'
@@ -41,7 +39,6 @@ const UserDirectory = () => {
       email: 'meera@inbox.com',
       role: 'Player',
       status: 'Active',
-      verification: 'KYC',
       registered: '2025-01-05',
       avatar: 'MG',
       color: 'bg-purple-200'
@@ -52,7 +49,6 @@ const UserDirectory = () => {
       email: 'nimesh@goal.com',
       role: 'Owner',
       status: 'Review',
-      verification: 'Docs mismatch',
       registered: '2025-01-28',
       avatar: 'NT',
       color: 'bg-green-200'
@@ -176,9 +172,6 @@ const UserDirectory = () => {
                       <button className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">
                         Status: Active
                       </button>
-                      <button className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">
-                        Verification
-                      </button>
                     </div>
                   </div>
 
@@ -190,7 +183,6 @@ const UserDirectory = () => {
                           <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600">User</th>
                           <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600">Role</th>
                           <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600">Status</th>
-                          <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600">Verification</th>
                           <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600">Registered</th>
                           <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600">Actions</th>
                         </tr>
@@ -223,26 +215,7 @@ const UserDirectory = () => {
                                 {user.status}
                               </span>
                             </td>
-                            <td className="py-3 px-4">
-                              <div className="flex items-center gap-2 text-sm text-gray-700">
-                                {user.verification === 'KYC' ? (
-                                  <>
-                                    <CheckCircle className="w-4 h-4 text-teal-600" />
-                                    {user.verification}
-                                  </>
-                                ) : user.verification === 'Pending' ? (
-                                  <>
-                                    <Clock className="w-4 h-4 text-gray-400" />
-                                    {user.verification}
-                                  </>
-                                ) : (
-                                  <>
-                                    <XCircle className="w-4 h-4 text-red-600" />
-                                    {user.verification}
-                                  </>
-                                )}
-                              </div>
-                            </td>
+                  
                             <td className="py-3 px-4">
                               <span className="text-sm text-gray-700">{user.registered}</span>
                             </td>

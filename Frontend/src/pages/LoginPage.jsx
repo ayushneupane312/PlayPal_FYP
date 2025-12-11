@@ -4,6 +4,7 @@ import { Mail, Lock, Loader } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import Input from "../components/Input";
 import { useAuthStore } from "../store/authStore"; // Backend store commented out
+import ForgotPassword from "./ForgetPassword";
 
 const LoginPage = () => {
   const [email, setEmail] = useState("");
@@ -15,8 +16,21 @@ const LoginPage = () => {
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
-      await login(email, password);
-      navigate("/admindashboard"); 
+      const response = await login(email, password);
+
+      // response.user.userType must come from backend
+      if (response?.user?.role === "admin") {
+        navigate("/admindashboard");
+        return;
+      }
+
+      // response.user.userType must come from backend
+      if (response?.user?.role === "player") {
+        navigate("/");
+        return;
+      }
+
+      
     }
     catch (err) {
       console.error("Login failed:", err);
@@ -56,7 +70,7 @@ const LoginPage = () => {
 
             <div className="flex items-center mb-6">
               <Link
-                to="/forgot-password"
+                to="/ForgetPassword"
                 className="text-sm text-green-400 hover:underline"
               >
                 Forgot password?
