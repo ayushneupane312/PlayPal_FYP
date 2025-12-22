@@ -3,8 +3,7 @@ import { motion } from "framer-motion";
 import { Mail, Lock, Loader } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import Input from "../components/Input";
-import { useAuthStore } from "../store/authStore"; // Backend store commented out
-import ForgotPassword from "./ForgetPassword";
+import { useAuthStore } from "../store/authStore";
 
 const LoginPage = () => {
   const [email, setEmail] = useState("");
@@ -15,27 +14,31 @@ const LoginPage = () => {
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    
+    // Clear any previous errors
     try {
       const response = await login(email, password);
 
-      // response.user.userType must come from backend
+      // Navigate based on role
       if (response?.user?.role === "admin") {
         navigate("/admindashboard");
         return;
       }
 
-      // response.user.userType must come from backend
       if (response?.user?.role === "player") {
         navigate("/");
         return;
       }
 
+      if (response?.user?.role === "futsalowner") {
+        navigate("/ownerdashboard"); // Add your futsal owner route
+        return;
+      }
       
-    }
-    catch (err) {
+    } catch (err) {
       console.error("Login failed:", err);
+      // Error is already set in the store
     }
-    
   };
 
   return (
@@ -58,6 +61,7 @@ const LoginPage = () => {
               placeholder="Email Address"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              required // Add HTML5 validation
             />
 
             <Input
@@ -66,6 +70,8 @@ const LoginPage = () => {
               placeholder="Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              required // Add HTML5 validation
+              minLength={6} // Optional: minimum password length
             />
 
             <div className="flex items-center mb-6">
@@ -77,17 +83,19 @@ const LoginPage = () => {
               </Link>
             </div>
 
-              {error && (
-                <p className="text-red-500 font-semibold mb-4 text-center">
-                  {error}
-                </p>
-              )}
+            {/* Display error message */}
+            {error && (
+              <div className="bg-red-500 bg-opacity-10 text-red-500 px-4 py-3 rounded-lg mb-4 text-sm">
+                {error}
+              </div>
+            )}
+
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               className="w-full py-3 px-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold rounded-lg shadow-lg hover:from-green-600 hover:to-emerald-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:ring-offset-gray-900 transition duration-200"
               type="submit"
-              disabled={isLoading} // Disabled removed since no backend
+              disabled={isLoading}
             >
               {isLoading ? (
                 <Loader className="w-6 h-6 animate-spin mx-auto" />

@@ -6,7 +6,6 @@ import PasswordStrengthMeter from "../components/PasswordStrengthMeter";
 import { useAuthStore } from "../store/authStore"; 
 import Input from "../components/Input";
 
-
 const SignUpPage = () => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -14,22 +13,37 @@ const SignUpPage = () => {
   const [userType, setUserType] = useState("player");
 
   const navigate = useNavigate();
-  const { signup, error, isLoading } = useAuthStore(); // Backend authentication hook commented out
+  const { signup, error, isLoading } = useAuthStore();
+
+  // Password validation function
+  const isPasswordValid = (password) => {
+    const criteria = [
+      password.length >= 6,
+      /[A-Z]/.test(password),
+      /[a-z]/.test(password),
+      /\d/.test(password),
+      /[^A-Za-z0-9]/.test(password),
+    ];
+    return criteria.every(criterion => criterion === true);
+  };
 
   const handleSignUp = async (e) => {
     e.preventDefault();
 
-   
+    // Client-side password validation
+    if (!isPasswordValid(password)) {
+      alert("Please ensure your password meets all the requirements");
+      return;
+    }
+
     try {
       console.log(email, password, name, userType);
       await signup(email, password, name, userType);
       navigate("/verify-email");
     } catch (error) {
       console.log(error);
+      // Error is already handled in the store
     }
-
-  
-    console.log("Sign-up form submitted:", { name, email, password, userType });
   };
 
   return (
@@ -52,6 +66,8 @@ const SignUpPage = () => {
               placeholder="Full Name"
               value={name}
               onChange={(e) => setName(e.target.value)}
+              required
+              minLength={2}
             />
             <Input
               icon={Mail}
@@ -59,6 +75,7 @@ const SignUpPage = () => {
               placeholder="Email Address"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              required
             />
             <Input
               icon={Lock}
@@ -66,45 +83,43 @@ const SignUpPage = () => {
               placeholder="Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              required
             />
+
+            {/* Password Strength Meter */}
+            <PasswordStrengthMeter password={password} />
 
             <div className="mt-4">
               <label className="block text-gray-400 mb-2">User Type</label>
               <select
                 value={userType}
                 onChange={(e) => setUserType(e.target.value)}
-                className="w-full p-3 bg-gray-700 text-white rounded-lg"
+                className="w-full p-3 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                required
               >
                 <option value="player">Player</option>
                 <option value="futsalowner">Futsal Owner</option>
-      
-   
               </select>
             </div>
 
+            {/* Display error message */}
             {error && (
-              <p className="text-red-500 font-semibold mt-3 text-center">
+              <div className="mt-4 bg-red-500 bg-opacity-10 border border-red-500 text-red-500 px-4 py-3 rounded-lg text-sm">
                 {error}
-              </p>
+              </div>
             )}
 
-           
-            <PasswordStrengthMeter password={password} />
-
-            <motion.button
-              className="mt-5 w-full py-3 px-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white 
-              font-bold rounded-lg shadow-lg hover:from-green-600 hover:to-emerald-700 
-              focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 
-              focus:ring-offset-gray-900 transition duration-200"
+             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
+              className="mt-5 w-full py-3 px-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold rounded-lg shadow-lg hover:from-green-600 hover:to-emerald-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:ring-offset-gray-900 transition duration-200"
               type="submit"
               disabled={isLoading}
             >
               {isLoading ? (
-                <Loader className="animate-spin mx-auto" size={24} />
+                <Loader className="w-6 h-6 animate-spin mx-auto" />
               ) : (
-                "Sign Up"
+                "Signup"
               )}
             </motion.button>
           </form>

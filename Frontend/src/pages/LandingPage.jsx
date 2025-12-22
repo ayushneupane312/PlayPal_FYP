@@ -2,6 +2,10 @@ import React from 'react';
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { Calendar, CreditCard, Users, Bell, User, Trophy, BarChart3, ShieldCheck, MapPin, Star, Phone, Mail, Instagram, Facebook } from "lucide-react";
+import footballVideo from "../Assets/football.mp4";
+
+
+
 
 const PlayPalLanding = () => {
   return (
@@ -9,20 +13,20 @@ const PlayPalLanding = () => {
       {/* Hero Section */}
       <section className="relative overflow-hidden pt-20 pb-32 lg:pt-32 lg:pb-40">
         {/* Video Background */}
-        <div className="absolute inset-0 -z-20">
-          <video
-            key="hero-video"
-            autoPlay
-            loop
-            muted
-            playsInline
-            preload="auto"
-            className="h-full w-full object-cover opacity-60"
-            src="/videos/football.mp4"
-          />
-          {/* Gradient Overlay */}
-          <div className="absolute inset-0 bg-gradient-to-b from-slate-950/80 via-slate-950/80 to-slate-950"></div>
-        </div>
+<div className="absolute inset-0 -z-20">
+  <video
+    key="hero-video"
+    autoPlay
+    loop
+    muted
+    playsInline
+    preload="auto"
+    className="h-full w-full object-cover opacity-60"
+    src="/videos/football.mp4"
+  />
+  <div className="absolute inset-0 bg-gradient-to-b from-slate-950/80 via-slate-950/80 to-slate-950"></div>
+</div>
+
 
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex flex-col lg:flex-row items-center justify-between gap-12">
           <div className="max-w-2xl text-center lg:text-left">
