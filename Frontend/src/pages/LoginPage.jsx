@@ -26,7 +26,7 @@ const LoginPage = () => {
       }
 
       if (response?.user?.role === "player") {
-        navigate("/");
+        navigate("/playerdashboard");
         return;
       }
 

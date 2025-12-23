@@ -6,6 +6,10 @@ const API_URL =
     ? "http://localhost:5000/auth"
     : "/auth";
 
+const UPLOAD_URL = import.meta.env.MODE === "development"
+    ? "http://localhost:5000/upload"
+    : "/upload";
+
 axios.defaults.withCredentials = true;
 
 export const useAuthStore = create((set) => ({
@@ -119,4 +123,52 @@ export const useAuthStore = create((set) => ({
             throw error;
         }
     },
+
+
+   
+
+    // Add this to your store
+    uploadFile: async (user_id, file) => {
+        set({ isLoading: true, error: null });
+        const formData = new FormData();
+        formData.append('user_id', user_id);
+        formData.append('file', file);
+
+        try {
+            const response = await axios.post(`${UPLOAD_URL}/upload-file`, formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                }
+            });
+
+            set({ isLoading: false });
+            return response.data;
+        } catch (error) {
+            set({ 
+                error: error.response?.data?.msg || "Error uploading file", 
+                isLoading: false 
+            });
+            throw error;
+        }
+    },
+
+    getFiles: async (user_id) => {
+        set({ isLoading: true, error: null });
+        try {
+            const response = await axios.get(`${UPLOAD_URL}/get-file`, { 
+                params: { user_id } 
+            });
+            set({ isLoading: false });
+            return response.data;
+        } catch (error) {
+            set({ 
+                error: error.response?.data?.msg || "Error getting files", 
+                isLoading: false 
+            });
+            throw error;
+        }
+    },
+
+
+
 }));
