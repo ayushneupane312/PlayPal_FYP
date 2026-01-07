@@ -1,6 +1,7 @@
 {
   "dependencies": {
     "bcryptjs": "^3.0.3",
+    "cloudinary": "^2.8.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
@@ -9,7 +10,8 @@
     "mongoose": "^8.19.3",
     "multer": "^2.0.2",
     "nodemailer": "^7.0.10",
-    "nodeman": "^1.1.2"
+    "nodeman": "^1.1.2",
+    "path": "^0.12.7"
   },
   "name": "backend",
   "version": "1.0.0",
@@ -17,7 +19,7 @@
   "main": "src/index.js",
   "scripts": {
     "start": " node src/index.js",
-    "server" : "nodemon src/index.js",
+    "server": "nodemon src/index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

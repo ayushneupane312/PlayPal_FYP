@@ -1,6 +1,6 @@
 const nodemailer = require('nodemailer');
 require('dotenv').config();
-const { VERIFICATION_EMAIL_TEMPLATE } = require ('./emailTemplates');
+const { VERIFICATION_EMAIL_TEMPLATE, PASSWORD_RESET_REQUEST_TEMPLATE, PASSWORD_RESET_SUCCESS_TEMPLATE} = require ('./emailTemplates');
 
 const transporter = nodemailer.createTransport({
     service: 'Gmail',
@@ -65,6 +65,38 @@ const sendWelcomeEmail = async (email, name) => {
     }
 };
 
+const sendPasswordResetEmail = async (email, resetToken) => {
+    try {
+        const info = await transporter.sendMail({
+            from: `"${sender.name}" <${sender.email}>`,
+            to: email,
+            subject: "Password Reset",
+            html: PASSWORD_RESET_REQUEST_TEMPLATE.replace("{resetURL}", resetToken),
+        });
+
+        console.log("Password reset email sent:", info.messageId);
+    } catch (error) {
+        console.error("Error sending password reset email:", error);
+        throw new Error("Email not sent: " + error.message);
+    }
+};
+
+const sendPasswordResetSuccessEmail = async (email) => {
+    try {
+        const info = await transporter.sendMail({
+            from: `"${sender.name}" <${sender.email}>`,
+            to: email,
+            subject: "Password Reset Successful",
+            html: PASSWORD_RESET_SUCCESS_TEMPLATE,
+        });
+
+        console.log("Password reset success email sent:", info.messageId);
+    } catch (error) {
+        console.error("Error sending password reset success email:", error);
+        throw new Error("Email not sent: " + error.message);
+    }
+};
 
 
-module.exports = {sendEmail,sendVerificationEmail,sendWelcomeEmail, sender};
+
+module.exports = {sendEmail,sendVerificationEmail,sendWelcomeEmail,sendPasswordResetEmail, sendPasswordResetSuccessEmail, sender};
