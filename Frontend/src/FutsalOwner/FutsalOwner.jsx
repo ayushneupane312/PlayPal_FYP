@@ -1,346 +1,343 @@
 import React, { useState } from 'react';
-import { Calendar, Users, CreditCard, Trophy, Star, Bell, Settings, Menu, TrendingUp, DollarSign, Activity, Plus, RefreshCw, Send } from 'lucide-react';
+import { Calendar, DollarSign, Users, TrendingUp, Clock, Trophy, Bell, Search, Settings, LayoutDashboard, MapPin, CreditCard, BarChart3, Menu, X } from 'lucide-react';
 
-const FutsalDashboard = () => {
-  const [activeView, setActiveView] = useState('overview');
-  const [calendarView, setCalendarView] = useState('month');
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+export default function FutsalDashboard() {
+  const [notifications, setNotifications] = useState([
+    { id: 1, title: 'New booking request', desc: 'Team Alpha requested Court 1 for tomorrow at 6 PM', time: 'Just now' },
+    { id: 2, title: 'Payment received', desc: 'Rs. 2,500 received for booking #1234', time: '5 min ago' },
+    { id: 3, title: 'Tournament registration', desc: '5 new teams registered for Weekend Cup', time: '1 hour ago' }
+  ]);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // Sample data
   const stats = [
-    { title: 'Bookings today', value: '26', change: '+12% vs yesterday', positive: true },
-    { title: 'Revenue (NPR)', value: '84,300', change: '+8% weekly', positive: true },
-    { title: 'Occupancy', value: '78%', change: '+5 pts', positive: true },
-    { title: 'Upcoming matches', value: '9', change: 'Today', positive: true },
-    { title: 'Registered players', value: '1,243', change: '+34 this week', positive: true }
+    { label: "Today's Bookings", value: '12', change: '+3 from yesterday', icon: Calendar, color: 'bg-blue-500' },
+    { label: 'Monthly Revenue', value: 'Rs. 2.4L', change: '+12% from last month', icon: DollarSign, color: 'bg-green-500' },
+    { label: 'Active Courts', value: '4', change: '2 in maintenance', icon: MapPin, color: 'bg-purple-500' }
   ];
 
-  const activities = [
-    { type: 'Booking confirmed', team: 'Team Thunder', court: 'Court A', time: '6-7 PM', status: 'Booked', color: 'emerald' },
-    { type: 'Refund issued', team: 'No-show', time: '11 AM', status: 'Refunded', color: 'blue' },
-    { type: 'Review received', rating: '4.5★', comment: 'Great turf quality', status: 'New', color: 'yellow' }
+  const recentBookings = [
+    { team: 'Team Alpha', court: 'Court 1', time: '6:00 PM - 7:00 PM', price: 'Rs. 2,500', status: 'Confirmed', initial: 'T' },
+    { team: 'Striker FC', court: 'Court 2', time: '7:00 PM - 8:00 PM', price: 'Rs. 2,500', status: 'Pending', initial: 'S' },
+    { team: 'Goal Getters', court: 'Court 3', time: '5:00 PM - 6:00 PM', price: 'Rs. 2,500', status: 'Confirmed', initial: 'G' },
+    { team: 'FC Warriors', court: 'Court 1', time: '8:00 PM - 9:00 PM', price: 'Rs. 2,500', status: 'Confirmed', initial: 'F' }
   ];
 
-  const bookings = [
-    { day: 'Mon 1', slots: [{ court: 'Court A', time: '7 AM', status: 'booked' }, { court: 'Court B', time: '8 AM', status: 'open' }] },
-    { day: 'Tue 2', slots: [{ court: 'Court A', time: '6 PM', status: 'booked' }, { court: 'Maintenance', time: '8 PM', status: 'maintenance' }] },
-    { day: 'Wed 3', slots: [{ court: 'Open', time: '5 PM', status: 'open' }] },
-    { day: 'Thu 4', slots: [{ court: 'Court B', time: '7 PM', status: 'booked' }] },
-    { day: 'Fri 5', slots: [{ court: 'Court A', time: '6 PM', status: 'booked' }, { court: 'Court B', time: '7 PM', status: 'booked' }] },
-    { day: 'Sat 6', slots: [{ court: 'Open', time: '10 AM', status: 'open' }] },
-    { day: 'Sun 7', slots: [{ court: 'Private', time: '2 PM', status: 'private' }] }
+  const tournaments = [
+    { name: 'Weekend Cup 2024', date: 'Dec 28-29', prize: 'Rs. 50,000', entry: 'Rs. 5,000', teams: 12, maxTeams: 16 },
+    { name: 'New Year Championship', date: 'Jan 1-2', prize: 'Rs. 100,000', entry: 'Rs. 8,000', teams: 8, maxTeams: 16 }
   ];
 
-  const payments = [
-    { player: 'Team Thunder', method: 'eSewa', amount: 'NPR 4,200', status: 'Completed' },
-    { player: 'Solo • A. Rana', method: 'Stripe', amount: 'NPR 1,800', status: 'Refunded' },
-    { player: 'Team Falcons', method: 'Khalti', amount: 'NPR 3,600', status: 'Pending' }
+  const peakHours = [
+    { time: '6 AM', bookings: 2 },
+    { time: '8 AM', bookings: 5 },
+    { time: '10 AM', bookings: 4 },
+    { time: '12 PM', bookings: 3 },
+    { time: '2 PM', bookings: 6 },
+    { time: '4 PM', bookings: 8 },
+    { time: '6 PM', bookings: 12 },
+    { time: '8 PM', bookings: 11 },
+    { time: '10 PM', bookings: 7 }
   ];
 
-  const teams = [
-    { name: 'Team Thunder', bookings: 14, rating: '4.7★', engagement: 'high' },
-    { name: 'Solo • M. Karki', bookings: 12, rating: '4.9★', engagement: 'medium' },
-    { name: 'Team Falcons', bookings: 9, rating: '4.6★', engagement: 'medium' }
-  ];
-
-  const notifications = [
-    { text: 'New booking • Court A • 7 PM', time: '2m ago' },
-    { text: 'Payment received • NPR 3,600 • Khalti', time: '12m ago' },
-    { text: 'Dispute opened • Team Falcons', time: '1h ago' }
-  ];
-
-  const getStatusColor = (status) => {
-    const colors = {
-      booked: 'bg-red-500',
-      open: 'bg-emerald-500',
-      maintenance: 'bg-gray-400',
-      private: 'bg-purple-500'
-    };
-    return colors[status] || 'bg-gray-300';
-  };
-
-  const Sidebar = () => (
-    <div className={`${sidebarOpen ? 'w-64' : 'w-20'} bg-gray-900 text-white transition-all duration-300 flex flex-col`}>
-      <div className="p-4 flex items-center justify-between">
-        <div className={`${sidebarOpen ? 'block' : 'hidden'} w-10 h-10 bg-emerald-500 rounded-lg`}></div>
-        <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2 hover:bg-gray-800 rounded">
-          <Menu size={20} />
-        </button>
-      </div>
-
-      <nav className="flex-1 px-3 py-4 space-y-1">
-        {[
-          { icon: Activity, label: 'Dashboard Overview', view: 'overview' },
-          { icon: Calendar, label: 'Manage Bookings', view: 'bookings' },
-          { icon: CreditCard, label: 'Payments & Revenue', view: 'payments' },
-          { icon: Users, label: 'Players & Teams', view: 'players' },
-          { icon: Trophy, label: 'Tournaments & Events', view: 'tournaments' },
-          { icon: Star, label: 'Reviews & Ratings', view: 'reviews' },
-          { icon: Bell, label: 'Notifications', view: 'notifications' },
-          { icon: Settings, label: 'Account Settings', view: 'settings' }
-        ].map((item) => (
-          <button
-            key={item.view}
-            onClick={() => setActiveView(item.view)}
-            className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-colors ${
-              activeView === item.view ? 'bg-emerald-600' : 'hover:bg-gray-800'
-            }`}
-          >
-            <item.icon size={20} />
-            {sidebarOpen && <span className="text-sm">{item.label}</span>}
-          </button>
-        ))}
-      </nav>
-    </div>
-  );
-
-  const OverviewContent = () => (
-    <div className="space-y-6">
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-        {stats.map((stat, idx) => (
-          <div key={idx} className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
-            <div className="text-sm text-gray-600 mb-2">{stat.title}</div>
-            <div className="text-3xl font-bold mb-2">{stat.value}</div>
-            <div className={`inline-block px-2 py-1 rounded text-xs ${stat.positive ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
-              {stat.change}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Trends and Activity */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 bg-white rounded-lg p-6 shadow-sm border border-gray-200">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="font-semibold text-lg">Trends</h3>
-            <span className="text-sm text-gray-500">Last 7 days</span>
-          </div>
-          <div className="h-64 flex items-center justify-center bg-emerald-50 rounded-lg">
-            <div className="text-center">
-              <TrendingUp size={48} className="mx-auto mb-2 text-emerald-600" />
-              <p className="text-gray-600">Revenue & Booking Trends</p>
-            </div>
-          </div>
-          <div className="grid grid-cols-3 gap-3 mt-6">
-            <button className="flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
-              <Calendar size={16} />
-              <span className="text-sm">Add Booking</span>
-            </button>
-            <button className="flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
-              <DollarSign size={16} />
-              <span className="text-sm">Issue Refund</span>
-            </button>
-            <button className="flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
-              <Send size={16} />
-              <span className="text-sm">Send Offer</span>
-            </button>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="font-semibold text-lg">Activity</h3>
-            <span className="text-sm text-gray-500">Recent</span>
-          </div>
-          <div className="space-y-4">
-            {activities.map((activity, idx) => (
-              <div key={idx} className="flex items-start gap-3 pb-4 border-b border-gray-100 last:border-0">
-                <div className="w-8 h-8 rounded-full bg-gray-200"></div>
-                <div className="flex-1 min-w-0">
-                  <div className="font-medium text-sm">{activity.type}</div>
-                  <div className="text-xs text-gray-600">
-                    {activity.team} {activity.court && `• ${activity.court}`} {activity.time && `• ${activity.time}`}
-                    {activity.rating && activity.rating} {activity.comment && `• ${activity.comment}`}
-                  </div>
-                </div>
-                <span className={`px-2 py-1 rounded text-xs whitespace-nowrap ${
-                  activity.color === 'emerald' ? 'bg-emerald-100 text-emerald-700' :
-                  activity.color === 'blue' ? 'bg-blue-100 text-blue-700' :
-                  'bg-yellow-100 text-yellow-700'
-                }`}>
-                  {activity.status}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Calendar */}
-      <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="font-semibold text-lg">Manage Bookings</h3>
-          <div className="flex gap-2">
-            <button onClick={() => setCalendarView('month')} className={`px-4 py-2 rounded ${calendarView === 'month' ? 'bg-emerald-500 text-white' : 'bg-gray-100'}`}>Month</button>
-            <button onClick={() => setCalendarView('week')} className={`px-4 py-2 rounded ${calendarView === 'week' ? 'bg-emerald-500 text-white' : 'bg-gray-100'}`}>Week</button>
-            <button onClick={() => setCalendarView('day')} className={`px-4 py-2 rounded ${calendarView === 'day' ? 'bg-emerald-500 text-white' : 'bg-gray-100'}`}>Day</button>
-          </div>
-        </div>
-        <div className="flex justify-between items-center mb-4">
-          <div className="flex items-center gap-2">
-            <button className="p-1 hover:bg-gray-100 rounded">«</button>
-            <button className="p-1 hover:bg-gray-100 rounded">‹</button>
-            <span className="font-medium px-3">September 2025</span>
-            <button className="p-1 hover:bg-gray-100 rounded">›</button>
-            <button className="p-1 hover:bg-gray-100 rounded">»</button>
-          </div>
-          <div className="flex gap-2">
-            <button className="px-4 py-2 text-sm border border-gray-300 rounded hover:bg-gray-50">Add Booking</button>
-            <button className="px-4 py-2 text-sm border border-gray-300 rounded hover:bg-gray-50">Block Slot</button>
-          </div>
-        </div>
-        <div className="grid grid-cols-7 gap-2">
-          {bookings.map((day, idx) => (
-            <div key={idx} className="border border-gray-200 rounded p-2 min-h-24">
-              <div className="text-xs font-medium text-gray-600 mb-2">{day.day}</div>
-              <div className="space-y-1">
-                {day.slots.map((slot, sidx) => (
-                  <div key={sidx} className={`${getStatusColor(slot.status)} text-white text-xs rounded px-2 py-1`}>
-                    <div className="font-medium">{slot.court}</div>
-                    <div className="text-xs opacity-90">{slot.time}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-
-  const PaymentsContent = () => (
-    <div className="space-y-6">
-      <div className="grid grid-cols-2 gap-4">
-        <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
-          <div className="text-sm text-gray-600 mb-2">Total earnings</div>
-          <div className="text-3xl font-bold">NPR 1,245,600</div>
-        </div>
-        <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
-          <div className="text-sm text-gray-600 mb-2">Pending payouts</div>
-          <div className="text-3xl font-bold">NPR 84,000</div>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
-        <h3 className="font-semibold text-lg mb-4">Recent Transactions</h3>
-        <table className="w-full">
-          <thead>
-            <tr className="border-b">
-              <th className="text-left py-2 text-sm font-medium">Player/Team</th>
-              <th className="text-left py-2 text-sm font-medium">Method</th>
-              <th className="text-left py-2 text-sm font-medium">Amount</th>
-              <th className="text-left py-2 text-sm font-medium">Status</th>
-              <th className="text-left py-2 text-sm font-medium">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {payments.map((payment, idx) => (
-              <tr key={idx} className="border-b">
-                <td className="py-3">{payment.player}</td>
-                <td className="py-3">{payment.method}</td>
-                <td className="py-3 font-medium">{payment.amount}</td>
-                <td className="py-3">
-                  <span className={`px-2 py-1 rounded text-xs ${
-                    payment.status === 'Completed' ? 'bg-emerald-100 text-emerald-700' :
-                    payment.status === 'Refunded' ? 'bg-blue-100 text-blue-700' :
-                    'bg-yellow-100 text-yellow-700'
-                  }`}>
-                    {payment.status}
-                  </span>
-                </td>
-                <td className="py-3">
-                  <button className="text-emerald-600 hover:underline text-sm">
-                    {payment.status === 'Completed' ? 'Receipt' : payment.status === 'Refunded' ? 'Details' : 'Payout'}
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-
-  const PlayersContent = () => (
-    <div className="space-y-6">
-      <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="font-semibold text-lg">Players & Teams</h3>
-          <span className="text-sm text-gray-500">Engagement</span>
-        </div>
-        <div className="space-y-4">
-          {teams.map((team, idx) => (
-            <div key={idx} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-full bg-gray-200"></div>
-                <div>
-                  <div className="font-medium">{team.name}</div>
-                  <div className="text-sm text-gray-600">{team.bookings} bookings • {team.rating}</div>
-                </div>
-              </div>
-              <button className="px-4 py-2 border border-emerald-500 text-emerald-600 rounded hover:bg-emerald-50">
-                Send Offer
-              </button>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
+  const maxBookings = Math.max(...peakHours.map(h => h.bookings));
 
   return (
     <div className="flex h-screen bg-gray-50">
-      <Sidebar />
-      
-      <div className="flex-1 flex flex-col overflow-hidden">
+      {/* Sidebar */}
+      <div className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 fixed lg:static inset-y-0 left-0 z-50 w-64 bg-gray-900 text-white transition-transform duration-300`}>
+        <div className="flex items-center gap-3 p-6 border-b border-gray-800">
+          <div className="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center">
+            <Users className="w-6 h-6" />
+          </div>
+          <span className="text-xl font-bold">PlayPal</span>
+        </div>
+
+        <nav className="p-4 space-y-2">
+          <a href="#" className="flex items-center gap-3 px-4 py-3 bg-green-600 rounded-lg">
+            <LayoutDashboard className="w-5 h-5" />
+            <span>Dashboard</span>
+          </a>
+          <a href="#" className="flex items-center gap-3 px-4 py-3 hover:bg-gray-800 rounded-lg transition">
+            <MapPin className="w-5 h-5" />
+            <span>Venue</span>
+          </a>
+          <a href="#" className="flex items-center gap-3 px-4 py-3 hover:bg-gray-800 rounded-lg transition">
+            <Users className="w-5 h-5" />
+            <span>Courts & Pricing</span>
+          </a>
+          <a href="#" className="flex items-center gap-3 px-4 py-3 hover:bg-gray-800 rounded-lg transition">
+            <Calendar className="w-5 h-5" />
+            <span>Bookings</span>
+          </a>
+          <a href="#" className="flex items-center gap-3 px-4 py-3 hover:bg-gray-800 rounded-lg transition">
+            <Trophy className="w-5 h-5" />
+            <span>Tournaments</span>
+          </a>
+          <a href="#" className="flex items-center gap-3 px-4 py-3 hover:bg-gray-800 rounded-lg transition">
+            <MapPin className="w-5 h-5" />
+            <span>Facilities</span>
+          </a>
+          <a href="#" className="flex items-center gap-3 px-4 py-3 hover:bg-gray-800 rounded-lg transition">
+            <BarChart3 className="w-5 h-5" />
+            <span>Earnings</span>
+          </a>
+          <a href="#" className="flex items-center gap-3 px-4 py-3 hover:bg-gray-800 rounded-lg transition">
+            <Settings className="w-5 h-5" />
+            <span>Settings</span>
+          </a>
+        </nav>
+      </div>
+
+      {/* Main Content */}
+      <div className="flex-1 overflow-auto">
         {/* Header */}
-        <header className="bg-white border-b border-gray-200 px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4 flex-1">
-              <h1 className="text-xl font-semibold">Welcome, Everest Futsal!</h1>
-              <input
-                type="text"
-                placeholder="Search bookings, players, payouts..."
-                className="flex-1 max-w-md px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
-              />
-            </div>
+        <header className="bg-white border-b border-gray-200 sticky top-0 z-40">
+          <div className="flex items-center justify-between px-6 py-4">
             <div className="flex items-center gap-4">
-              <button className="p-2 hover:bg-gray-100 rounded-lg">
-                <Bell size={20} />
+              <button onClick={() => setSidebarOpen(!sidebarOpen)} className="lg:hidden">
+                {sidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
               </button>
-              <button className="p-2 hover:bg-gray-100 rounded-lg">
-                <Settings size={20} />
-              </button>
-              <div className="w-8 h-8 rounded-full bg-emerald-500"></div>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search..."
+                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg w-64 focus:outline-none focus:ring-2 focus:ring-green-500"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center gap-4">
+              <div className="relative">
+                <button
+                  onClick={() => setShowNotifications(!showNotifications)}
+                  className="relative p-2 hover:bg-gray-100 rounded-lg"
+                >
+                  <Bell className="w-6 h-6 text-gray-600" />
+                  <span className="absolute top-1 right-1 w-2 h-2 bg-yellow-400 rounded-full"></span>
+                </button>
+
+                {showNotifications && (
+                  <div className="absolute right-0 mt-2 w-96 bg-white rounded-lg shadow-xl border border-gray-200 z-50">
+                    <div className="p-4 border-b border-gray-200">
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-semibold text-gray-900">Notifications</h3>
+                        <Trophy className="w-5 h-5 text-yellow-500" />
+                      </div>
+                    </div>
+                    <div className="max-h-96 overflow-auto">
+                      {notifications.map(notif => (
+                        <div key={notif.id} className="p-4 border-b border-gray-100 hover:bg-gray-50">
+                          <h4 className="font-medium text-gray-900 mb-1">{notif.title}</h4>
+                          <p className="text-sm text-gray-600 mb-1">{notif.desc}</p>
+                          <span className="text-xs text-gray-500">{notif.time}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex items-center gap-3 pl-4 border-l border-gray-200">
+                <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center text-white font-semibold">
+                  RK
+                </div>
+                <span className="font-medium text-gray-900">Raj Kumar</span>
+              </div>
             </div>
           </div>
         </header>
 
-        {/* Main Content */}
-        <main className="flex-1 overflow-auto p-6">
-          <h2 className="text-2xl font-bold mb-6">Owner Dashboard Overview</h2>
-          
-          {activeView === 'overview' && <OverviewContent />}
-          {activeView === 'payments' && <PaymentsContent />}
-          {activeView === 'players' && <PlayersContent />}
-          {activeView === 'notifications' && (
-            <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
-              <h3 className="font-semibold text-lg mb-4">Notifications</h3>
-              <div className="space-y-3">
-                {notifications.map((notif, idx) => (
-                  <div key={idx} className="flex justify-between items-center p-3 border-b">
-                    <span className="text-sm">{notif.text}</span>
-                    <span className="text-xs text-gray-500">{notif.time}</span>
+        {/* Dashboard Content */}
+        <div className="p-6">
+          <div className="mb-6">
+            <h1 className="text-2xl font-bold text-gray-900">Dashboard Overview</h1>
+            <p className="text-gray-600">Welcome back, Raj! Here's what's happening at your venue.</p>
+          </div>
+
+          {/* Stats Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            {stats.map((stat, idx) => (
+              <div key={idx} className="bg-white rounded-lg shadow p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-gray-600 text-sm">{stat.label}</span>
+                  <div className={`${stat.color} w-10 h-10 rounded-lg flex items-center justify-center`}>
+                    <stat.icon className="w-5 h-5 text-white" />
+                  </div>
+                </div>
+                <div className="text-3xl font-bold text-gray-900 mb-2">{stat.value}</div>
+                <div className="text-green-600 text-sm">{stat.change}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Charts Row */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            {/* Weekly Revenue */}
+            <div className="bg-white rounded-lg shadow p-6">
+              <div className="mb-6">
+                <h2 className="text-lg font-semibold text-gray-900">Weekly Revenue</h2>
+                <p className="text-sm text-gray-600">Revenue and booking trends</p>
+              </div>
+              <div className="h-64">
+                <svg viewBox="0 0 700 200" className="w-full h-full">
+                  <defs>
+                    <linearGradient id="revenueGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                      <stop offset="0%" style={{ stopColor: '#10b981', stopOpacity: 0.3 }} />
+                      <stop offset="100%" style={{ stopColor: '#10b981', stopOpacity: 0.05 }} />
+                    </linearGradient>
+                  </defs>
+                  
+                  {/* Y-axis labels */}
+                  <text x="30" y="20" className="text-xs fill-gray-500">Rs.28k</text>
+                  <text x="30" y="60" className="text-xs fill-gray-500">Rs.21k</text>
+                  <text x="30" y="100" className="text-xs fill-gray-500">Rs.14k</text>
+                  <text x="30" y="140" className="text-xs fill-gray-500">Rs.7k</text>
+                  <text x="30" y="180" className="text-xs fill-gray-500">Rs.0k</text>
+
+                  {/* Area chart */}
+                  <path
+                    d="M 80,120 L 150,100 L 220,110 L 290,80 L 360,95 L 430,85 L 500,60 L 570,50 L 640,70 L 640,180 L 80,180 Z"
+                    fill="url(#revenueGradient)"
+                  />
+                  <path
+                    d="M 80,120 L 150,100 L 220,110 L 290,80 L 360,95 L 430,85 L 500,60 L 570,50 L 640,70"
+                    fill="none"
+                    stroke="#10b981"
+                    strokeWidth="2"
+                  />
+
+                  {/* X-axis labels */}
+                  <text x="80" y="195" className="text-xs fill-gray-500">Mon</text>
+                  <text x="150" y="195" className="text-xs fill-gray-500">Tue</text>
+                  <text x="220" y="195" className="text-xs fill-gray-500">Wed</text>
+                  <text x="290" y="195" className="text-xs fill-gray-500">Thu</text>
+                  <text x="360" y="195" className="text-xs fill-gray-500">Fri</text>
+                  <text x="430" y="195" className="text-xs fill-gray-500">Sat</text>
+                  <text x="500" y="195" className="text-xs fill-gray-500">Sun</text>
+                </svg>
+              </div>
+            </div>
+
+            {/* Peak Hours */}
+            <div className="bg-white rounded-lg shadow p-6">
+              <div className="mb-6">
+                <h2 className="text-lg font-semibold text-gray-900">Peak Hours</h2>
+                <p className="text-sm text-gray-600">Bookings by time of day</p>
+              </div>
+              <div className="h-64 flex items-end justify-between gap-2">
+                {peakHours.map((hour, idx) => (
+                  <div key={idx} className="flex-1 flex flex-col items-center gap-2">
+                    <div
+                      className="w-full bg-gradient-to-t from-green-500 to-green-300 rounded-t-lg transition-all hover:from-green-600 hover:to-green-400"
+                      style={{ height: `${(hour.bookings / maxBookings) * 100}%`, minHeight: '20px' }}
+                    ></div>
+                    <span className="text-xs text-gray-600 whitespace-nowrap">{hour.time}</span>
                   </div>
                 ))}
               </div>
             </div>
-          )}
-        </main>
+          </div>
+
+          {/* Bottom Section */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Recent Bookings */}
+            <div className="bg-white rounded-lg shadow">
+              <div className="p-6 border-b border-gray-200 flex items-center justify-between">
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900">Recent Bookings</h2>
+                  <p className="text-sm text-gray-600">Latest booking requests</p>
+                </div>
+                <button className="text-green-600 text-sm font-medium hover:text-green-700">View All</button>
+              </div>
+              <div className="divide-y divide-gray-100">
+                {recentBookings.map((booking, idx) => (
+                  <div key={idx} className="p-4 flex items-center justify-between hover:bg-gray-50">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center text-green-600 font-semibold">
+                        {booking.initial}
+                      </div>
+                      <div>
+                        <div className="font-medium text-gray-900">{booking.team}</div>
+                        <div className="text-sm text-gray-600">{booking.court} • Today</div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-sm font-medium text-gray-900 mb-1">{booking.time}</div>
+                      <div className="text-sm text-gray-600">{booking.price}</div>
+                      <span className={`inline-block mt-1 px-2 py-1 text-xs rounded-full ${
+                        booking.status === 'Confirmed' 
+                          ? 'bg-green-100 text-green-700' 
+                          : 'bg-yellow-100 text-yellow-700'
+                      }`}>
+                        {booking.status}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Upcoming Tournaments */}
+            <div className="bg-white rounded-lg shadow">
+              <div className="p-6 border-b border-gray-200 flex items-center justify-between">
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900">Upcoming Tournaments</h2>
+                  <p className="text-sm text-gray-600">Manage your events</p>
+                </div>
+                <button className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition">
+                  Create New →
+                </button>
+              </div>
+              <div className="p-6 space-y-4">
+                {tournaments.map((tournament, idx) => (
+                  <div key={idx} className="border border-gray-200 rounded-lg p-4">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-start gap-3">
+                        <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+                          <Trophy className="w-6 h-6 text-yellow-600" />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-gray-900">{tournament.name}</h3>
+                          <p className="text-sm text-gray-600 flex items-center gap-1 mt-1">
+                            <Calendar className="w-4 h-4" />
+                            {tournament.date}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-sm font-medium text-gray-900">Prize: {tournament.prize}</div>
+                        <div className="text-xs text-gray-600">Entry: {tournament.entry}</div>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-gray-600">Team Registration</span>
+                        <span className="font-medium text-gray-900">{tournament.teams}/{tournament.maxTeams}</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div
+                          className="bg-green-500 h-2 rounded-full transition-all"
+                          style={{ width: `${(tournament.teams / tournament.maxTeams) * 100}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
+
+      {/* Overlay for mobile sidebar */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        ></div>
+      )}
     </div>
   );
-};
-
-export default FutsalDashboard;
+}
