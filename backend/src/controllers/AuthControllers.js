@@ -214,7 +214,7 @@ const forgotPassword = async (req, res) => {
 
         //test reset link
 
-        const resetLink = `${process.env.FRONTEND_URL}reset-password/${resetToken}`;
+        const resetLink = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
 
         console.log("Password Reset Link:", resetLink);
         await sendPasswordResetEmail(user.email, resetLink);
@@ -262,7 +262,7 @@ const uploadFile = async (req, res) => {
     console.log('req.file:', req.file);
     console.log('req.files:', req.files);
     console.log('Headers:', req.headers);
-    console.log('===========================');
+ 
 
     try {
         // Check if file exists first
@@ -289,7 +289,7 @@ const uploadFile = async (req, res) => {
 const getAllStore = async (req, res) => {
     console.log('=== GET ALL STORE REQUEST ===');
     console.log('Query params:', req.query);
-    console.log('=============================');
+  
 
     const { user_id } = req.query;
 
@@ -305,7 +305,7 @@ const getAllStore = async (req, res) => {
     } catch (error) {
         console.error("=== GET STORE ERROR ===");
         console.error("Error:", error.message);
-        console.error("=======================");
+
         res.status(500).json({ success: false, msg: error.message });
     }
 };
