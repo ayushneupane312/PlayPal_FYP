@@ -9,37 +9,16 @@ const FraudDetection = () => {
 
   const stats = [
     {
-      title: 'Active Fraud Alerts',
+      title: 'Pending Applicaions',
       value: '28',
       icon: AlertTriangle,
       bgColor: 'bg-red-500/10',
       iconColor: 'text-red-500',
-      badge: 'Live',
+  
       badgeColor: 'bg-red-500'
     },
-    {
-      title: 'Flagged Amount (Today)',
-      value: '$12,450',
-      icon: DollarSign,
-      bgColor: 'bg-yellow-500/10',
-      iconColor: 'text-yellow-500'
-    },
-    {
-      title: 'Detection Accuracy',
-      value: '94.2%',
-      icon: CheckCircle,
-      bgColor: 'bg-green-500/10',
-      iconColor: 'text-green-500'
-    },
-    {
-      title: 'AI Monitoring Status',
-      value: 'Active',
-      icon: Activity,
-      bgColor: 'bg-cyan-500/10',
-      iconColor: 'text-cyan-500',
-      badge: 'Active',
-      badgeColor: 'bg-cyan-500'
-    }
+   
+
   ];
 
   const riskDistribution = [
@@ -176,23 +155,7 @@ const FraudDetection = () => {
             })}
           </div>
 
-          {/* Risk Score Distribution */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-6">Risk Score Distribution</h2>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              {riskDistribution.map((risk, index) => (
-                <div key={index} className="text-center">
-                  <div className="mb-3">
-                    <div className={`w-20 h-20 ${risk.color} rounded-full flex items-center justify-center mx-auto mb-2`}>
-                      <span className="text-white text-3xl font-bold">{risk.count}</span>
-                    </div>
-                  </div>
-                  <p className="text-gray-900 font-semibold mb-1">{risk.label}</p>
-                  <p className="text-gray-500 text-sm">{risk.range}</p>
-                </div>
-              ))}
-            </div>
-          </div>
+
 
           {/* Search and Filter */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">

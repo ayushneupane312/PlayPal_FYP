@@ -31,6 +31,9 @@ import FutsalOwnerSettings from "./FutsalOwner/FutsalOwnerSettings.jsx";
 import EarningPage from "./FutsalOwner/EarningsPage.jsx";
 import ToastProvider from "./FutsalOwner/components/ToastProvider.jsx";
 
+import FutsalOwnerDetails from "./SuperAdmin/FutsalOwnerDetails.jsx";
+import FutsalOwnerApproval from "./SuperAdmin/FutsalOwnerApproval.jsx";
+
 
 
 
@@ -89,6 +92,9 @@ function App() {
       <Route path="/FutsalFacilities" element={<FutsalFacilities/>}/>
       <Route path="/FutsalOwnerSettings" element={<FutsalOwnerSettings/>} />
       <Route path="/EarningsPage" element={<EarningPage/>}/>
+      <Route path="/futsalownerdetails/:id" element={<FutsalOwnerDetails/>} />
+      <Route path="/futsalownerapproval" element={<FutsalOwnerApproval/>} />
+
     
       
 
