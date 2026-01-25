@@ -2,9 +2,8 @@ const FutsalOwner = require('../models/FutsalOwnerForm.js');
 const fs = require('fs').promises;
 const path = require('path');
 
-// @desc    Register Futsal Owner
-// @route   POST /api/futsal-owners/register
-// @access  Public
+const { sendFutsalOwnerApprovalEmail, sendFutsalOwnerPendingEmail, sendFutsalOwnerRejectionEmail, sendAdminNewRegistrationNotification} = require ("../mailtrap/emails")
+
 exports.registerFutsalOwner = async (req, res) => {
   try {
     const {
@@ -58,12 +57,27 @@ exports.registerFutsalOwner = async (req, res) => {
       businessContact,
       businessDoc,
       citizenshipDoc,
-      groundImages
+      groundImages,
+      status: 'pending'
     });
+
+    // ✅ Send confirmation email to owner
+    try {
+      await sendFutsalOwnerPendingEmail(futsalOwner);
+    } catch (emailError) {
+      console.error('Failed to send confirmation email:', emailError);
+    }
+
+    // ✅ Send notification to admin
+    try {
+      await sendAdminNewRegistrationNotification(futsalOwner);
+    } catch (emailError) {
+      console.error('Failed to send admin notification:', emailError);
+    }
 
     res.status(201).json({
       success: true,
-      message: 'Futsal owner registered successfully',
+      message: 'Registration submitted successfully! You will receive an email once reviewed.',
       data: futsalOwner
     });
 
@@ -77,9 +91,6 @@ exports.registerFutsalOwner = async (req, res) => {
   }
 };
 
-// @desc    Get all futsal owners
-// @route   GET /api/futsal-owners
-// @access  Public
 exports.getAllFutsalOwners = async (req, res) => {
   try {
     const { status, page = 1, limit = 10 } = req.query;
@@ -155,9 +166,6 @@ exports.getFutsalOwnerById = async (req, res) => {
   }
 };
 
-// @desc    Update futsal owner status
-// @route   PATCH /api/futsal-owners/:id/status
-// @access  Private/Admin
 exports.updateFutsalOwnerStatus = async (req, res) => {
   try {
     const { status } = req.body;
@@ -166,16 +174,12 @@ exports.updateFutsalOwnerStatus = async (req, res) => {
     if (!['pending', 'approved', 'rejected'].includes(status)) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid status value. Must be: pending, approved, or rejected'
+        message: 'Invalid status. Must be: pending, approved, or rejected'
       });
     }
 
-    // Find and update
-    const futsalOwner = await FutsalOwner.findByIdAndUpdate(
-      req.params.id,
-      { status },
-      { new: true, runValidators: true }
-    ).select('-__v');
+    // Find futsal owner
+    const futsalOwner = await FutsalOwner.findById(req.params.id);
 
     if (!futsalOwner) {
       return res.status(404).json({
@@ -184,22 +188,33 @@ exports.updateFutsalOwnerStatus = async (req, res) => {
       });
     }
 
+    // Update status
+    futsalOwner.status = status;
+    futsalOwner.statusUpdatedAt = new Date();
+    await futsalOwner.save();
+
+    // ✅ Send appropriate email
+    let emailSent = false;
+    try {
+      if (status === 'approved') {
+        await sendFutsalOwnerApprovalEmail(futsalOwner);
+        emailSent = true;
+      } else if (status === 'rejected') {
+        await sendFutsalOwnerRejectionEmail(futsalOwner);
+        emailSent = true;
+      }
+    } catch (emailError) {
+      console.error('Failed to send status email:', emailError);
+    }
+
     res.status(200).json({
       success: true,
-      message: `Status updated to ${status} successfully`,
+      message: `Status updated to ${status}${emailSent ? '. Email notification sent.' : ''}`,
       data: futsalOwner
     });
 
   } catch (error) {
     console.error('Update error:', error);
-    
-    if (error.kind === 'ObjectId') {
-      return res.status(404).json({
-        success: false,
-        message: 'Futsal owner not found'
-      });
-    }
-    
     res.status(500).json({
       success: false,
       message: 'Failed to update status',

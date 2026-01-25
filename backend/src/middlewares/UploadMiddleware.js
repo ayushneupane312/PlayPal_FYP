@@ -2,39 +2,42 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
-// Create uploads directory if it doesn't exist
-const uploadDir = 'uploads/futsal';
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
+// Absolute base uploads path
+const BASE_UPLOAD_PATH = path.join(__dirname, '../uploads/futsal');
+
+// Ensure base directory exists
+if (!fs.existsSync(BASE_UPLOAD_PATH)) {
+  fs.mkdirSync(BASE_UPLOAD_PATH, { recursive: true });
 }
 
-// Configure storage
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    let folder = 'uploads/futsal/';
-    
-    // Organize files by type
+    let folder = BASE_UPLOAD_PATH;
+
     if (file.fieldname === 'businessDoc') {
-      folder += 'business-docs/';
+      folder = path.join(BASE_UPLOAD_PATH, 'business-docs');
     } else if (file.fieldname === 'citizenshipDoc') {
-      folder += 'citizenship-docs/';
+      folder = path.join(BASE_UPLOAD_PATH, 'citizenship-docs');
     } else if (file.fieldname === 'groundImages') {
-      folder += 'ground-images/';
+      folder = path.join(BASE_UPLOAD_PATH, 'ground-images');
     }
-    
-    // Create folder if it doesn't exist
+
     if (!fs.existsSync(folder)) {
       fs.mkdirSync(folder, { recursive: true });
     }
-    
+
     cb(null, folder);
   },
+
   filename: function (req, file, cb) {
-    // Generate unique filename
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
-  }
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+    cb(
+      null,
+      file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname)
+    );
+  },
 });
+
 
 // File filter
 const fileFilter = (req, file, cb) => {

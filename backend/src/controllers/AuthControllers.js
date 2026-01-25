@@ -257,12 +257,6 @@ const resetPassword = async (req, res) => {
 };
 
 const uploadFile = async (req, res) => {
-    console.log('=== UPLOAD FILE REQUEST ===');
-    console.log('req.body:', req.body);
-    console.log('req.file:', req.file);
-    console.log('req.files:', req.files);
-    console.log('Headers:', req.headers);
- 
 
     try {
         // Check if file exists first
