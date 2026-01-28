@@ -1,8 +1,16 @@
 import React, { useState, useRef } from 'react';
+import PlayerSidebar from './PlayerSidebar';
+import {
+  Play,
+  Eye,
+  Heart,
+  Upload,
+  MapPin,
+  Clock
+} from 'lucide-react';
 
 const HighlightsPage = () => {
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [activeNav, setActiveNav] = useState('Highlights');
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [activeTab, setActiveTab] = useState('featured');
   const [selectedVideo, setSelectedVideo] = useState(1);
   const [videoProgress, setVideoProgress] = useState(0);
@@ -111,73 +119,6 @@ const HighlightsPage = () => {
   const currentVideo = [...videos.featured, ...videos.live, ...videos.uploaded]
     .find(video => video.id === selectedVideo) || videos.featured[0];
 
-  // Navigation Items
-  const navigationItems = [
-    { id: 'dashboard', name: 'Dashboard', icon: '' },
-    { id: 'bookings', name: 'Bookings', icon: '', badge: 3 },
-    { id: 'payments', name: 'Payments', icon: '', badge: 2 },
-    { id: 'teams', name: 'Teams', icon: '' },
-    { id: 'tournaments', name: 'Tournaments', icon: '' },
-    { id: 'highlights', name: 'Highlights', icon: '' },
-    { id: 'health', name: 'Health', icon: '' },
-  ];
-
-  const bottomNavItems = [
-    { id: 'settings', name: 'Settings', icon: '' },
-    { id: 'help', name: 'Help', icon: '' },
-    { id: 'logout', name: 'Logout', icon: '' },
-  ];
-
-  // Icons
-  const PlayIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
-    </svg>
-  );
-
-  const EyeIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-      <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
-      <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
-    </svg>
-  );
-
-  const HeartIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-      <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
-    </svg>
-  );
-
-  const UploadIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-      <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clipRule="evenodd" />
-    </svg>
-  );
-
-  const LiveIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-      <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
-    </svg>
-  );
-
-  const ChevronLeftIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-      <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
-    </svg>
-  );
-
-  const ChevronRightIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-      <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
-    </svg>
-  );
-
-  const TimeIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
-    </svg>
-  );
-
   // Handle video selection
   const handleVideoSelect = (videoId) => {
     setSelectedVideo(videoId);
@@ -201,74 +142,16 @@ const HighlightsPage = () => {
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      {/* Left Sidebar */}
-      <div className={`bg-white shadow-lg rounded-r-xl fixed h-full z-10 transition-all duration-300 ${sidebarCollapsed ? 'w-20' : 'w-64'}`}>
-        <div className="p-6">
-          {/* Logo */}
-          <div className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'space-x-3'} mb-10`}>
-            <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-600 rounded-lg flex items-center justify-center">
-              <div className="text-white font-bold">PP</div>
-            </div>
-            {!sidebarCollapsed && (
-              <h1 className="text-xl font-bold text-gray-800">PlayPal<span className="text-emerald-600"> – Futsal</span></h1>
-            )}
-          </div>
-          
-          {/* Collapse Button */}
-          <button
-            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-            className="absolute -right-3 top-20 bg-white border border-gray-200 rounded-full w-6 h-6 flex items-center justify-center shadow-md hover:shadow-lg transition-all"
-          >
-            {sidebarCollapsed ? <ChevronRightIcon className="w-4 h-4 text-gray-600" /> : <ChevronLeftIcon className="w-4 h-4 text-gray-600" />}
-          </button>
-          
-          {/* Navigation */}
-          <nav className="space-y-2">
-            {navigationItems.map((item) => (
-              <button
-                key={item.id}
-                className={`flex items-center justify-between w-full p-3 rounded-xl transition-all ${activeNav === item.name ? 'bg-emerald-50 text-emerald-700 font-medium' : 'text-gray-600 hover:bg-gray-100'}`}
-                onClick={() => setActiveNav(item.name)}
-              >
-                <div className="flex items-center space-x-3">
-                  <span className={`text-lg ${activeNav === item.name ? 'text-emerald-600' : 'text-gray-400'}`}>
-                    {item.icon}
-                  </span>
-                  {!sidebarCollapsed && <span>{item.name}</span>}
-                </div>
-                {!sidebarCollapsed && item.badge && (
-                  <span className="bg-emerald-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
-                    {item.badge}
-                  </span>
-                )}
-                {sidebarCollapsed && item.badge && (
-                  <span className="absolute -top-1 -right-1 bg-emerald-500 text-white text-xs font-bold rounded-full w-4 h-4 flex items-center justify-center">
-                    {item.badge}
-                  </span>
-                )}
-              </button>
-            ))}
-          </nav>
-          
-          {/* Bottom Navigation */}
-          <div className="absolute bottom-0 left-0 right-0 p-6 border-t border-gray-100">
-            <nav className="space-y-2">
-              {bottomNavItems.map((item) => (
-                <button
-                  key={item.id}
-                  className="flex items-center w-full p-3 rounded-xl text-gray-600 hover:bg-gray-100 transition-all"
-                >
-                  <span className="text-lg text-gray-400 mr-3">{item.icon}</span>
-                  {!sidebarCollapsed && <span>{item.name}</span>}
-                </button>
-              ))}
-            </nav>
-          </div>
-        </div>
-      </div>
+      {/* Sidebar */}
+      <PlayerSidebar onCollapseChange={setIsSidebarCollapsed} />
       
-      {/* Main Content */}
-      <div className={`flex-1 transition-all duration-300 ${sidebarCollapsed ? 'ml-20' : 'ml-64'} p-6`}>
+      {/* Main Content - Dynamic margin based on sidebar state */}
+      <div 
+        className={`flex-1 p-6 transition-all duration-300 ease-in-out ${
+          isSidebarCollapsed ? 'ml-20' : 'ml-64'
+        }`}
+        style={{ width: `calc(100% - ${isSidebarCollapsed ? '5rem' : '16rem'})` }}
+      >
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
           <div>
@@ -278,7 +161,7 @@ const HighlightsPage = () => {
           
           {/* Upload Button */}
           <button className="bg-emerald-500 hover:bg-emerald-600 text-white font-medium py-2 px-6 rounded-xl flex items-center transition-all">
-            <UploadIcon className="mr-2" /> Upload Video
+            <Upload className="w-5 h-5 mr-2" /> Upload Video
           </button>
         </div>
 
@@ -293,7 +176,7 @@ const HighlightsPage = () => {
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="text-center">
                     <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center mb-4 mx-auto">
-                      <PlayIcon className="w-8 h-8 text-white" />
+                      <Play className="w-8 h-8 text-white" />
                     </div>
                     <p className="text-white/80 text-sm">Click play to watch video</p>
                   </div>
@@ -334,15 +217,15 @@ const HighlightsPage = () => {
                     <h2 className="text-xl font-bold text-gray-800 mb-2">{currentVideo.title}</h2>
                     <div className="flex items-center space-x-4 text-gray-600">
                       <div className="flex items-center">
-                        <EyeIcon className="mr-2 text-gray-400" />
+                        <Eye className="w-5 h-5 mr-2 text-gray-400" />
                         <span className="text-sm">{currentVideo.views}</span>
                       </div>
                       <div className="flex items-center">
-                        <HeartIcon className="mr-2 text-gray-400" />
+                        <Heart className="w-5 h-5 mr-2 text-gray-400" />
                         <span className="text-sm">{currentVideo.likes}</span>
                       </div>
                       <div className="flex items-center">
-                        <TimeIcon className="mr-2 text-gray-400" />
+                        <Clock className="w-5 h-5 mr-2 text-gray-400" />
                         <span className="text-sm">{currentVideo.duration}</span>
                       </div>
                     </div>
@@ -360,10 +243,10 @@ const HighlightsPage = () => {
                     onClick={handlePlayVideo}
                     className="bg-emerald-500 hover:bg-emerald-600 text-white font-medium py-2 px-4 rounded-xl flex items-center transition-all"
                   >
-                    <PlayIcon className="mr-2" /> Play Video
+                    <Play className="w-5 h-5 mr-2" /> Play Video
                   </button>
-                  <button className="border border-gray-300 text-gray-700 font-medium py-2 px-4 rounded-xl hover:bg-gray-50 transition-all">
-                    <HeartIcon className="inline mr-2" /> Like
+                  <button className="border border-gray-300 text-gray-700 font-medium py-2 px-4 rounded-xl hover:bg-gray-50 transition-all flex items-center">
+                    <Heart className="w-5 h-5 mr-2" /> Like
                   </button>
                   <button className="border border-gray-300 text-gray-700 font-medium py-2 px-4 rounded-xl hover:bg-gray-50 transition-all">
                     Share
@@ -385,7 +268,7 @@ const HighlightsPage = () => {
                     <p className="text-2xl font-bold text-gray-800">12</p>
                   </div>
                   <div className="text-emerald-600">
-                    <PlayIcon className="text-2xl" />
+                    <Play className="w-8 h-8" />
                   </div>
                 </div>
                 <div className="flex justify-between items-center p-3 bg-gray-50 rounded-xl">
@@ -394,7 +277,7 @@ const HighlightsPage = () => {
                     <p className="text-2xl font-bold text-gray-800">2.4K</p>
                   </div>
                   <div className="text-blue-600">
-                    <EyeIcon className="text-2xl" />
+                    <Eye className="w-8 h-8" />
                   </div>
                 </div>
                 <div className="flex justify-between items-center p-3 bg-gray-50 rounded-xl">
@@ -403,7 +286,7 @@ const HighlightsPage = () => {
                     <p className="text-2xl font-bold text-gray-800">458</p>
                   </div>
                   <div className="text-red-500">
-                    <HeartIcon className="text-2xl" />
+                    <Heart className="w-8 h-8" />
                   </div>
                 </div>
               </div>
@@ -458,7 +341,7 @@ const HighlightsPage = () => {
           {videos[activeTab].map((video) => (
             <div 
               key={video.id} 
-              className={`border rounded-xl overflow-hidden hover:shadow-md transition-all cursor-pointer ${selectedVideo === video.id ? 'border-emerald-500 ring-1 ring-emerald-500' : 'border-gray-100'}`}
+              className={`bg-white border rounded-xl overflow-hidden hover:shadow-md transition-all cursor-pointer ${selectedVideo === video.id ? 'border-emerald-500 ring-1 ring-emerald-500' : 'border-gray-100'}`}
               onClick={() => handleVideoSelect(video.id)}
             >
               {/* Thumbnail */}
@@ -490,7 +373,7 @@ const HighlightsPage = () => {
                 {/* Play Overlay */}
                 <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
                   <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
-                    <PlayIcon className="w-6 h-6 text-white" />
+                    <Play className="w-6 h-6 text-white" />
                   </div>
                 </div>
               </div>
@@ -503,11 +386,11 @@ const HighlightsPage = () => {
                 <div className="flex justify-between items-center">
                   <div className="flex items-center space-x-4 text-gray-600">
                     <div className="flex items-center">
-                      <EyeIcon className="w-4 h-4 mr-1" />
+                      <Eye className="w-4 h-4 mr-1" />
                       <span className="text-xs">{video.views}</span>
                     </div>
                     <div className="flex items-center">
-                      <HeartIcon className="w-4 h-4 mr-1" />
+                      <Heart className="w-4 h-4 mr-1" />
                       <span className="text-xs">{video.likes}</span>
                     </div>
                   </div>
@@ -537,7 +420,7 @@ const HighlightsPage = () => {
           <div className="space-y-4">
             <div className="flex items-start p-4 border border-gray-100 rounded-xl">
               <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center mr-4">
-                <PlayIcon className="text-emerald-600" />
+                <Play className="w-5 h-5 text-emerald-600" />
               </div>
               <div className="flex-1">
                 <p className="font-medium text-gray-800">You uploaded a new video</p>
@@ -548,7 +431,7 @@ const HighlightsPage = () => {
             
             <div className="flex items-start p-4 border border-gray-100 rounded-xl">
               <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mr-4">
-                <HeartIcon className="text-red-500" />
+                <Heart className="w-5 h-5 text-red-500" />
               </div>
               <div className="flex-1">
                 <p className="font-medium text-gray-800">Your video got 42 likes</p>
@@ -559,7 +442,7 @@ const HighlightsPage = () => {
             
             <div className="flex items-start p-4 border border-gray-100 rounded-xl">
               <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center mr-4">
-                <LiveIcon className="text-purple-600" />
+                <MapPin className="w-5 h-5 text-purple-600" />
               </div>
               <div className="flex-1">
                 <p className="font-medium text-gray-800">New live match started</p>
@@ -581,7 +464,7 @@ const HighlightsPage = () => {
               </button>
             </div>
             <div className="text-right">
-              <UploadIcon className="text-5xl text-white/20" />
+              <Upload className="w-20 h-20 text-white/20" />
             </div>
           </div>
         </div>

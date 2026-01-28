@@ -1,59 +1,58 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Users, Home, Shield, Building2, AlertTriangle, BarChart3, Settings, ChevronLeft } from 'lucide-react';
+import { 
+  Users, 
+  Home, 
+  Shield, 
+  Building2, 
+  AlertTriangle, 
+  BarChart3, 
+  Settings, 
+  ChevronLeft,
+  ChevronRight,
+  CircleDot,
+  LogOut
+} from 'lucide-react';
 
-const AdminSidebar = ({ collapsed, setCollapsed }) => {
+const AdminSidebar = ({ onCollapseChange }) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const [isCollapsed, setIsCollapsed] = useState(false);
   
   // Determine active item based on current route
   const getActiveItem = () => {
     const path = location.pathname;
-    if (path === "/" || path === "/admindashboard") return "dashboard";
-    if (path.includes("/admin/user-management")) return "user-management";
-    if (path.includes("/admin/futsal-centers")) return "futsal-centers";
-    if (path.includes("/admin/fraud-detection")) return "fraud-detection";
-    if (path.includes("/admin/disputes")) return "disputes";
-    if (path.includes("/admin/analytics")) return "analytics";
-    if (path.includes("/admin/settings")) return "settings";
-    return "dashboard";
+    if (path === "/" || path === "/admindashboard") return "Dashboard";
+    if (path.includes("/admin/user-management")) return "User Management";
+    if (path.includes("/admin/futsal-centers")) return "Futsal Centers";
+    if (path.includes("/admin/futsalownerapproval")) return "Futsal Approval";
+    if (path.includes("/admin/analytics")) return "Analytics";
+    if (path.includes("/admin/settings")) return "Settings";
+    return "Dashboard";
   };
 
   const [activeItem, setActiveItem] = useState(getActiveItem());
 
-  const menuItems = [
-    { id: 'dashboard', icon: Home, label: 'Dashboard' },
-    { id: 'user-management', icon: Users, label: 'User Management' },
-    { id: 'futsal-centers', icon: Building2, label: 'Futsal Centers' },
-    { id: 'fraud-detection', icon: AlertTriangle, label: 'Fraud Detection' },
-    { id: 'disputes', icon: Shield, label: 'Disputes' },
-    { id: 'analytics', icon: BarChart3, label: 'Analytics' },
-    { id: 'settings', icon: Settings, label: 'Settings' },
-  ];
-
-  const handleNavigation = (id) => {
-    setActiveItem(id);
+  const handleNavigation = (name) => {
+    setActiveItem(name);
     
-    switch (id) {
-      case "dashboard":
+    switch (name) {
+      case "Dashboard":
         navigate("/admindashboard");
         break;
-      case "user-management":
+      case "User Management":
         navigate("/admin/user-management");
         break;
-      case "futsal-centers":
+      case "Futsal Centers":
         navigate("/admin/futsal-centers");
         break;
-      case "fraud-detection":
-        navigate("/admin/fraud-detection");
+      case "Futsal Approval":
+        navigate("/admin/futsalownerapproval");
         break;
-      case "disputes":
-        navigate("/admin/disputes");
-        break;
-      case "analytics":
+      case "Analytics":
         navigate("/admin/analytics");
         break;
-      case "settings":
+      case "Settings":
         navigate("/admin/settings");
         break;
       default:
@@ -61,74 +60,186 @@ const AdminSidebar = ({ collapsed, setCollapsed }) => {
     }
   };
 
+  const handleLogout = () => {
+    navigate('/login');
+  };
+
+  const toggleCollapse = () => {
+    const newCollapseState = !isCollapsed;
+    setIsCollapsed(newCollapseState);
+    if (onCollapseChange) {
+      onCollapseChange(newCollapseState);
+    }
+  };
+
+  const handleLogoClick = () => {
+    navigate("/admindashboard");
+    setActiveItem("Dashboard");
+  };
+
+  const navigationItems = [
+    { id: 'dashboard', name: 'Dashboard', icon: <Home className="w-5 h-5" /> },
+    { id: 'user-management', name: 'User Management', icon: <Users className="w-5 h-5" /> },
+    { id: 'futsal-centers', name: 'Futsal Centers', icon: <Building2 className="w-5 h-5" /> },
+    { id: 'futsal-approval', name: 'Futsal Approval', icon: <AlertTriangle className="w-5 h-5" /> },
+    { id: 'analytics', name: 'Analytics', icon: <BarChart3 className="w-5 h-5" /> },
+  ];
+
+  const bottomNavItems = [
+    { id: 'settings', name: 'Settings', icon: <Settings className="w-5 h-5" /> },
+  ];
+
   return (
-    <div className={`${collapsed ? 'w-20' : 'w-64'} bg-slate-900 h-screen fixed left-0 top-0 transition-all duration-300 flex flex-col`}>
-      {/* Logo Section */}
-      <div className="p-6 flex items-center justify-between border-b border-slate-800">
-        {!collapsed && (
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <div className="w-8 h-8 bg-cyan-500 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-lg">⚡</span>
-              </div>
-              <span className="text-white font-bold text-xl">PlayPal</span>
+    <div 
+      className={`bg-white shadow-lg fixed h-full z-10 transition-all duration-300 ease-in-out ${
+        isCollapsed ? 'w-20' : 'w-64'
+      }`}
+    >
+      <div className="flex flex-col h-full relative">
+        {/* Collapse Button */}
+        <button
+          onClick={toggleCollapse}
+          className="absolute -right-3 top-20 bg-white border-2 border-gray-200 rounded-full w-6 h-6 flex items-center justify-center shadow-md hover:shadow-lg transition-all hover:bg-emerald-50 hover:border-emerald-300 z-50"
+        >
+          {isCollapsed ? (
+            <ChevronRight className="w-4 h-4 text-gray-600" />
+          ) : (
+            <ChevronLeft className="w-4 h-4 text-gray-600" />
+          )}
+        </button>
+
+        {/* Logo */}
+        <div className="p-6 border-b border-gray-100">
+          <button
+            onClick={handleLogoClick}
+            className={`flex items-center ${
+              isCollapsed ? 'justify-center' : 'space-x-3'
+            } hover:opacity-80 transition-opacity w-full`}
+          >
+            <div className="w-10 h-10 bg-gradient-to-r from-green-400 to-emerald-500 rounded-lg flex items-center justify-center flex-shrink-0">
+              <CircleDot className="text-white w-6 h-6" />
             </div>
-            <span className="text-cyan-400 text-xs ml-10">Super Admin</span>
-          </div>
-        )}
-        {collapsed && (
-          <div className="w-8 h-8 bg-cyan-500 rounded-lg flex items-center justify-center mx-auto">
-            <span className="text-white font-bold text-lg">⚡</span>
-          </div>
-        )}
-      </div>
-
-      {/* Menu Items */}
-      <nav className="flex-1 py-6 px-3">
-        {menuItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = activeItem === item.id;
-          
-          return (
-            <button
-              key={item.id}
-              onClick={() => handleNavigation(item.id)}
-              className={`w-full flex items-center gap-3 px-4 py-3 mb-2 rounded-lg transition-all duration-200 ${
-                isActive 
-                  ? 'bg-cyan-500/10 text-cyan-400 border-l-4 border-cyan-400' 
-                  : 'text-slate-400 hover:bg-slate-800 hover:text-white'
-              }`}
-            >
-              <Icon size={20} />
-              {!collapsed && <span className="text-sm font-medium">{item.label}</span>}
-            </button>
-          );
-        })}
-      </nav>
-
-      {/* Collapse Button */}
-      <button
-        onClick={() => setCollapsed(!collapsed)}
-        className="p-4 border-t border-slate-800 flex items-center justify-center hover:bg-slate-800 transition-colors"
-      >
-        <ChevronLeft 
-          size={20} 
-          className={`text-slate-400 transition-transform duration-300 ${collapsed ? 'rotate-180' : ''}`} 
-        />
-        {!collapsed && <span className="text-slate-400 text-sm ml-2">Collapse</span>}
-      </button>
-
-      {/* Admin Profile */}
-      <div className="p-4 border-t border-slate-800 flex items-center gap-3">
-        <div className="w-10 h-10 bg-cyan-500 rounded-full flex items-center justify-center text-white font-bold">
-          SA
+            {!isCollapsed && (
+              <div>
+                <h1 className="text-lg font-bold text-gray-800 whitespace-nowrap">
+                  PlayPal
+                </h1>
+                <p className="text-xs text-emerald-600 font-medium">Super Admin</p>
+              </div>
+            )}
+          </button>
         </div>
-        {!collapsed && (
-          <div className="flex-1">
-            <div className="text-white text-sm font-medium">Super Admin</div>
-            <div className="text-slate-400 text-xs">admin@playpal.com</div>
+
+        {/* Navigation */}
+        <nav className="flex-1 p-4 overflow-y-auto">
+          <ul className="space-y-1">
+            {navigationItems.map((item) => (
+              <li key={item.id} className="relative group">
+                <button
+                  onClick={() => handleNavigation(item.name)}
+                  className={`flex items-center ${
+                    isCollapsed ? 'justify-center' : 'justify-between'
+                  } w-full p-3 rounded-xl transition-all ${
+                    activeItem === item.name
+                      ? 'bg-emerald-50 text-emerald-700 font-medium'
+                      : 'text-gray-600 hover:bg-gray-100'
+                  }`}
+                >
+                  <div className={`flex items-center ${isCollapsed ? '' : 'space-x-3'}`}>
+                    <span
+                      className={`${
+                        activeItem === item.name ? 'text-emerald-600' : 'text-gray-400'
+                      }`}
+                    >
+                      {item.icon}
+                    </span>
+                    {!isCollapsed && <span className="text-sm">{item.name}</span>}
+                  </div>
+                </button>
+                
+                {/* Tooltip on hover when collapsed */}
+                {isCollapsed && (
+                  <div className="absolute left-full ml-2 top-1/2 transform -translate-y-1/2 bg-gray-900 text-white text-sm px-3 py-2 rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50">
+                    {item.name}
+                  </div>
+                )}
+              </li>
+            ))}
+          </ul>
+        </nav>
+
+        {/* Bottom Nav */}
+        <div className="p-4 border-t border-gray-100">
+          <ul className="space-y-1">
+            {bottomNavItems.map((item) => (
+              <li key={item.id} className="relative group">
+                <button
+                  onClick={() => handleNavigation(item.name)}
+                  className={`flex items-center ${
+                    isCollapsed ? 'justify-center' : ''
+                  } w-full p-3 rounded-xl transition-all ${
+                    activeItem === item.name
+                      ? 'bg-emerald-50 text-emerald-700 font-medium'
+                      : 'text-gray-600 hover:bg-gray-100'
+                  }`}
+                >
+                  <span
+                    className={`${
+                      activeItem === item.name ? 'text-emerald-600' : 'text-gray-400'
+                    } ${isCollapsed ? '' : 'mr-3'}`}
+                  >
+                    {item.icon}
+                  </span>
+                  {!isCollapsed && <span className="text-sm">{item.name}</span>}
+                </button>
+                
+                {/* Tooltip on hover when collapsed */}
+                {isCollapsed && (
+                  <div className="absolute left-full ml-2 top-1/2 transform -translate-y-1/2 bg-gray-900 text-white text-sm px-3 py-2 rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50">
+                    {item.name}
+                  </div>
+                )}
+              </li>
+            ))}
+            
+            {/* Logout Button */}
+            <li className="relative group">
+              <button
+                onClick={handleLogout}
+                className={`flex items-center ${
+                  isCollapsed ? 'justify-center' : ''
+                } w-full p-3 rounded-xl text-gray-600 hover:bg-red-50 hover:text-red-600 transition-all`}
+              >
+                <span className={`text-gray-400 hover:text-red-600 ${isCollapsed ? '' : 'mr-3'}`}>
+                  <LogOut className="w-5 h-5" />
+                </span>
+                {!isCollapsed && <span className="text-sm">Logout</span>}
+              </button>
+              
+              {/* Tooltip on hover when collapsed */}
+              {isCollapsed && (
+                <div className="absolute left-full ml-2 top-1/2 transform -translate-y-1/2 bg-gray-900 text-white text-sm px-3 py-2 rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50">
+                  Logout
+                </div>
+              )}
+            </li>
+          </ul>
+        </div>
+
+        {/* Admin Profile - At Bottom */}
+        <div className="p-4 border-t border-gray-100">
+          <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'}`}>
+            <div className="w-10 h-10 bg-gradient-to-r from-emerald-400 to-emerald-600 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">
+              SA
+            </div>
+            {!isCollapsed && (
+              <div className="flex-1 min-w-0">
+                <div className="text-gray-800 text-sm font-medium truncate">Super Admin</div>
+                <div className="text-gray-500 text-xs truncate">admin@playpal.com</div>
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </div>
     </div>
   );

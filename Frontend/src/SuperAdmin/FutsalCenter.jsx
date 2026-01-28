@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
 import { Search, Bell, MapPin, DollarSign, Calendar, Star, Clock, Eye, Flag, X, Grid3x3, List, CheckCircle } from 'lucide-react';
-import AdminSidebar from '../SuperAdmin/AdminSidebar';
+import AdminSidebar from './AdminSidebar';
 
 const FutsalCenters = () => {
-  const [collapsed, setCollapsed] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [viewMode, setViewMode] = useState('grid');
+
 
   const centers = [
     {
@@ -101,18 +100,12 @@ const FutsalCenters = () => {
     }
   ];
 
-  const stats = [
-    { label: 'Total Centers', value: 156, color: 'text-cyan-500' },
-    { label: 'Approved', value: 142, color: 'text-green-500' },
-    { label: 'Pending Review', value: 8, color: 'text-yellow-500' },
-    { label: 'Flagged/Suspended', value: 6, color: 'text-red-500' }
-  ];
 
   const filteredCenters = centers.filter(center => {
     const matchesSearch = center.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
                          center.location.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || center.status.toLowerCase() === statusFilter.toLowerCase();
-    return matchesSearch && matchesStatus;
+    
+    return matchesSearch;
   });
 
   const getStatusColor = (status) => {
@@ -126,9 +119,14 @@ const FutsalCenters = () => {
 
   return (
     <div className="flex bg-gray-50 min-h-screen">
-      <AdminSidebar />
+      <AdminSidebar onCollapseChange={setIsSidebarCollapsed} />
       
-      <div className={`flex-1 ${collapsed ? 'ml-20' : 'ml-64'} transition-all duration-300`}>
+      <div 
+        className={`flex-1 p-8 transition-all duration-300 ease-in-out ${
+          isSidebarCollapsed ? 'ml-20' : 'ml-64'
+        }`}
+        style={{ width: `calc(100% - ${isSidebarCollapsed ? '5rem' : '16rem'})` }}
+      >
         {/* Header */}
         <div className="bg-white border-b border-gray-200 px-8 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4 flex-1 max-w-xl">
@@ -155,15 +153,7 @@ const FutsalCenters = () => {
             <p className="text-gray-500">Manage and monitor all futsal centers</p>
           </div>
 
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-            {stats.map((stat, index) => (
-              <div key={index} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                <p className="text-gray-500 text-sm mb-2">{stat.label}</p>
-                <h3 className={`text-4xl font-bold ${stat.color}`}>{stat.value}</h3>
-              </div>
-            ))}
-          </div>
+ 
 
           {/* Search and View Toggle */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
@@ -179,39 +169,8 @@ const FutsalCenters = () => {
                 />
               </div>
               
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-6 py-3 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors outline-none cursor-pointer"
-              >
-                <option value="all">All Status</option>
-                <option value="approved">Approved</option>
-                <option value="pending">Pending</option>
-                <option value="flagged">Flagged</option>
-              </select>
+  
 
-              <div className="flex gap-2 bg-gray-100 p-1 rounded-lg">
-                <button
-                  onClick={() => setViewMode('grid')}
-                  className={`px-4 py-2 rounded-lg transition-colors ${
-                    viewMode === 'grid' 
-                      ? 'bg-cyan-500 text-white' 
-                      : 'text-gray-600 hover:bg-gray-200'
-                  }`}
-                >
-                  Grid
-                </button>
-                <button
-                  onClick={() => setViewMode('list')}
-                  className={`px-4 py-2 rounded-lg transition-colors ${
-                    viewMode === 'list' 
-                      ? 'bg-cyan-500 text-white' 
-                      : 'text-gray-600 hover:bg-gray-200'
-                  }`}
-                >
-                  List
-                </button>
-              </div>
             </div>
           </div>
 

@@ -5,17 +5,15 @@ import LoginPage from "./pages/LoginPage"
 import LandingPage from "./pages/LandingPage";
 import Navbar from "./pages/Navbar.jsx";
 import SignupPage from "./pages/SignupPage.jsx";
-import AdminDashboard from "./SuperAdmin/AdminDashboard.jsx";
-import FutsalCenter from "./Players/FutsalCenter.jsx";
-import UserDirectory from "./SuperAdmin/UserDirectory.jsx";
+
+
+
 import ResetPassword from "./pages/ResetPassword.jsx";
 import ForgotPassword from "./pages/ForgetPassword.jsx";
 import EmailVerificationPage from "./pages/EmailVerificationPage.jsx";
-import AdminSidebar from "./SuperAdmin/AdminSidebar.jsx";
+
 import FutsalOwner from "./FutsalOwner/FutsalOwner.jsx";
-import FraudDetection from "./SuperAdmin/FraudDetection.jsx";
-import Analytics from "./SuperAdmin/Analytics.jsx";
-import SystemSettings from "./SuperAdmin/SystemSettings.jsx"
+
 import PlayerDashboard from "./Players/PlayerDashboard.jsx";
 import BookingPage from "./Players/BookingPage.jsx";
 import PaymentPage from "./Players/SplitPaymentPage.jsx";
@@ -31,8 +29,18 @@ import FutsalOwnerSettings from "./FutsalOwner/FutsalOwnerSettings.jsx";
 import EarningPage from "./FutsalOwner/EarningsPage.jsx";
 import ToastProvider from "./FutsalOwner/components/ToastProvider.jsx";
 
+import PlayerSettings from "./Players/PlayerSettings.jsx";
+import PlayersTournaments from "./Players/PlayersTournaments.jsx";
+
 import FutsalOwnerDetails from "./SuperAdmin/FutsalOwnerDetails.jsx";
 import FutsalOwnerApproval from "./SuperAdmin/FutsalOwnerApproval.jsx";
+import AdminDashboard from "./SuperAdmin/AdminDashboard.jsx";
+import FutsalCenter from "./SuperAdmin/FutsalCenter.jsx";
+import UserDirectory from "./SuperAdmin/UserDirectory.jsx";
+import Analytics from "./SuperAdmin/Analytics.jsx";
+import SystemSettings from "./SuperAdmin/SystemSettings.jsx"
+import AdminSidebar from "./SuperAdmin/AdminSidebar.jsx";
+
 
 
 
@@ -75,10 +83,7 @@ function App() {
 
       <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignupPage />} />
-      <Route path="/admindashboard" element={<AdminDashboard />} />
-      <Route path="/admin/futsal-centers" element={<FutsalCenter />} />
-      
-      <Route path="/admin/user-management" element={<UserDirectory />} />
+     
       <Route path="/reset-password/:token" element={<ResetPassword />} />
       <Route path="/forgetpassword" element={<ForgotPassword />}/>
       <Route path="/verify-email" element={<EmailVerificationPage />} />
@@ -93,14 +98,20 @@ function App() {
       <Route path="/FutsalOwnerSettings" element={<FutsalOwnerSettings/>} />
       <Route path="/EarningsPage" element={<EarningPage/>}/>
       <Route path="/futsalownerdetails/:id" element={<FutsalOwnerDetails/>} />
-      <Route path="/futsalownerapproval" element={<FutsalOwnerApproval/>} />
+
+
+
+
+
 
     
       
 
-
+      <Route path="/admin/futsal-centers" element={<FutsalCenter />} />
+      <Route path="/admin/user-management" element={<UserDirectory />} />
+      <Route path="/admindashboard" element={<AdminDashboard />} />
       <Route path="/AdminSidebar" element={<AdminSidebar/>} />
-      <Route path="/admin/fraud-detection" element={<FraudDetection/>}/>
+      <Route path="/admin/futsalownerapproval" element={<FutsalOwnerApproval/>} />
       <Route path="/admin/analytics" element={<Analytics/>}/>
       <Route path="/admin/settings" element={<SystemSettings/>}/>
 
@@ -111,6 +122,9 @@ function App() {
       <Route path="/SplitPaymentPage" element={<PaymentPage/>}/>
       <Route path="/HighlightsPage" element={<HighlightsPage/>}/>
       <Route path="/HealthPage" element={<HealthPage/>}/>
+      <Route path="/PlayerSettings" element={<PlayerSettings/>} />
+      <Route path="/PlayersTournaments" element={<PlayersTournaments/>} />
+
       
 
     

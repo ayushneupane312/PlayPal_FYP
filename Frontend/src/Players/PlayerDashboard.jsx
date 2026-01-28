@@ -19,6 +19,7 @@ import {
 import PlayerSidebar from './PlayerSidebar';
 
 const FutsalDashboard = () => {
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [activeNav, setActiveNav] = useState('dashboard');
   const [timeFilter, setTimeFilter] = useState('This Week');
 
@@ -107,10 +108,15 @@ const FutsalDashboard = () => {
   return (
     <div className="flex min-h-screen bg-gray-50">
       {/* Sidebar */}
-      <PlayerSidebar activeNav={activeNav} setActiveNav={setActiveNav} />
+      <PlayerSidebar onCollapseChange={setIsSidebarCollapsed} />
 
       {/* Main Content */}
-      <div className="flex-1 lg:ml-64 p-6">
+      <div 
+        className={`flex-1 p-8 transition-all duration-300 ease-in-out ${
+          isSidebarCollapsed ? 'ml-20' : 'ml-64'
+        }`}
+        style={{ width: `calc(100% - ${isSidebarCollapsed ? '5rem' : '16rem'})` }}
+      >
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
           <div>

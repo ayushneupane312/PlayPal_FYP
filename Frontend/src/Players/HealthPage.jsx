@@ -1,8 +1,19 @@
 import React, { useState, useEffect } from 'react';
+import PlayerSidebar from './PlayerSidebar';
+import {
+  Heart,
+  Bed,
+  Scale,
+  Ruler,
+  Calculator,
+  ArrowUp,
+  ArrowDown,
+  Minus,
+  Calendar
+} from 'lucide-react';
 
 const HealthPage = () => {
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [activeNav, setActiveNav] = useState('Health');
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [healthData, setHealthData] = useState([]);
   const [todayData, setTodayData] = useState({
     sleepHours: 7.5,
@@ -160,90 +171,6 @@ const HealthPage = () => {
     alert('Health data saved successfully!');
   };
 
-  // Navigation Items
-  const navigationItems = [
-    { id: 'dashboard', name: 'Dashboard', icon: '' },
-    { id: 'bookings', name: 'Bookings', icon: '', badge: 3 },
-    { id: 'payments', name: 'Payments', icon: '', badge: 2 },
-    { id: 'teams', name: 'Teams', icon: '' },
-    { id: 'tournaments', name: 'Tournaments', icon: '' },
-    { id: 'highlights', name: 'Highlights', icon: '' },
-    { id: 'health', name: 'Health', icon: '' },
-  ];
-
-  const bottomNavItems = [
-    { id: 'settings', name: 'Settings', icon: '' },
-    { id: 'help', name: 'Help', icon: '' },
-    { id: 'logout', name: 'Logout', icon: '' },
-  ];
-
-  // Icons
-  const HeartIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-      <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
-    </svg>
-  );
-
-  const BedIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-      <path fillRule="evenodd" d="M5 4a3 3 0 00-3 3v6a3 3 0 003 3h10a3 3 0 003-3V7a3 3 0 00-3-3H5zm-1 9v-6h4v6H4zm6 0v-6h4v6h-4z" clipRule="evenodd" />
-    </svg>
-  );
-
-  const ScaleIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-      <path fillRule="evenodd" d="M10 2a1 1 0 011 1v1.323l3.954 1.582 1.599-.8a1 1 0 01.894 1.79l-1.233.616 1.738 5.42a1 1 0 01-.285 1.05A3.989 3.989 0 0115 15a3.989 3.989 0 01-2.667-1.019 1 1 0 01-.285-1.05l1.715-5.349L11 6.477V16h2a1 1 0 110 2H7a1 1 0 110-2h2V6.477L6.237 7.582l1.715 5.349a1 1 0 01-.285 1.05A3.989 3.989 0 015 15a3.989 3.989 0 01-2.667-1.019 1 1 0 01-.285-1.05l1.738-5.42-1.233-.617a1 1 0 01.894-1.788l1.599.799L9 4.323V3a1 1 0 011-1z" clipRule="evenodd" />
-    </svg>
-  );
-
-  const RulerIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-      <path fillRule="evenodd" d="M3 6a3 3 0 013-3h10a1 1 0 01.8 1.6L14.25 8l2.55 3.4A1 1 0 0116 13H6a1 1 0 00-1 1v3a1 1 0 11-2 0V6z" clipRule="evenodd" />
-    </svg>
-  );
-
-  const CalculatorIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-      <path fillRule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V4a2 2 0 00-2-2H6zm1 2a1 1 0 000 2h6a1 1 0 100-2H7zm6 7a1 1 0 011 1v3a1 1 0 11-2 0v-3a1 1 0 011-1zm-3 3a1 1 0 100 2h.01a1 1 0 100-2H10zm-4 1a1 1 0 011-1h.01a1 1 0 110 2H7a1 1 0 01-1-1zm1-4a1 1 0 100 2h.01a1 1 0 100-2H7zm2 1a1 1 0 011-1h.01a1 1 0 110 2H10a1 1 0 01-1-1zm4-4a1 1 0 100 2h.01a1 1 0 100-2H13zM9 9a1 1 0 011-1h.01a1 1 0 110 2H10a1 1 0 01-1-1zM7 8a1 1 0 000 2h.01a1 1 0 000-2H7z" clipRule="evenodd" />
-    </svg>
-  );
-
-  const ChevronLeftIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-      <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
-    </svg>
-  );
-
-  const ChevronRightIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-      <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
-    </svg>
-  );
-
-  const ArrowUpIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-      <path fillRule="evenodd" d="M3.293 9.707a1 1 0 010-1.414l6-6a1 1 0 011.414 0l6 6a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L4.707 9.707a1 1 0 01-1.414 0z" clipRule="evenodd" />
-    </svg>
-  );
-
-  const ArrowDownIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-      <path fillRule="evenodd" d="M16.707 10.293a1 1 0 010 1.414l-6 6a1 1 0 01-1.414 0l-6-6a1 1 0 111.414-1.414L9 14.586V3a1 1 0 012 0v11.586l4.293-4.293a1 1 0 011.414 0z" clipRule="evenodd" />
-    </svg>
-  );
-
-  const MinusIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-      <path fillRule="evenodd" d="M3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
-    </svg>
-  );
-
-  const CalendarIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-      <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
-    </svg>
-  );
-
   // Get BMI category
   const getBMICategory = (bmi) => {
     if (bmi < 18.5) return { category: 'Underweight', color: 'text-blue-600', bg: 'bg-blue-100' };
@@ -266,74 +193,16 @@ const HealthPage = () => {
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      {/* Left Sidebar */}
-      <div className={`bg-white shadow-lg rounded-r-xl fixed h-full z-10 transition-all duration-300 ${sidebarCollapsed ? 'w-20' : 'w-64'}`}>
-        <div className="p-6">
-          {/* Logo */}
-          <div className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'space-x-3'} mb-10`}>
-            <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-600 rounded-lg flex items-center justify-center">
-              <div className="text-white font-bold">PP</div>
-            </div>
-            {!sidebarCollapsed && (
-              <h1 className="text-xl font-bold text-gray-800">PlayPal<span className="text-emerald-600"> – Futsal</span></h1>
-            )}
-          </div>
-          
-          {/* Collapse Button */}
-          <button
-            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-            className="absolute -right-3 top-20 bg-white border border-gray-200 rounded-full w-6 h-6 flex items-center justify-center shadow-md hover:shadow-lg transition-all"
-          >
-            {sidebarCollapsed ? <ChevronRightIcon className="w-4 h-4 text-gray-600" /> : <ChevronLeftIcon className="w-4 h-4 text-gray-600" />}
-          </button>
-          
-          {/* Navigation */}
-          <nav className="space-y-2">
-            {navigationItems.map((item) => (
-              <button
-                key={item.id}
-                className={`flex items-center justify-between w-full p-3 rounded-xl transition-all ${activeNav === item.name ? 'bg-emerald-50 text-emerald-700 font-medium' : 'text-gray-600 hover:bg-gray-100'}`}
-                onClick={() => setActiveNav(item.name)}
-              >
-                <div className="flex items-center space-x-3">
-                  <span className={`text-lg ${activeNav === item.name ? 'text-emerald-600' : 'text-gray-400'}`}>
-                    {item.icon}
-                  </span>
-                  {!sidebarCollapsed && <span>{item.name}</span>}
-                </div>
-                {!sidebarCollapsed && item.badge && (
-                  <span className="bg-emerald-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
-                    {item.badge}
-                  </span>
-                )}
-                {sidebarCollapsed && item.badge && (
-                  <span className="absolute -top-1 -right-1 bg-emerald-500 text-white text-xs font-bold rounded-full w-4 h-4 flex items-center justify-center">
-                    {item.badge}
-                  </span>
-                )}
-              </button>
-            ))}
-          </nav>
-          
-          {/* Bottom Navigation */}
-          <div className="absolute bottom-0 left-0 right-0 p-6 border-t border-gray-100">
-            <nav className="space-y-2">
-              {bottomNavItems.map((item) => (
-                <button
-                  key={item.id}
-                  className="flex items-center w-full p-3 rounded-xl text-gray-600 hover:bg-gray-100 transition-all"
-                >
-                  <span className="text-lg text-gray-400 mr-3">{item.icon}</span>
-                  {!sidebarCollapsed && <span>{item.name}</span>}
-                </button>
-              ))}
-            </nav>
-          </div>
-        </div>
-      </div>
+      {/* Sidebar */}
+      <PlayerSidebar onCollapseChange={setIsSidebarCollapsed} />
       
-      {/* Main Content */}
-      <div className={`flex-1 transition-all duration-300 ${sidebarCollapsed ? 'ml-20' : 'ml-64'} p-6`}>
+      {/* Main Content - Dynamic margin based on sidebar state */}
+      <div 
+        className={`flex-1 p-6 transition-all duration-300 ease-in-out ${
+          isSidebarCollapsed ? 'ml-20' : 'ml-64'
+        }`}
+        style={{ width: `calc(100% - ${isSidebarCollapsed ? '5rem' : '16rem'})` }}
+      >
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
           <div>
@@ -370,9 +239,9 @@ const HealthPage = () => {
                 {sleepChange.status !== 'no-change' && (
                   <div className="flex items-center mt-1">
                     {sleepChange.status === 'improvement' ? (
-                      <ArrowUpIcon className="w-4 h-4 text-emerald-500 mr-1" />
+                      <ArrowUp className="w-4 h-4 text-emerald-500 mr-1" />
                     ) : (
-                      <ArrowDownIcon className="w-4 h-4 text-red-500 mr-1" />
+                      <ArrowDown className="w-4 h-4 text-red-500 mr-1" />
                     )}
                     <span className={`text-xs font-medium ${sleepChange.status === 'improvement' ? 'text-emerald-600' : 'text-red-600'}`}>
                       {sleepChange.value.toFixed(1)}h ({sleepChange.percent}%)
@@ -381,13 +250,13 @@ const HealthPage = () => {
                 )}
                 {sleepChange.status === 'no-change' && (
                   <div className="flex items-center mt-1">
-                    <MinusIcon className="w-4 h-4 text-gray-500 mr-1" />
+                    <Minus className="w-4 h-4 text-gray-500 mr-1" />
                     <span className="text-xs text-gray-500">No change</span>
                   </div>
                 )}
               </div>
               <div className="p-3 rounded-xl bg-blue-50 text-blue-600">
-                <BedIcon />
+                <Bed className="w-5 h-5" />
               </div>
             </div>
             <div className="mt-4">
@@ -413,9 +282,9 @@ const HealthPage = () => {
                 {weightChange.status !== 'no-change' && (
                   <div className="flex items-center mt-1">
                     {weightChange.status === 'improvement' ? (
-                      <ArrowDownIcon className="w-4 h-4 text-emerald-500 mr-1" />
+                      <ArrowDown className="w-4 h-4 text-emerald-500 mr-1" />
                     ) : (
-                      <ArrowUpIcon className="w-4 h-4 text-red-500 mr-1" />
+                      <ArrowUp className="w-4 h-4 text-red-500 mr-1" />
                     )}
                     <span className={`text-xs font-medium ${weightChange.status === 'improvement' ? 'text-emerald-600' : 'text-red-600'}`}>
                       {weightChange.value.toFixed(1)}kg ({weightChange.percent}%)
@@ -424,13 +293,13 @@ const HealthPage = () => {
                 )}
                 {weightChange.status === 'no-change' && (
                   <div className="flex items-center mt-1">
-                    <MinusIcon className="w-4 h-4 text-gray-500 mr-1" />
+                    <Minus className="w-4 h-4 text-gray-500 mr-1" />
                     <span className="text-xs text-gray-500">No change</span>
                   </div>
                 )}
               </div>
               <div className="p-3 rounded-xl bg-amber-50 text-amber-600">
-                <ScaleIcon />
+                <Scale className="w-5 h-5" />
               </div>
             </div>
             <div className="mt-4">
@@ -447,12 +316,12 @@ const HealthPage = () => {
                 <p className="text-gray-500 text-sm mb-1">Height</p>
                 <p className="text-2xl font-bold text-gray-800">{todayData.height} <span className="text-lg text-gray-600">cm</span></p>
                 <div className="flex items-center mt-1">
-                  <MinusIcon className="w-4 h-4 text-gray-500 mr-1" />
+                  <Minus className="w-4 h-4 text-gray-500 mr-1" />
                   <span className="text-xs text-gray-500">Static measurement</span>
                 </div>
               </div>
               <div className="p-3 rounded-xl bg-purple-50 text-purple-600">
-                <RulerIcon />
+                <Ruler className="w-5 h-5" />
               </div>
             </div>
             <div className="mt-4">
@@ -471,9 +340,9 @@ const HealthPage = () => {
                 {bmiChange.status !== 'no-change' && (
                   <div className="flex items-center mt-1">
                     {bmiChange.status === 'improvement' ? (
-                      <ArrowDownIcon className="w-4 h-4 text-emerald-500 mr-1" />
+                      <ArrowDown className="w-4 h-4 text-emerald-500 mr-1" />
                     ) : (
-                      <ArrowUpIcon className="w-4 h-4 text-red-500 mr-1" />
+                      <ArrowUp className="w-4 h-4 text-red-500 mr-1" />
                     )}
                     <span className={`text-xs font-medium ${bmiChange.status === 'improvement' ? 'text-emerald-600' : 'text-red-600'}`}>
                       {bmiChange.value.toFixed(1)} ({bmiChange.percent}%)
@@ -482,13 +351,13 @@ const HealthPage = () => {
                 )}
                 {bmiChange.status === 'no-change' && (
                   <div className="flex items-center mt-1">
-                    <MinusIcon className="w-4 h-4 text-gray-500 mr-1" />
+                    <Minus className="w-4 h-4 text-gray-500 mr-1" />
                     <span className="text-xs text-gray-500">No change</span>
                   </div>
                 )}
               </div>
               <div className="p-3 rounded-xl bg-emerald-50 text-emerald-600">
-                <CalculatorIcon />
+                <Calculator className="w-5 h-5" />
               </div>
             </div>
             <div className="mt-4">
@@ -609,7 +478,7 @@ const HealthPage = () => {
           ) : (
             <div className="text-center py-8">
               <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <HeartIcon className="text-emerald-600 text-2xl" />
+                <Heart className="w-8 h-8 text-emerald-600" />
               </div>
               <h3 className="text-lg font-medium text-gray-800 mb-2">Update your health metrics</h3>
               <p className="text-gray-600 mb-6">Track your daily progress and monitor improvements</p>
@@ -657,7 +526,7 @@ const HealthPage = () => {
                     <tr key={record.id} className="border-b border-gray-100 hover:bg-gray-50">
                       <td className="py-3 px-4">
                         <div className="flex items-center">
-                          <CalendarIcon className="text-gray-400 mr-2" />
+                          <Calendar className="w-5 h-5 text-gray-400 mr-2" />
                           <span className="font-medium">{formatDate(record.date)}</span>
                         </div>
                       </td>
@@ -665,9 +534,9 @@ const HealthPage = () => {
                         <div className="flex items-center">
                           <span className="font-medium">{record.sleepHours}</span>
                           {sleepTrend > 0 ? (
-                            <ArrowUpIcon className="w-4 h-4 text-emerald-500 ml-2" />
+                            <ArrowUp className="w-4 h-4 text-emerald-500 ml-2" />
                           ) : sleepTrend < 0 ? (
-                            <ArrowDownIcon className="w-4 h-4 text-red-500 ml-2" />
+                            <ArrowDown className="w-4 h-4 text-red-500 ml-2" />
                           ) : null}
                         </div>
                       </td>
@@ -675,9 +544,9 @@ const HealthPage = () => {
                         <div className="flex items-center">
                           <span className="font-medium">{record.weight}</span>
                           {weightTrend < 0 ? (
-                            <ArrowDownIcon className="w-4 h-4 text-emerald-500 ml-2" />
+                            <ArrowDown className="w-4 h-4 text-emerald-500 ml-2" />
                           ) : weightTrend > 0 ? (
-                            <ArrowUpIcon className="w-4 h-4 text-red-500 ml-2" />
+                            <ArrowUp className="w-4 h-4 text-red-500 ml-2" />
                           ) : null}
                         </div>
                       </td>
@@ -688,9 +557,9 @@ const HealthPage = () => {
                         <div className="flex items-center">
                           <span className="font-medium">{record.bmi}</span>
                           {bmiTrend < 0 ? (
-                            <ArrowDownIcon className="w-4 h-4 text-emerald-500 ml-2" />
+                            <ArrowDown className="w-4 h-4 text-emerald-500 ml-2" />
                           ) : bmiTrend > 0 ? (
-                            <ArrowUpIcon className="w-4 h-4 text-red-500 ml-2" />
+                            <ArrowUp className="w-4 h-4 text-red-500 ml-2" />
                           ) : null}
                         </div>
                       </td>
@@ -719,28 +588,28 @@ const HealthPage = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="p-4 bg-white rounded-lg">
               <div className="flex items-center mb-2">
-                <HeartIcon className="text-emerald-500 mr-2" />
+                <Heart className="w-5 h-5 text-emerald-500 mr-2" />
                 <span className="font-medium text-gray-800">BMI Calculation</span>
               </div>
               <p className="text-sm text-gray-600">BMI = weight (kg) / (height (m) × height (m))</p>
             </div>
             <div className="p-4 bg-white rounded-lg">
               <div className="flex items-center mb-2">
-                <HeartIcon className="text-emerald-500 mr-2" />
+                <Heart className="w-5 h-5 text-emerald-500 mr-2" />
                 <span className="font-medium text-gray-800">Daily Comparison</span>
               </div>
               <p className="text-sm text-gray-600">Compares today's data with previous records</p>
             </div>
             <div className="p-4 bg-white rounded-lg">
               <div className="flex items-center mb-2">
-                <HeartIcon className="text-emerald-500 mr-2" />
+                <Heart className="w-5 h-5 text-emerald-500 mr-2" />
                 <span className="font-medium text-gray-800">Data Validation</span>
               </div>
               <p className="text-sm text-gray-600">Validates realistic ranges, no negatives</p>
             </div>
             <div className="p-4 bg-white rounded-lg">
               <div className="flex items-center mb-2">
-                <HeartIcon className="text-emerald-500 mr-2" />
+                <Heart className="w-5 h-5 text-emerald-500 mr-2" />
                 <span className="font-medium text-gray-800">Non-destructive Updates</span>
               </div>
               <p className="text-sm text-gray-600">Past records preserved, new entries added</p>

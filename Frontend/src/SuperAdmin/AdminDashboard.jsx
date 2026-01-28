@@ -3,7 +3,8 @@ import { DollarSign, Users, Calendar, AlertTriangle, Building2, Scale, Activity,
 import AdminSidebar from './AdminSidebar';
 
 const Dashboard = () => {
-  const [collapsed, setCollapsed] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  
 
   // Stats data
   const stats = [
@@ -131,9 +132,14 @@ const Dashboard = () => {
 
   return (
     <div className="flex bg-gray-50 min-h-screen">
-      <AdminSidebar collapsed={collapsed} setCollapsed={setCollapsed} />
+      <AdminSidebar onCollapseChange={setIsSidebarCollapsed} />
       
-      <div className={`flex-1 ${collapsed ? 'ml-20' : 'ml-64'} transition-all duration-300`}>
+      <div 
+      className={`flex-1 p-8 transition-all duration-300 ease-in-out ${
+        isSidebarCollapsed ? 'ml-20' : 'ml-64'
+      }`}
+      style={{ width: `calc(100% - ${isSidebarCollapsed ? '5rem' : '16rem'})` }}
+    >
         {/* Header */}
         <div className="bg-white border-b border-gray-200 px-8 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4 flex-1 max-w-xl">

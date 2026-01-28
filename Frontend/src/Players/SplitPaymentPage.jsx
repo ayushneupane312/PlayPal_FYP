@@ -1,8 +1,14 @@
 import React, { useState, useEffect } from 'react';
+import PlayerSidebar from './PlayerSidebar';
+import { 
+  Check, 
+  Clock, 
+  Calendar, 
+  AlertTriangle 
+} from 'lucide-react';
 
 const PaymentPage = () => {
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [activeNav, setActiveNav] = useState('Payments');
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [bookingAmount, setBookingAmount] = useState(5000);
   const [players, setPlayers] = useState([]);
   const [selectedPlayer, setSelectedPlayer] = useState(null);
@@ -87,7 +93,6 @@ const PaymentPage = () => {
       }
     ];
     
-    // Calculate individual share
     const individualShare = bookingAmount / initialPlayers.length;
     const playersWithShare = initialPlayers.map(player => ({
       ...player,
@@ -97,7 +102,6 @@ const PaymentPage = () => {
     setPlayers(playersWithShare);
   }, [bookingAmount]);
 
-  // Calculate payment statistics
   const paidPlayers = players.filter(p => p.paymentStatus === 'Paid').length;
   const pendingPlayers = players.filter(p => p.paymentStatus === 'Pending').length;
   const failedPlayers = players.filter(p => p.paymentStatus === 'Failed').length;
@@ -105,74 +109,6 @@ const PaymentPage = () => {
     .reduce((sum, player) => sum + player.amountDue, 0);
   const bookingConfirmed = paidPlayers === players.length;
 
-  // Navigation Items
-  const navigationItems = [
-    { id: 'dashboard', name: 'Dashboard', icon: '' },
-    { id: 'bookings', name: 'Bookings', icon: '', badge: 3 },
-    { id: 'payments', name: 'Payments', icon: '', badge: 2 },
-    { id: 'teams', name: 'Teams', icon: '' },
-    { id: 'tournaments', name: 'Tournaments', icon: '' },
-    { id: 'highlights', name: 'Highlights', icon: '' },
-    { id: 'health', name: 'Health', icon: '' },
-  ];
-
-  const bottomNavItems = [
-    { id: 'settings', name: 'Settings', icon: '' },
-    { id: 'help', name: 'Help', icon: '' },
-    { id: 'logout', name: 'Logout', icon: '' },
-  ];
-
-  // Icons
-  const CreditCardIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-      <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z" />
-      <path fillRule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" clipRule="evenodd" />
-    </svg>
-  );
-
-  const UsersIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-      <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
-    </svg>
-  );
-
-  const CheckIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-    </svg>
-  );
-
-  const ClockIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
-    </svg>
-  );
-
-  const CalendarIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-      <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
-    </svg>
-  );
-
-  const ChevronLeftIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-      <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
-    </svg>
-  );
-
-  const ChevronRightIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-      <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
-    </svg>
-  );
-
-  const AlertIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-      <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-    </svg>
-  );
-
-  // Payment method logos
   const ESewaLogo = () => (
     <div className="bg-green-500 text-white px-3 py-1 rounded-lg text-sm font-bold">eSewa</div>
   );
@@ -185,10 +121,8 @@ const PaymentPage = () => {
     <div className="bg-indigo-500 text-white px-3 py-1 rounded-lg text-sm font-bold">Stripe</div>
   );
 
-  // Handle payment simulation
   const handlePayment = (playerId, paymentMethod) => {
     if (selectedPlayer && selectedPlayer.id === playerId && selectedPlayer.paymentMethod) {
-      // Prevent double payment - transaction already locked
       alert(`Payment already processed for ${selectedPlayer.name}. Transaction ID: ${selectedPlayer.transactionId}`);
       return;
     }
@@ -198,11 +132,10 @@ const PaymentPage = () => {
 
     setSelectedPlayer(player);
 
-    // Simulate payment processing
     setTimeout(() => {
       const updatedPlayers = players.map(p => {
         if (p.id === playerId) {
-          if (Math.random() > 0.2) { // 80% success rate
+          if (Math.random() > 0.2) {
             return {
               ...p,
               paymentMethod: paymentMethod,
@@ -231,87 +164,27 @@ const PaymentPage = () => {
     }, 1500);
   };
 
-  // Handle retry for failed payments
   const handleRetryPayment = (playerId) => {
     const player = players.find(p => p.id === playerId);
     if (player && player.paymentStatus === 'Failed') {
       setSelectedPlayer(player);
-      // Open payment method selection
     }
   };
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      {/* Left Sidebar */}
-      <div className={`bg-white shadow-lg rounded-r-xl fixed h-full z-10 transition-all duration-300 ${sidebarCollapsed ? 'w-20' : 'w-64'}`}>
-        <div className="p-6">
-          {/* Logo */}
-          <div className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'space-x-3'} mb-10`}>
-            <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-600 rounded-lg flex items-center justify-center">
-              <div className="text-white font-bold">PP</div>
-            </div>
-            {!sidebarCollapsed && (
-              <h1 className="text-xl font-bold text-gray-800">PlayPal<span className="text-emerald-600"> – Futsal</span></h1>
-            )}
-          </div>
-          
-          {/* Collapse Button */}
-          <button
-            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-            className="absolute -right-3 top-20 bg-white border border-gray-200 rounded-full w-6 h-6 flex items-center justify-center shadow-md hover:shadow-lg transition-all"
-          >
-            {sidebarCollapsed ? <ChevronRightIcon className="w-4 h-4 text-gray-600" /> : <ChevronLeftIcon className="w-4 h-4 text-gray-600" />}
-          </button>
-          
-          {/* Navigation */}
-          <nav className="space-y-2">
-            {navigationItems.map((item) => (
-              <button
-                key={item.id}
-                className={`flex items-center justify-between w-full p-3 rounded-xl transition-all ${activeNav === item.name ? 'bg-emerald-50 text-emerald-700 font-medium' : 'text-gray-600 hover:bg-gray-100'}`}
-                onClick={() => setActiveNav(item.name)}
-              >
-                <div className="flex items-center space-x-3">
-                  <span className={`text-lg ${activeNav === item.name ? 'text-emerald-600' : 'text-gray-400'}`}>
-                    {item.icon}
-                  </span>
-                  {!sidebarCollapsed && <span>{item.name}</span>}
-                </div>
-                {!sidebarCollapsed && item.badge && (
-                  <span className="bg-emerald-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
-                    {item.badge}
-                  </span>
-                )}
-                {sidebarCollapsed && item.badge && (
-                  <span className="absolute -top-1 -right-1 bg-emerald-500 text-white text-xs font-bold rounded-full w-4 h-4 flex items-center justify-center">
-                    {item.badge}
-                  </span>
-                )}
-              </button>
-            ))}
-          </nav>
-          
-          {/* Bottom Navigation */}
-          <div className="absolute bottom-0 left-0 right-0 p-6 border-t border-gray-100">
-            <nav className="space-y-2">
-              {bottomNavItems.map((item) => (
-                <button
-                  key={item.id}
-                  className="flex items-center w-full p-3 rounded-xl text-gray-600 hover:bg-gray-100 transition-all"
-                >
-                  <span className="text-lg text-gray-400 mr-3">{item.icon}</span>
-                  {!sidebarCollapsed && <span>{item.name}</span>}
-                </button>
-              ))}
-            </nav>
-          </div>
-        </div>
-      </div>
+      {/* Sidebar */}
+      <PlayerSidebar onCollapseChange={setIsSidebarCollapsed} />
       
-      {/* Main Content */}
-      <div className={`flex-1 transition-all duration-300 ${sidebarCollapsed ? 'ml-20' : 'ml-64'} p-6`}>
+      {/* Main Content - Dynamic margin based on sidebar state */}
+      <div 
+        className={`flex-1 p-8 transition-all duration-300 ease-in-out ${
+          isSidebarCollapsed ? 'ml-20' : 'ml-64'
+        }`}
+        style={{ width: `calc(100% - ${isSidebarCollapsed ? '5rem' : '16rem'})` }}
+      >
         {/* Header */}
-        <div className="flex justify-between items-center mb-8">
+        <div className="flex justify-between items-start mb-8">
           <div>
             <h1 className="text-3xl font-bold text-gray-800">Split Payment</h1>
             <p className="text-gray-600">Manage and track shared payments for your booking</p>
@@ -342,11 +215,11 @@ const PaymentPage = () => {
               <h2 className="text-xl font-bold text-gray-800 mb-2">Booking Details</h2>
               <div className="flex items-center space-x-4 text-gray-600">
                 <div className="flex items-center">
-                  <CalendarIcon className="mr-2 text-gray-400" />
+                  <Calendar className="w-5 h-5 mr-2 text-gray-400" />
                   <span>{bookingData.date}</span>
                 </div>
                 <div className="flex items-center">
-                  <ClockIcon className="mr-2 text-gray-400" />
+                  <Clock className="w-5 h-5 mr-2 text-gray-400" />
                   <span>{bookingData.time}</span>
                 </div>
               </div>
@@ -411,7 +284,7 @@ const PaymentPage = () => {
           
           {!bookingConfirmed && (
             <div className="flex items-center p-4 bg-amber-50 border border-amber-100 rounded-xl">
-              <AlertIcon className="text-amber-500 mr-3" />
+              <AlertTriangle className="w-5 h-5 text-amber-500 mr-3" />
               <div>
                 <p className="font-medium text-gray-800">Booking will be confirmed when all players have paid</p>
                 <p className="text-sm text-gray-600 mt-1">
@@ -487,13 +360,12 @@ const PaymentPage = () => {
                   </div>
                 </div>
                 
-                {/* Payment Details */}
                 <div className="flex justify-between items-center">
                   <div>
                     {player.paymentStatus === 'Paid' ? (
                       <div className="text-sm text-gray-600">
                         <div className="flex items-center">
-                          <CheckIcon className="w-4 h-4 text-emerald-500 mr-2" />
+                          <Check className="w-4 h-4 text-emerald-500 mr-2" />
                           <span>Paid via {player.paymentMethod} on {new Date(player.paidAt).toLocaleDateString()}</span>
                         </div>
                         <div className="text-xs text-gray-500 mt-1">
@@ -502,25 +374,24 @@ const PaymentPage = () => {
                       </div>
                     ) : player.paymentStatus === 'Failed' ? (
                       <div className="text-sm text-red-600 flex items-center">
-                        <AlertIcon className="w-4 h-4 mr-2" />
+                        <AlertTriangle className="w-4 h-4 mr-2" />
                         <span>Payment failed. Please retry.</span>
                       </div>
                     ) : (
                       <div className="text-sm text-amber-600 flex items-center">
-                        <ClockIcon className="w-4 h-4 mr-2" />
+                        <Clock className="w-4 h-4 mr-2" />
                         <span>Awaiting payment</span>
                       </div>
                     )}
                   </div>
                   
-                  {/* Payment Actions */}
                   <div className="flex space-x-2">
                     {player.paymentStatus === 'Paid' ? (
                       <button
                         className="px-4 py-2 bg-gray-100 text-gray-800 rounded-lg font-medium cursor-not-allowed"
                         disabled
                       >
-                        <CheckIcon className="inline w-4 h-4 mr-2" />
+                        <Check className="inline w-4 h-4 mr-2" />
                         Payment Complete
                       </button>
                     ) : player.paymentStatus === 'Failed' ? (
@@ -558,7 +429,6 @@ const PaymentPage = () => {
                   </div>
                 </div>
                 
-                {/* Payment Processing Indicator */}
                 {selectedPlayer?.id === player.id && player.paymentStatus === 'Pending' && (
                   <div className="mt-4 p-3 bg-blue-50 border border-blue-100 rounded-lg">
                     <div className="flex items-center">
@@ -586,7 +456,6 @@ const PaymentPage = () => {
               </div>
             </div>
             
-            {/* Payment Method Info */}
             <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="border border-gray-100 rounded-xl p-4">
                 <div className="flex items-center mb-2">
@@ -606,41 +475,6 @@ const PaymentPage = () => {
                 </div>
                 <p className="text-sm text-gray-600">Credit/Debit cards, international</p>
               </div>
-            </div>
-          </div>
-        </div>
-        
-        {/* Logic Implementation Notes */}
-        <div className="mt-8 p-6 bg-gray-50 rounded-2xl border border-gray-200">
-          <h3 className="font-bold text-gray-800 mb-4">Payment System Logic Implemented:</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="p-4 bg-white rounded-lg">
-              <div className="flex items-center mb-2">
-                <CheckIcon className="text-emerald-500 mr-2" />
-                <span className="font-medium text-gray-800">Individual Payment Records</span>
-              </div>
-              <p className="text-sm text-gray-600">Each player has separate payment record with unique ID</p>
-            </div>
-            <div className="p-4 bg-white rounded-lg">
-              <div className="flex items-center mb-2">
-                <CheckIcon className="text-emerald-500 mr-2" />
-                <span className="font-medium text-gray-800">Auto-calculated Shares</span>
-              </div>
-              <p className="text-sm text-gray-600">individual_share = total_amount / number_of_players</p>
-            </div>
-            <div className="p-4 bg-white rounded-lg">
-              <div className="flex items-center mb-2">
-                <CheckIcon className="text-emerald-500 mr-2" />
-                <span className="font-medium text-gray-800">Payment Locking</span>
-              </div>
-              <p className="text-sm text-gray-600">Prevents double payment once status is "Paid"</p>
-            </div>
-            <div className="p-4 bg-white rounded-lg">
-              <div className="flex items-center mb-2">
-                <CheckIcon className="text-emerald-500 mr-2" />
-                <span className="font-medium text-gray-800">Independent Payments</span>
-              </div>
-              <p className="text-sm text-gray-600">Players pay independently without affecting others</p>
             </div>
           </div>
         </div>
