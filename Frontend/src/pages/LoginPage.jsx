@@ -4,6 +4,8 @@ import { Mail, Lock, Loader } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import Input from "../components/Input";
 import { useAuthStore } from "../store/authStore";
+import { showToast } from "../FutsalOwner/components/Toast";
+// ❌ REMOVE THIS LINE: import FormPage from '../FutsalOwner/FormPage.jsx';
 
 const LoginPage = () => {
   const [email, setEmail] = useState("");
@@ -15,29 +17,83 @@ const LoginPage = () => {
   const handleLogin = async (e) => {
     e.preventDefault();
     
-    // Clear any previous errors
     try {
       const response = await login(email, password);
 
-      // Navigate based on role
+      // ✅ Handle Admin
       if (response?.user?.role === "admin") {
+        showToast.success("Welcome Admin!");
         navigate("/admindashboard");
         return;
       }
 
+      // ✅ Handle Player
       if (response?.user?.role === "player") {
+        showToast.success("Welcome back!");
         navigate("/playerdashboard");
         return;
       }
 
+      // ✅ Handle Futsal Owner with different statuses
       if (response?.user?.role === "futsalowner") {
-        navigate("/ownerdashboard"); // Add your futsal owner route
-        return;
+        
+        // Check if registration form is completed
+        if (!response.user.registrationCompleted) {
+          showToast.info("Please complete your registration form");
+          navigate("/FormPage");
+          return;
+        }
+
+        // Check application status
+        switch (response.user.applicationStatus) {
+          case 'pending':
+            showToast.warning("Your application is pending admin approval. You'll receive an email once reviewed.");
+            navigate("/applicationstatus");
+            return;
+
+          case 'rejected':
+            showToast.error("Your application has been rejected. Please contact support for more information.");
+            navigate("/applicationstatus");
+            return;
+
+          case 'approved':
+            showToast.success("Welcome back!");
+            navigate("/FutsalOwner");
+            return;
+
+          default:
+            showToast.info("Please complete your registration form");
+            navigate("/FormPage");
+            return;
+        }
       }
+
+      showToast.error("Invalid user role. Please contact support.");
       
     } catch (err) {
       console.error("Login failed:", err);
-      // Error is already set in the store
+      
+      const errorData = err.response?.data;
+      
+      if (errorData?.requiresRegistration) {
+        showToast.info("Please complete your registration form");
+        navigate("/FormPage");
+        return;
+      }
+      
+      if (errorData?.applicationStatus === 'pending') {
+        showToast.warning("Your application is pending admin approval");
+        navigate("/applicationstatus");
+        return;
+      }
+      
+      if (errorData?.applicationStatus === 'rejected') {
+        showToast.error("Your application has been rejected. Contact support.");
+        navigate("/applicationstatus");
+        return;
+      }
+
+      showToast.error(errorData?.msg || error || "Login failed. Please try again.");
     }
   };
 
@@ -61,7 +117,7 @@ const LoginPage = () => {
               placeholder="Email Address"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              required // Add HTML5 validation
+              required
             />
 
             <Input
@@ -70,8 +126,8 @@ const LoginPage = () => {
               placeholder="Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              required // Add HTML5 validation
-              minLength={6} // Optional: minimum password length
+              required
+              minLength={6}
             />
 
             <div className="flex items-center mb-6">
@@ -83,7 +139,6 @@ const LoginPage = () => {
               </Link>
             </div>
 
-            {/* Display error message */}
             {error && (
               <div className="bg-red-500 bg-opacity-10 text-red-500 px-4 py-3 rounded-lg mb-4 text-sm">
                 {error}

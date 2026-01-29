@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Mail, Phone, MapPin, User, Building2, FileText, Image as ImageIcon } from 'lucide-react';
 import { useFutsalOwnerStore } from '../store/futsalOwnerFormStore.js';
-import { showToast } from './components/Toast'; // ✅ Import toast utility
+import { useAuthStore } from '../store/authStore.js';
+import { showToast } from './components/Toast';
 
 // Import components
 import FormInput from './components/FormInput';
@@ -9,7 +11,12 @@ import FormSection from './components/FormSection';
 import FileUpload from './components/FileUpload';
 import ImageUpload from './components/ImageUpload';
 
-export default function FutsalRegistration() {
+export default function FormPage() {
+  const navigate = useNavigate();
+  
+  // ✅ Get user from authStore
+  const { user, isAuthenticated } = useAuthStore();
+  
   const {
     registerFutsalOwner,
     resetState,
@@ -31,6 +38,49 @@ export default function FutsalRegistration() {
     groundImages: []
   });
 
+  // ✅ Check authentication on component mount
+  useEffect(() => {
+    console.log('🔍 Checking authentication...');
+    console.log('isAuthenticated:', isAuthenticated);
+    console.log('user:', user);
+    
+    if (!isAuthenticated) {
+      console.log('❌ Not authenticated, redirecting to login');
+      showToast.error('Please login first');
+      navigate('/login');
+      return;
+    }
+
+    if (!user || user.role !== "futsalowner")  {
+      console.log('❌ Wrong role:', user?.role);
+      showToast.error('Only futsal owners can access this page');
+      navigate('/');
+      return;
+    }
+
+    if (!user?.isVerified) {
+      console.log('❌ Email not verified');
+      showToast.error('Please verify your email first');
+      navigate('/verify-email');
+      return;
+    }
+
+    if (user?.registrationCompleted) {
+      console.log('✅ Already registered, redirecting to status');
+      showToast.info('You have already submitted your registration');
+      navigate('/applicationstatus');
+      return;
+    }
+
+    console.log('✅ All checks passed, pre-filling form');
+    // ✅ Pre-fill form with user data
+    setFormData(prev => ({
+      ...prev,
+      fullName: user.name || '',
+      email: user.email || ''
+    }));
+  }, [isAuthenticated, user, navigate]);
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
@@ -39,20 +89,35 @@ export default function FutsalRegistration() {
   const handleFileUpload = (e, fieldName) => {
     const file = e.target.files[0];
     if (file) {
+      // Check file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        showToast.error('File size must be less than 5MB');
+        return;
+      }
       setFormData(prev => ({ ...prev, [fieldName]: file }));
     }
   };
 
   const handleImageUpload = (e) => {
     const files = Array.from(e.target.files);
-    if (formData.groundImages.length + files.length <= 10) {
-      setFormData(prev => ({ 
-        ...prev, 
-        groundImages: [...prev.groundImages, ...files] 
-      }));
-    } else {
-      showToast.warning('Maximum 10 images allowed'); // ✅ Toast warning
+    
+    if (formData.groundImages.length + files.length > 10) {
+      showToast.warning('Maximum 10 images allowed');
+      return;
     }
+
+    const validFiles = files.filter(file => {
+      if (file.size > 5 * 1024 * 1024) {
+        showToast.error(`${file.name} is too large. Max 5MB per image.`);
+        return false;
+      }
+      return true;
+    });
+
+    setFormData(prev => ({ 
+      ...prev, 
+      groundImages: [...prev.groundImages, ...validFiles] 
+    }));
   };
 
   const handleRemoveImage = (index) => {
@@ -65,14 +130,24 @@ export default function FutsalRegistration() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Manual validation for required files
+    // Validate required fields
+    if (!formData.fullName || !formData.email || !formData.phone) {
+      showToast.error('Please fill in all personal information');
+      return;
+    }
+
+    if (!formData.futsalName || !formData.futsalLocation || !formData.businessContact) {
+      showToast.error('Please fill in all futsal information');
+      return;
+    }
+
     if (!formData.businessDoc) {
-      showToast.error('Please upload Business Registration Document'); // ✅ Toast error
+      showToast.error('Please upload Business Registration Document');
       return;
     }
 
     if (!formData.citizenshipDoc) {
-      showToast.error('Please upload Citizenship/ID Document'); // ✅ Toast error
+      showToast.error('Please upload Citizenship/ID Document');
       return;
     }
 
@@ -98,21 +173,12 @@ export default function FutsalRegistration() {
       submitData.append('groundImages', image);
     });
 
-    // ✅ Use toast.promise for async operation
-    showToast.promise(
-      registerFutsalOwner(submitData),
-      {
-        loading: 'Submitting your registration...',
-        success: "Registration submitted successfully! We'll review your application soon.",
-        error: 'Failed to submit registration. Please try again.',
-      }
-    );
-  };
-
-  // ✅ Show toast on success/error from store
-  useEffect(() => {
-    if (success) {
-      // Toast is already shown by promise, just reset form
+    try {
+      console.log('📤 Submitting form data...');
+      await registerFutsalOwner(submitData);
+      showToast.success('Registration submitted successfully!');
+      
+      // Clear form
       setFormData({
         fullName: '',
         email: '',
@@ -135,23 +201,36 @@ export default function FutsalRegistration() {
       if (citizenshipDocInput) citizenshipDocInput.value = '';
       if (groundImagesInput) groundImagesInput.value = '';
 
-      // Reset store state
+      // Redirect to application status
       setTimeout(() => {
-        resetState();
-      }, 1000);
+        navigate('/applicationstatus');
+      }, 1500);
+      
+    } catch (error) {
+      console.error('❌ Submission error:', error);
+      showToast.error(error.response?.data?.message || 'Failed to submit registration');
     }
-  }, [success, resetState]);
+  };
 
-  // ✅ Show error toast if error exists
+  // Show error toast if error exists
   useEffect(() => {
     if (error) {
       showToast.error(error);
-      // Auto-clear error after showing
       setTimeout(() => {
         resetState();
       }, 1000);
     }
   }, [error, resetState]);
+
+  // Show success toast
+  useEffect(() => {
+    if (success) {
+      showToast.success("Registration submitted successfully!");
+      setTimeout(() => {
+        resetState();
+      }, 1000);
+    }
+  }, [success, resetState]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -161,7 +240,7 @@ export default function FutsalRegistration() {
           <div className="inline-flex items-center justify-center w-16 h-16 bg-green-600 rounded-2xl mb-4">
             <Building2 className="w-10 h-10 text-white" />
           </div>
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">Register Futsal Owner</h1>
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">Futsal Owner Registration</h1>
           <p className="text-gray-600">
             Complete the form below to register your futsal business. All fields marked with * are required.
           </p>
@@ -192,6 +271,7 @@ export default function FutsalRegistration() {
               placeholder="owner@example.com"
               icon={Mail}
               required
+              disabled
             />
 
             <FormInput
@@ -256,7 +336,7 @@ export default function FutsalRegistration() {
           <FormSection
             icon={FileText}
             title="Business Documents"
-            description="Upload required business and identification documents"
+            description="Upload required business and identification documents (Max 5MB per file)"
           >
             <div className="grid md:grid-cols-2 gap-6">
               <FileUpload
@@ -281,7 +361,7 @@ export default function FutsalRegistration() {
           <FormSection
             icon={ImageIcon}
             title="Futsal Images"
-            description="Upload photos of your futsal ground to showcase your facility"
+            description="Upload photos of your futsal ground (Max 10 images, 5MB each)"
           >
             <ImageUpload
               id="groundImages"
@@ -309,7 +389,7 @@ export default function FutsalRegistration() {
                   Submitting...
                 </span>
               ) : (
-                'Register Futsal Business'
+                'Submit Registration'
               )}
             </button>
           </div>
@@ -318,3 +398,4 @@ export default function FutsalRegistration() {
     </div>
   );
 }
+

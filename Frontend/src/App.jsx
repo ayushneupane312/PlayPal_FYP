@@ -1,12 +1,11 @@
 import { Navigate, Outlet, Route, Routes, useLocation } from "react-router-dom";
-
 import { createContext, useEffect, useState } from "react";
+import { useAuthStore } from "./store/authStore"; // ✅ Import authStore
+
 import LoginPage from "./pages/LoginPage"
 import LandingPage from "./pages/LandingPage";
 import Navbar from "./pages/Navbar.jsx";
 import SignupPage from "./pages/SignupPage.jsx";
-
-
 
 import ResetPassword from "./pages/ResetPassword.jsx";
 import ForgotPassword from "./pages/ForgetPassword.jsx";
@@ -40,108 +39,84 @@ import UserDirectory from "./SuperAdmin/UserDirectory.jsx";
 import Analytics from "./SuperAdmin/Analytics.jsx";
 import SystemSettings from "./SuperAdmin/SystemSettings.jsx"
 import AdminSidebar from "./SuperAdmin/AdminSidebar.jsx";
-
-
-
-
+import ApplicationStatus from "./FutsalOwner/ApplicationStatus.jsx";
 
 function App() {
   const location = useLocation();
+  
+  // ✅ Get checkAuth and isCheckingAuth from store
+  const { checkAuth, isCheckingAuth } = useAuthStore();
 
-  const showNavbar = ["/", "/login", "/signup"]. includes(location.pathname);
+  // ✅ Check authentication on app mount
+  useEffect(() => {
+    console.log('🚀 App mounted, checking authentication...');
+    checkAuth();
+  }, [checkAuth]);
+
+  const showNavbar = ["/", "/login", "/signup"].includes(location.pathname);
+
+  // ✅ Show loading spinner while checking auth
+  if (isCheckingAuth) {
+    return (
+      <div className="min-h-screen bg-[#17153B] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500"></div>
+          <p className="text-gray-400 text-sm">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <ToastProvider> 
+      <div className="min-h-screen bg-[#17153B] flex flex-col">
+        {showNavbar && <Navbar />}
+        
+        <div className="flex-1">
+          <Routes>
+            <Route path="*" element={<Navigate to="/" replace />} />
 
-    <div className="min-h-screen bg-[#17153B] flex flex-col">
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/signup" element={<SignupPage />} />
+            <Route path="/reset-password/:token" element={<ResetPassword />} />
+            <Route path="/forgetpassword" element={<ForgotPassword />}/>
+            <Route path="/verify-email" element={<EmailVerificationPage />} />
 
-    
-    {showNavbar && <Navbar />}
+            {/* Futsal Owner Routes */}
+            <Route path="/FutsalOwner" element={<FutsalOwner/>} />
+            <Route path="/FormPage" element={<FormPage/>} />
+            <Route path="/VenuePage" element={<VenuePage/>} />
+            <Route path="/CourtsAndPricing" element={<CostAndPricing/>} />
+            <Route path="/FutsalBooking" element={<FutsalBooking/>}/>
+            <Route path="/Tournaments" element={<Tournaments/>}/>
+            <Route path="/FutsalFacilities" element={<FutsalFacilities/>}/>
+            <Route path="/FutsalOwnerSettings" element={<FutsalOwnerSettings/>} />
+            <Route path="/EarningsPage" element={<EarningPage/>}/>
+            <Route path="/futsalownerdetails/:id" element={<FutsalOwnerDetails/>} />
+            <Route path="/applicationstatus" element={<ApplicationStatus/>}/>
 
-    <div className="flex-1">
-    <Routes>
+            {/* Admin Routes */}
+            <Route path="/admin/futsal-centers" element={<FutsalCenter />} />
+            <Route path="/admin/user-management" element={<UserDirectory />} />
+            <Route path="/admindashboard" element={<AdminDashboard />} />
+            <Route path="/AdminSidebar" element={<AdminSidebar/>} />
+            <Route path="/admin/futsalownerapproval" element={<FutsalOwnerApproval/>} />
+            <Route path="/admin/analytics" element={<Analytics/>}/>
+            <Route path="/admin/settings" element={<SystemSettings/>}/>
 
-      {/* <Route
-          path="/signup"
-          element={
-            <RedirectAuthenticatedUser>
-              <SignUpPage />
-            </RedirectAuthenticatedUser>
-          }
-        />
-   
-        <Route
-          path="/login"
-          element={
-            <RedirectAuthenticatedUser>
-              <LoginPage />
-            </RedirectAuthenticatedUser>
-          }
-        /> */}
-      <Route path="*" element={<Navigate to="/" replace />} />
-
-      <Route path="/" element={<LandingPage />} />
-
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/signup" element={<SignupPage />} />
-     
-      <Route path="/reset-password/:token" element={<ResetPassword />} />
-      <Route path="/forgetpassword" element={<ForgotPassword />}/>
-      <Route path="/verify-email" element={<EmailVerificationPage />} />
-
-      <Route path="/FutsalOwner" element={<FutsalOwner/>} />
-      <Route path="/FormPage" element={<FormPage/>} />
-      <Route path="/VenuePage" element={<VenuePage/>} />
-      <Route path="/CourtsAndPricing" element={<CostAndPricing/>} />
-      <Route path="/FutsalBooking" element={<FutsalBooking/>}/>
-      <Route path="/Tournaments" element={<Tournaments/>}/>
-      <Route path="/FutsalFacilities" element={<FutsalFacilities/>}/>
-      <Route path="/FutsalOwnerSettings" element={<FutsalOwnerSettings/>} />
-      <Route path="/EarningsPage" element={<EarningPage/>}/>
-      <Route path="/futsalownerdetails/:id" element={<FutsalOwnerDetails/>} />
-
-
-
-
-
-
-    
-      
-
-      <Route path="/admin/futsal-centers" element={<FutsalCenter />} />
-      <Route path="/admin/user-management" element={<UserDirectory />} />
-      <Route path="/admindashboard" element={<AdminDashboard />} />
-      <Route path="/AdminSidebar" element={<AdminSidebar/>} />
-      <Route path="/admin/futsalownerapproval" element={<FutsalOwnerApproval/>} />
-      <Route path="/admin/analytics" element={<Analytics/>}/>
-      <Route path="/admin/settings" element={<SystemSettings/>}/>
-
-
-
-      <Route path="/playerdashboard" element={<PlayerDashboard/>}/>
-      <Route path="/BookingPage" element={<BookingPage/>}/>
-      <Route path="/SplitPaymentPage" element={<PaymentPage/>}/>
-      <Route path="/HighlightsPage" element={<HighlightsPage/>}/>
-      <Route path="/HealthPage" element={<HealthPage/>}/>
-      <Route path="/PlayerSettings" element={<PlayerSettings/>} />
-      <Route path="/PlayersTournaments" element={<PlayersTournaments/>} />
-
-      
-
-    
-   
-     
-    
-    </Routes>
-    </div>
-
-  </div>
-   </ToastProvider>
-
-
-
-
-    
-  
+            {/* Player Routes */}
+            <Route path="/playerdashboard" element={<PlayerDashboard/>}/>
+            <Route path="/BookingPage" element={<BookingPage/>}/>
+            <Route path="/SplitPaymentPage" element={<PaymentPage/>}/>
+            <Route path="/HighlightsPage" element={<HighlightsPage/>}/>
+            <Route path="/HealthPage" element={<HealthPage/>}/>
+            <Route path="/PlayerSettings" element={<PlayerSettings/>} />
+            <Route path="/PlayersTournaments" element={<PlayersTournaments/>} />
+          </Routes>
+        </div>
+      </div>
+    </ToastProvider>
   );
 }
 
