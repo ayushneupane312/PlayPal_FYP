@@ -1,15 +1,16 @@
-const User = require ("../models/UserModel.js");
-const bcrypt= require ( "bcryptjs");
+const User = require("../models/UserModel.js");
+const bcrypt = require("bcryptjs");
 const crypto = require("crypto");
-const storeSchema = require ('../models/store.js');
-const fs = require('fs');
-
-const { generateTokenAndSetCookie } = require ("../utils/generateTokenAndSetCookie.js");
-const { sendVerificationEmail, sendWelcomeEmail, sendPasswordResetSuccessEmail, sendPasswordResetEmail} = require ("../mailtrap/emails")
+const { generateTokenAndSetCookie } = require("../utils/generateTokenAndSetCookie.js");
+const { 
+    sendVerificationEmail, 
+    sendWelcomeEmail, 
+    sendPasswordResetSuccessEmail, 
+    sendPasswordResetEmail
+} = require("../mailtrap/emails");
 
 // ------------------- SIGNUP -------------------
 const signup = async (req, res) => {
-    console.log("Signup request body:", req.body);
     const { name, email, password, userType } = req.body;
 
     try {
@@ -43,24 +44,24 @@ const signup = async (req, res) => {
         if (existingUser) 
             return res.status(400).json({ msg: "An account with this email already exists" });
 
-        
         const verificationToken = Math.floor(100000 + Math.random() * 900000).toString();
 
+        // Create user
         const user = new User({
             name: name.trim(),
             email: email.toLowerCase().trim(),
             password: password,
             verificationToken,
-            verificationTokenExpires: Date.now() + 10 * 60 * 1000, // 10 min
+            verificationTokenExpires: Date.now() + 10 * 60 * 1000,
             role: userType,
-            isVerified: false, 
+            isVerified: false,
+            applicationStatus: 'none',
+            registrationCompleted: false,
         });
 
         await user.save();
-
         generateTokenAndSetCookie(res, user._id);
 
-        console.log("User saved to database:", user.email);
         await sendVerificationEmail(user.email, verificationToken);
 
         res.status(201).json({
@@ -71,6 +72,8 @@ const signup = async (req, res) => {
                 email: user.email,
                 role: user.role,
                 isVerified: user.isVerified,
+                registrationCompleted: user.registrationCompleted,
+                applicationStatus: user.applicationStatus,
                 lastLogin: user.lastLogin,
             },
         });
@@ -103,7 +106,11 @@ const verifyEmail = async (req, res) => {
         res.status(200).json({
             success: true,
             message: "Email verified successfully",
-            user: { ...user._doc, password: undefined },
+            user: { 
+                ...user._doc, 
+                password: undefined,
+                needsRegistration: user.role === 'futsalowner' && !user.registrationCompleted
+            },
         });
     } catch (error) {
         console.error("VerifyEmail error:", error);
@@ -111,28 +118,30 @@ const verifyEmail = async (req, res) => {
     }
 };
 
-//LOGIN 
+// ------------------- LOGIN -------------------
 const login = async (req, res) => {
     try {
-        console.log("Login request body:", req.body);
-
         const { email, password } = req.body;
+
+        if (!email || !password) {
+            return res.status(400).json({
+                success: false,
+                msg: "Please provide email and password"
+            });
+        }
        
         const user = await User.findOne({ 
             email: email.toLowerCase().trim()
         });
         
         if (!user) {
-            console.log("User not found");
             return res.status(400).json({ 
                 success: false, 
                 msg: "No account found with this email address" 
             });
         }
 
-        // Check if user verified email
         if (!user.isVerified) {
-            console.log("Email not verified");
             return res.status(400).json({ 
                 success: false, 
                 msg: "Please verify your email before logging in" 
@@ -141,18 +150,81 @@ const login = async (req, res) => {
 
         const isPasswordValid = await user.matchPassword(password);
         if (!isPasswordValid) {
-            console.log("Password mismatch");
             return res.status(400).json({ 
                 success: false, 
                 msg: "Incorrect password. Please try again" 
             });
         }
-        
+
+        // ✅ SET TOKEN BEFORE CHECKING FUTSAL OWNER STATUS
         generateTokenAndSetCookie(res, user._id);
         user.lastLogin = new Date();
         await user.save();
 
-        console.log("User logged in successfully:", user.email);
+        // ✅ FUTSAL OWNER SPECIFIC CHECKS (after setting token)
+        if (user.role === 'futsalowner') {
+            if (!user.registrationCompleted) {
+                return res.status(403).json({
+                    success: false,
+                    msg: "Please complete your futsal registration form first",
+                    requiresRegistration: true,
+                    user: {
+                        _id: user._id,
+                        name: user.name,
+                        email: user.email,
+                        role: user.role,
+                        isVerified: user.isVerified,
+                        applicationStatus: user.applicationStatus,
+                        registrationCompleted: user.registrationCompleted,
+                        status: user.status,
+                        lastLogin: user.lastLogin,
+                    }
+                });
+            }
+
+            if (user.applicationStatus === 'pending') {
+                return res.status(403).json({
+                    success: false,
+                    msg: "Your application is pending admin approval.",
+                    applicationStatus: 'pending',
+                    user: {
+                        _id: user._id,
+                        name: user.name,
+                        email: user.email,
+                        role: user.role,
+                        isVerified: user.isVerified,
+                        applicationStatus: user.applicationStatus,
+                        registrationCompleted: user.registrationCompleted,
+                        status: user.status,
+                        lastLogin: user.lastLogin,
+                    }
+                });
+            }
+
+            if (user.applicationStatus === 'rejected') {
+                return res.status(403).json({
+                    success: false,
+                    msg: "Your application has been rejected.",
+                    applicationStatus: 'rejected',
+                    user: {
+                        _id: user._id,
+                        name: user.name,
+                        email: user.email,
+                        role: user.role,
+                        isVerified: user.isVerified,
+                        applicationStatus: user.applicationStatus,
+                        registrationCompleted: user.registrationCompleted,
+                        status: user.status,
+                        lastLogin: user.lastLogin,
+                    }
+                });
+            }
+
+            if (user.applicationStatus === 'approved' && user.status !== 'active') {
+                user.status = 'active';
+                await user.save();
+            }
+        }
 
         return res.status(200).json({
             success: true,
@@ -163,6 +235,9 @@ const login = async (req, res) => {
                 email: user.email,
                 role: user.role,
                 isVerified: user.isVerified,
+                applicationStatus: user.applicationStatus,
+                registrationCompleted: user.registrationCompleted,
+                status: user.status,
                 lastLogin: user.lastLogin,
             },
         });
@@ -175,63 +250,81 @@ const login = async (req, res) => {
     }
 };
 
+// ------------------- CHECK AUTH -------------------
 const checkAuth = async (req, res) => {
-
     try {
-
         const user = await User.findById(req.userId).select("-password");
 
         if (!user) {
             return res.status(400).json({ success: false, message: "User not found" });
         }
-        res.status(200).json({ success: true, user });
-
+        
+        res.status(200).json({ 
+            success: true, 
+            user: {
+                ...user._doc,
+                needsRegistration: user.role === 'futsalowner' && !user.registrationCompleted
+            }
+        });
     } catch (error) {
-        console.log("error in checkAuth ", error);
+        console.error("Error in checkAuth:", error);
         res.status(500).json({ success: false, message: "Server error" });
     }
-
-}
-
+};
 
 // ------------------- LOGOUT -------------------
 const logout = async (req, res) => {
-    res.clearCookie("token", { httpOnly: true, sameSite: "none", secure: true });
-    res.status(200).json({ msg: "Logged out successfully" });
+    res.clearCookie("token", { 
+        httpOnly: true, 
+        sameSite: process.env.NODE_ENV === 'production' ? "none" : "lax",
+        secure: process.env.NODE_ENV === 'production'
+    });
+    res.status(200).json({ success: true, msg: "Logged out successfully" });
 };
 
+// ------------------- FORGOT PASSWORD -------------------
 const forgotPassword = async (req, res) => {
     const { email } = req.body;
+    
     try {
-        const user = await User.findOne({ email });
-        if (!user) {
-            return res.status(400).json({ msg: 'User not found' });
+        if (!email) {
+            return res.status(400).json({ success: false, message: 'Email is required' });
         }
+
+        const user = await User.findOne({ email: email.toLowerCase().trim() });
+        
+        if (!user) {
+            return res.status(400).json({ success: false, message: 'No account found with this email' });
+        }
+
         const resetToken = crypto.randomBytes(20).toString('hex');
         user.resetPasswordToken = resetToken;
-        user.resetPasswordExpires = Date.now() + 3600000; // 1 hour
+        user.resetPasswordExpires = Date.now() + 3600000;
         await user.save();
 
-        //test reset link
-
         const resetLink = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
-
-        console.log("Password Reset Link:", resetLink);
         await sendPasswordResetEmail(user.email, resetLink);
 
-        //await sendPasswordResetEmail(user.email, `${process.env.FRONTEND_URL}reset-password/${resetToken}`);
-        res.status(200).json({ msg: 'Password reset link sent' });
+        res.status(200).json({ success: true, message: 'Password reset link sent to your email' }); // ✅ Changed msg to message
+    } catch (error) {
+        console.error("Error in forgotPassword:", error);
+        res.status(500).json({ success: false, message: error.message });
     }
-    catch (error) {
-        console.log("error in forgotPassword ", error);
-        res.status(500).json({ msg: error.message });
-    }
-}
+};
 
+// ------------------- RESET PASSWORD -------------------
 const resetPassword = async (req, res) => {
     try {
         const { token } = req.params;
         const { password } = req.body;
+
+        if (!password) {
+            return res.status(400).json({ success: false, message: "Password is required" });
+        }
+
+        if (password.length < 6) {
+            return res.status(400).json({ success: false, message: "Password must be at least 6 characters long" });
+        }
 
         const user = await User.findOne({
             resetPasswordToken: token,
@@ -251,40 +344,28 @@ const resetPassword = async (req, res) => {
 
         res.status(200).json({ success: true, message: "Password reset successful" });
     } catch (error) {
-        console.log("Error in resetPassword ", error);
+        console.error("Error in resetPassword:", error);
         res.status(400).json({ success: false, message: error.message });
     }
 };
 
 const uploadFile = async (req, res) => {
-
     try {
-        // Check if file exists first
         if (!req.file) {
-            console.log('ERROR: No file uploaded');
-            console.log('Possible issue: field name mismatch or file not selected');
             return res.status(400).json({ 
                 success: false, 
                 msg: 'No file uploaded. Make sure the field name is "file"' 
             });
         }
 
-        // Rest of your code...
+        // Your upload logic here
     } catch (error) {
-        console.error("=== UPLOAD ERROR ===");
-        console.error("Error message:", error.message);
-        console.error("Error stack:", error.stack);
-       
-        
+        console.error("Upload error:", error);
         res.status(500).json({ success: false, msg: error.message });
     }
 };
 
 const getAllStore = async (req, res) => {
-    console.log('=== GET ALL STORE REQUEST ===');
-    console.log('Query params:', req.query);
-  
-
     const { user_id } = req.query;
 
     try {
@@ -293,18 +374,12 @@ const getAllStore = async (req, res) => {
         }
 
         const store = await Store.find({ user_id });
-        console.log('Found stores:', store.length);
-        
         res.status(200).json({ success: true, data: store });
     } catch (error) {
-        console.error("=== GET STORE ERROR ===");
-        console.error("Error:", error.message);
-
+        console.error("Get store error:", error);
         res.status(500).json({ success: false, msg: error.message });
     }
 };
-
-
 
 module.exports = {
     signup,
@@ -314,6 +389,6 @@ module.exports = {
     checkAuth,
     forgotPassword,
     resetPassword,
-    uploadFile,
-    getAllStore,
+    uploadFile, 
+    getAllStore
 };

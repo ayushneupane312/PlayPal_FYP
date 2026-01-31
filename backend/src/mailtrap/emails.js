@@ -49,7 +49,10 @@ const sendVerificationEmail = async (email, verificationToken) => {
         console.log("Verification email sent:", info.messageId);
     } catch (error) {
         console.error("Error sending verification email:", error);
-        throw new Error("Email not sent: " + error.message);
+        // throw new Error("Email not sent: " + error.message);
+        console.error("Email not sent:", error.message);
+        return;
+
     }
 };
 

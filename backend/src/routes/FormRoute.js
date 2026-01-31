@@ -2,23 +2,25 @@ const express = require('express');
 const formrouter = express.Router();
 const FutsalOwnerFormController = require('../controllers/FutsalOwnerFormController.js');
 const upload = require('../middlewares/UploadMiddleware.js');
-//const verifyToken = require("../middlewares/verifyToken.js");
-
+const verifyToken = require("../middlewares/verifyToken.js"); // ✅ Uncomment this
+const verifyAdmin = require("../middlewares/verifyAdmin.js"); // ✅ Add this
 
 const uploadFields = upload.fields([
-  { name: 'businessDoc', maxCount: 1  },
+  { name: 'businessDoc', maxCount: 1 },
   { name: 'citizenshipDoc', maxCount: 1 },
   { name: 'groundImages', maxCount: 10 }
 ]);
 
-// Public route
-formrouter.post('/register', uploadFields, FutsalOwnerFormController.registerFutsalOwner);
+// ✅ Protected route - requires authentication
+formrouter.post('/register', verifyToken, uploadFields, FutsalOwnerFormController.registerFutsalOwner);
 
-formrouter.get('/', FutsalOwnerFormController.getAllFutsalOwners);
-formrouter.get('/:id', FutsalOwnerFormController.getFutsalOwnerById);
+// ✅ Get user's own application status
+formrouter.get('/my-application', verifyToken, FutsalOwnerFormController.getMyApplication);
 
-// Protected admin routes
-formrouter.patch('/:id/status', FutsalOwnerFormController.updateFutsalOwnerStatus);
-formrouter.delete('/:id',FutsalOwnerFormController.deleteFutsalOwner);
+// ✅ Admin routes - require admin authentication
+formrouter.get('/', verifyToken, verifyAdmin, FutsalOwnerFormController.getAllFutsalOwners);
+formrouter.get('/:id', verifyToken, verifyAdmin, FutsalOwnerFormController.getFutsalOwnerById);
+formrouter.patch('/:id/status', verifyToken, verifyAdmin, FutsalOwnerFormController.updateFutsalOwnerStatus);
+formrouter.delete('/:id', verifyToken, verifyAdmin, FutsalOwnerFormController.deleteFutsalOwner);
 
 module.exports = formrouter;
