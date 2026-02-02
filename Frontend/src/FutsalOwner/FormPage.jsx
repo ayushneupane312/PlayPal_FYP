@@ -174,7 +174,7 @@ export default function FormPage() {
     });
 
     try {
-      console.log('📤 Submitting form data...');
+
       await registerFutsalOwner(submitData);
       showToast.success('Registration submitted successfully!');
       

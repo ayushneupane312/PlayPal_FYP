@@ -38,16 +38,7 @@ const Dashboard = () => {
       bgColor: 'bg-yellow-500/10',
       iconColor: 'text-yellow-500'
     },
-    {
-      title: 'Fraud Alerts',
-      value: '12',
-      subtitle: 'vs last week',
-      percentage: '-0.16%',
-      trend: 'down',
-      icon: AlertTriangle,
-      bgColor: 'bg-red-500/10',
-      iconColor: 'text-red-500'
-    }
+
   ];
 
   const secondaryStats = [
@@ -60,15 +51,7 @@ const Dashboard = () => {
       bgColor: 'bg-purple-500/10',
       iconColor: 'text-purple-500'
     },
-    {
-      title: 'Pending Disputes',
-      value: '24',
-      percentage: '-8%',
-      trend: 'down',
-      icon: Scale,
-      bgColor: 'bg-orange-500/10',
-      iconColor: 'text-orange-500'
-    },
+
     {
       title: 'Daily Active Users',
       value: '2,847',

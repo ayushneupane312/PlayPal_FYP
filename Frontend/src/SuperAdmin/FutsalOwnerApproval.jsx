@@ -162,38 +162,7 @@ const FutsalOwnerApprovals = () => {
         style={{ width: `calc(100% - ${isSidebarCollapsed ? '5rem' : '16rem'})` }}
       >
         {/* Header */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 px-8 py-4 flex items-center justify-between mb-8">
-          <div className="flex items-center gap-4 flex-1 max-w-xl">
-            <Search className="text-gray-400" size={20} />
-            <input
-              type="text"
-              placeholder="Search by name, email, or futsal name..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="flex-1 outline-none text-gray-700"
-            />
-          </div>
-          <div className="flex items-center gap-4">
-            <button 
-              onClick={refreshData}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              title="Refresh"
-            >
-              <RefreshCw className={`text-gray-600 ${isLoading ? 'animate-spin' : ''}`} size={20} />
-            </button>
-            <button className="relative hover:bg-gray-50 p-2 rounded-lg transition-colors">
-              <Bell className="text-gray-600" size={20} />
-              {counts.pending > 0 && (
-                <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-white text-xs flex items-center justify-center">
-                  {counts.pending}
-                </span>
-              )}
-            </button>
-            <span className="text-gray-600 text-sm font-medium">
-              {new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
-            </span>
-          </div>
-        </div>
+      
 
         {/* Main Content */}
         <div>

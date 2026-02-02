@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Search, Bell, TrendingUp, Calendar, Users, Clock, DollarSign } from 'lucide-react';
 import AdminSidebar from './AdminSidebar';
-
+import AdminHeader from '../components/AdminHeader'
 const Analytics = () => {
   const [collapsed, setCollapsed] = useState(false);
 
@@ -104,30 +104,18 @@ const Analytics = () => {
       
       <div className={`flex-1 ${collapsed ? 'ml-20' : 'ml-64'} transition-all duration-300`}>
         {/* Header */}
-        <div className="bg-white border-b border-gray-200 px-8 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4 flex-1 max-w-xl">
-            <Search className="text-gray-400" size={20} />
-            <input
-              type="text"
-              placeholder="Search anything..."
-              className="flex-1 outline-none text-gray-700"
-            />
-          </div>
-          <div className="flex items-center gap-4">
-            <button className="relative">
-              <Bell className="text-gray-600" size={20} />
-              <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-white text-xs flex items-center justify-center">3</span>
-            </button>
-            <span className="text-gray-600 text-sm">04:23 AM</span>
-          </div>
-        </div>
+          <AdminHeader
+          title="Perform Analytics"
+          subtitle="Comprehensive user insights and trends"
+     
+          notificationCount={3}
+          showNotification={true}
+          showTime={true}
+        />
+       
 
         {/* Main Content */}
         <div className="p-8">
-          <div className="mb-6">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Platform Analytics</h1>
-            <p className="text-gray-500">Comprehensive user insights and trends</p>
-          </div>
 
           {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
