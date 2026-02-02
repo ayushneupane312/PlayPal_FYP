@@ -29,7 +29,7 @@ const futsalDirs = [
 futsalDirs.forEach(dir => {
     if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir, { recursive: true });
-        console.log('✅ Created directory:', dir);
+        console.log(' Created directory:', dir);
     }
 });
 
@@ -47,14 +47,15 @@ const authRoutes = require('./routes/AuthRoutes');
 app.use('/auth', authRoutes);
 
 const userRoutes = require('./routes/UserRoutes');
-app.use('/users', userRoutes);
+app.use('/api/users', userRoutes);
 
 const uploadRoutes = require('./routes/AdminRoute');
 app.use('/upload', uploadRoutes);
 
-// ✅ Futsal Owner Routes
 const formRoutes = require('./routes/FormRoute');
 app.use('/futsal-owners', formRoutes);
+
+
 
 // Default route
 app.get('/', (req, res) => res.send('PlayPal API is running!'));
@@ -78,6 +79,6 @@ dbConnect();
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
     
-    console.log(`🌐 API URL: http://localhost:${PORT}`);
+    console.log(`API URL: http://localhost:${PORT}`);
    
 });
