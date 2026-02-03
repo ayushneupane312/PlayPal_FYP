@@ -44,7 +44,7 @@ const futsalOwnerSchema = new mongoose.Schema({
         trim: true
     },
     
-    // Documents (stored as file paths)
+    // Documents — Cloudinary secure URLs
     businessDoc: {
         type: String,
         required: [true, 'Business registration document is required']
@@ -53,9 +53,24 @@ const futsalOwnerSchema = new mongoose.Schema({
         type: String,
         required: [true, 'Citizenship/ID document is required']
     },
+
+    // Cloudinary public_ids — needed to delete files from Cloudinary later
+    businessDocPublicId: {
+        type: String,
+        default: ''
+    },
+    citizenshipDocPublicId: {
+        type: String,
+        default: ''
+    },
     
-    // Futsal Images (array of file paths)
+    // Futsal Images — Cloudinary secure URLs
     groundImages: [{
+        type: String
+    }],
+
+    // Cloudinary public_ids for ground images
+    groundImagePublicIds: [{
         type: String
     }],
     

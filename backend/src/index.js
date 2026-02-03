@@ -6,32 +6,33 @@ const path = require('path');
 const dotenv = require('dotenv');
 const fs = require('fs');
 
+
 // Load environment variables
 dotenv.config();
 
 const app = express();
 
 
-// Create uploads directory if it doesn't exist
-const uploadsDir = path.join(__dirname, 'uploads');
-if (!fs.existsSync(uploadsDir)) {
-    fs.mkdirSync(uploadsDir, { recursive: true });
-    console.log(' Created uploads directory');
-}
+// // Create uploads directory if it doesn't exist
+// const uploadsDir = path.join(__dirname, 'uploads');
+// if (!fs.existsSync(uploadsDir)) {
+//     fs.mkdirSync(uploadsDir, { recursive: true });
+//     console.log(' Created uploads directory');
+// }
 
-// Create futsal uploads subdirectories
-const futsalDirs = [
-    path.join(__dirname, 'uploads/futsal/business-docs'),
-    path.join(__dirname, 'uploads/futsal/citizenship-docs'),
-    path.join(__dirname, 'uploads/futsal/ground-images')
-];
+// // Create futsal uploads subdirectories
+// const futsalDirs = [
+//     path.join(__dirname, 'uploads/futsal/business-docs'),
+//     path.join(__dirname, 'uploads/futsal/citizenship-docs'),
+//     path.join(__dirname, 'uploads/futsal/ground-images')
+// ];
 
-futsalDirs.forEach(dir => {
-    if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
-        console.log(' Created directory:', dir);
-    }
-});
+// futsalDirs.forEach(dir => {
+//     if (!fs.existsSync(dir)) {
+//         fs.mkdirSync(dir, { recursive: true });
+//         console.log(' Created directory:', dir);
+//     }
+// });
 
 // Middleware
 app.use(cors({ origin: 'http://localhost:5173', credentials: true }));
@@ -49,11 +50,13 @@ app.use('/auth', authRoutes);
 const userRoutes = require('./routes/UserRoutes');
 app.use('/api/users', userRoutes);
 
-const uploadRoutes = require('./routes/AdminRoute');
-app.use('/upload', uploadRoutes);
+
 
 const formRoutes = require('./routes/FormRoute');
 app.use('/futsal-owners', formRoutes);
+
+const uploadRoutes = require("./routes/UploadRoute");
+app.use("/api/upload", uploadRoutes);
 
 
 
@@ -62,10 +65,6 @@ app.get('/', (req, res) => res.send('PlayPal API is running!'));
 
 // Error handling - ADD DETAILED LOGGING
 app.use((err, req, res, next) => {
-  console.error('=== ERROR DETAILS ===');
-  console.error('Error:', err.message);
-  console.error('Stack:', err.stack);
-  console.error('=====================');
   res.status(500).json({ 
     message: 'Something went wrong!',
     error: process.env.NODE_ENV === 'development' ? err.message : undefined

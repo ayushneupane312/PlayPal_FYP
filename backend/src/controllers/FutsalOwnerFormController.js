@@ -1,7 +1,6 @@
 const FutsalOwner = require('../models/futsalOwnerForm.js');
 const User = require('../models/UserModel.js');
-const fs = require('fs').promises;
-const path = require('path');
+const { deleteFromCloudinary } = require('../middlewares/UploadMiddleware');
 
 const { 
     sendFutsalOwnerApprovalEmail, 
@@ -65,10 +64,12 @@ exports.registerFutsalOwner = async (req, res) => {
             });
         }
 
-        // Handle file uploads
-        const businessDoc = req.files?.businessDoc?.[0]?.path;
-        const citizenshipDoc = req.files?.citizenshipDoc?.[0]?.path;
-        const groundImages = req.files?.groundImages?.map(file => file.path) || [];
+        // ── Read files from Cloudinary results ──────────────────
+        // uploadToCloudinary middleware already ran — req.files now holds
+        // { url, public_id, resource_type } instead of the raw multer objects.
+        const businessDoc    = req.files?.businessDoc?.[0];
+        const citizenshipDoc = req.files?.citizenshipDoc?.[0];
+        const groundImages   = req.files?.groundImages || [];
 
         // Validate required documents
         if (!businessDoc || !citizenshipDoc) {
@@ -87,9 +88,17 @@ exports.registerFutsalOwner = async (req, res) => {
             futsalLocation,
             googleMapLink: googleMapLink || '',
             businessContact,
-            businessDoc,
-            citizenshipDoc,
-            groundImages,
+
+            // ── Cloudinary URLs (was .path, now .url) ──────────
+            businessDoc:    businessDoc.url,
+            citizenshipDoc: citizenshipDoc.url,
+            groundImages:   groundImages.map(img => img.url),
+
+            // ── Store public_ids so deleteFutsalOwner can clean up Cloudinary ──
+            businessDocPublicId:    businessDoc.public_id,
+            citizenshipDocPublicId: citizenshipDoc.public_id,
+            groundImagePublicIds:   groundImages.map(img => img.public_id),
+
             status: 'pending'
         });
 
@@ -361,22 +370,24 @@ exports.deleteFutsalOwner = async (req, res) => {
             });
         }
 
-        // Delete associated files from filesystem
-        const filesToDelete = [
-            futsalOwner.businessDoc,
-            futsalOwner.citizenshipDoc,
-            ...futsalOwner.groundImages
-        ];
-
-        for (const filePath of filesToDelete) {
-            if (filePath) {
-                try {
-                    await fs.unlink(filePath);
-                    console.log(`Deleted file: ${filePath}`);
-                } catch (err) {
-                    console.error(`Failed to delete file: ${filePath}`, err.message);
-                }
+        // ── Delete files from Cloudinary ─────────────────────────
+        // businessDoc and citizenshipDoc are PDFs → resource_type "raw"
+        // groundImages are images            → resource_type "image"
+        try {
+            if (futsalOwner.businessDocPublicId) {
+                await deleteFromCloudinary(futsalOwner.businessDocPublicId, 'raw');
             }
+            if (futsalOwner.citizenshipDocPublicId) {
+                await deleteFromCloudinary(futsalOwner.citizenshipDocPublicId, 'raw');
+            }
+            if (futsalOwner.groundImagePublicIds?.length) {
+                await Promise.all(
+                    futsalOwner.groundImagePublicIds.map(id => deleteFromCloudinary(id, 'image'))
+                );
+            }
+        } catch (cloudErr) {
+            // Log but don't block the delete — DB record should still go
+            console.error('Cloudinary cleanup error:', cloudErr.message);
         }
 
         // ✅ Update user record
