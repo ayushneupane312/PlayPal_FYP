@@ -27,6 +27,7 @@ import FutsalFacilities from "./FutsalOwner/FutsalFacilities.jsx";
 import FutsalOwnerSettings from "./FutsalOwner/FutsalOwnerSettings.jsx";
 import EarningPage from "./FutsalOwner/EarningsPage.jsx";
 import ToastProvider from "./FutsalOwner/components/ToastProvider.jsx";
+import OwnerDetailPage from "./FutsalOwner/OwnerDetailPage.jsx";
 
 import PlayerSettings from "./Players/PlayerSettings.jsx";
 import PlayersTournaments from "./Players/PlayersTournaments.jsx";
@@ -40,6 +41,7 @@ import Analytics from "./SuperAdmin/Analytics.jsx";
 import SystemSettings from "./SuperAdmin/SystemSettings.jsx"
 import AdminSidebar from "./SuperAdmin/AdminSidebar.jsx";
 import ApplicationStatus from "./FutsalOwner/ApplicationStatus.jsx";
+
 
 function App() {
   const location = useLocation();
@@ -93,8 +95,10 @@ function App() {
             <Route path="/FutsalFacilities" element={<FutsalFacilities/>}/>
             <Route path="/FutsalOwnerSettings" element={<FutsalOwnerSettings/>} />
             <Route path="/EarningsPage" element={<EarningPage/>}/>
-            <Route path="/futsalownerdetails/:id" element={<FutsalOwnerDetails/>} />
+            <Route path="/futsalownerdetails/:id" element={<OwnerDetailPage/>} />
             <Route path="/applicationstatus" element={<ApplicationStatus/>}/>
+          
+
 
             {/* Admin Routes */}
             <Route path="/admin/futsal-centers" element={<FutsalCenter />} />

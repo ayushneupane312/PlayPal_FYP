@@ -20,6 +20,7 @@ import { useFutsalOwnerStore } from '../store/futsalOwnerFormStore';
 import { showToast } from '../FutsalOwner/components/Toast';
 import AdminSidebar from './AdminSidebar';
 import { useNavigate } from 'react-router-dom';
+import OwnerDetailPage from '../FutsalOwner/OwnerDetailPage';
 
 const FutsalOwnerApprovals = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
