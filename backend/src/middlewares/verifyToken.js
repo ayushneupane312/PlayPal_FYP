@@ -1,12 +1,16 @@
 const jwt = require('jsonwebtoken');
 
 const verifyToken = (req, res, next) => {
+        console.log("🔐 verifyToken HIT");
+    console.log("Headers:", req.headers.authorization);
+    console.log("Cookies:", req.cookies);
     // Check for token in Authorization header (Bearer token) or cookies
     let token = req.headers.authorization?.split(' ')[1]; // Bearer <token>
     
     if (!token) {
         token = req.cookies.token;
     }
+     console.log("Token found:", token);
 
     if (!token) {
         return res.status(401).json({ success: false, message: "Not authorized to access this route" });
@@ -14,6 +18,7 @@ const verifyToken = (req, res, next) => {
 
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
+        console.log("Decoded token:", decoded);
 
         if (!decoded) {
             return res.status(401).json({ success: false, message: "Not authorized invalid token" });

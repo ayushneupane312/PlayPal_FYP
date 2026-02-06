@@ -1,23 +1,185 @@
+// const multer  = require('multer');
+// const cloudinary = require('../config/cloudinary');
+
+// // ──────────────────────────────────────────────────────────
+// // FOLDER MAP — fieldname  →  Cloudinary folder
+// // ──────────────────────────────────────────────────────────
+// const FOLDERS = {
+//   businessDoc:    'futsal/business-docs',
+//   citizenshipDoc: 'futsal/citizenship-docs',
+//   groundImages:   'futsal/ground-images',
+//   file:           'uploads',            // generic single-file route
+// };
+
+// // ──────────────────────────────────────────────────────────
+// // ALLOWED MIMETYPES — per fieldname
+// // ──────────────────────────────────────────────────────────
+// const ALLOWED = {
+//   businessDoc:    ['application/pdf', 'image/jpeg', 'image/png'],
+//   citizenshipDoc: ['application/pdf', 'image/jpeg', 'image/png'],
+//   groundImages:   ['image/jpeg', 'image/png', 'image/webp'],
+//   file:           ['image/jpeg', 'image/png', 'image/gif', 'image/webp',
+//                    'video/mp4', 'video/webm', 'video/quicktime',
+//                    'application/pdf'],
+// };
+
+// // ─── fileFilter ───────────────────────────────────────────
+// const fileFilter = (req, file, cb) => {
+//   const allowed = ALLOWED[file.fieldname];
+
+//   if (!allowed) {
+//     return cb(new Error(`Unknown field "${file.fieldname}".`), false);
+//   }
+
+//   if (!allowed.includes(file.mimetype)) {
+//     return cb(
+//       new Error(`"${file.originalname}" — invalid type. Allowed: ${allowed.join(', ')}`),
+//       false
+//     );
+//   }
+
+//   cb(null, true);
+// };
+
+// // ─── multer instance — memory only, nothing touches disk ─
+// const upload = multer({
+//   storage: multer.memoryStorage(),
+//   fileFilter,
+//   limits: { fileSize: 10 * 1024 * 1024 },   // 10 MB
+// });
+
+// // ──────────────────────────────────────────────────────────
+// // HELPERS
+// // ──────────────────────────────────────────────────────────
+
+// // Cloudinary needs "raw" for PDFs, "video" for videos, "image" for images
+// const resourceType = (mimetype) => {
+//   if (mimetype === 'application/pdf')  return 'raw';
+//   if (mimetype.startsWith('video/'))   return 'video';
+//   return 'image';
+// };
+
+// // Stream one buffer → Cloudinary, returns the full result object
+// const streamOne = (buffer, originalname, mimetype, folder) =>
+//   new Promise((resolve, reject) => {
+//     const type = resourceType(mimetype);
+//     const ext  = originalname.split('.').pop().toLowerCase();
+
+//     const stream = cloudinary.uploader.upload_stream(
+//       {
+//         resource_type: type,
+//         folder,
+//         format: ext,
+//         // auto-optimise images only
+//         ...(type === 'image' && {
+//           transformation: { quality: 'auto', fetch_format: 'auto' },
+//         }),
+//       },
+//       (err, result) => (err ? reject(err) : resolve(result))
+//     );
+
+//     stream.end(buffer);
+//   });
+
+// // Normalise a single Cloudinary result down to what the controller needs
+// const pick = (result) => ({
+//   url:           result.secure_url,
+//   public_id:     result.public_id,
+//   resource_type: result.resource_type,
+// });
+
+// // ──────────────────────────────────────────────────────────
+// // uploadToCloudinary  — Express middleware
+// //
+// // Plug this AFTER upload.single / upload.fields / upload.array.
+// // It reads the buffers multer put on req, streams every file to
+// // Cloudinary, then REPLACES req.file / req.files with the results.
+// //
+// // Your controller reads exactly the same keys, just .url instead of .path
+// // ──────────────────────────────────────────────────────────
+// const uploadToCloudinary = async (req, res, next) => {
+//   try {
+//     // ── upload.single("field")  →  req.file  (one object) ──
+//     if (req.file) {
+//       const folder = FOLDERS[req.file.fieldname] || 'uploads';
+//       const result = await streamOne(
+//         req.file.buffer,
+//         req.file.originalname,
+//         req.file.mimetype,
+//         folder
+//       );
+//       req.file = pick(result);   // overwrite
+//     }
+
+//     // ── upload.fields([…])  →  req.files  (object of arrays) ──
+//     if (req.files && !Array.isArray(req.files)) {
+//       const out = {};
+
+//       for (const [fieldname, files] of Object.entries(req.files)) {
+//         const folder = FOLDERS[fieldname] || 'uploads';
+
+//         out[fieldname] = await Promise.all(
+//           files.map((f) => streamOne(f.buffer, f.originalname, f.mimetype, folder).then(pick))
+//         );
+//       }
+
+//       req.files = out;   // overwrite
+//     }
+
+//     // ── upload.array("field")  →  req.files  (plain array) ──
+//     if (req.files && Array.isArray(req.files)) {
+//       const folder = FOLDERS[req.files[0]?.fieldname] || 'uploads';
+
+//       req.files = await Promise.all(
+//         req.files.map((f) => streamOne(f.buffer, f.originalname, f.mimetype, folder).then(pick))
+//       );
+//     }
+
+//     next();
+//   } catch (err) {
+//     next(err);   // hits your global error handler
+//   }
+// };
+
+// // ──────────────────────────────────────────────────────────
+// // deleteFromCloudinary(public_id, resource_type)
+// //   resource_type  →  "image" | "video" | "raw"
+// // ──────────────────────────────────────────────────────────
+// const deleteFromCloudinary = (publicId, resType = 'image') =>
+//   cloudinary.uploader.destroy(publicId, { resource_type: resType });
+
+// module.exports = { upload, uploadToCloudinary, deleteFromCloudinary };
+
+
+
+
+
+
+
 const multer  = require('multer');
 const cloudinary = require('../config/cloudinary');
 
 // ──────────────────────────────────────────────────────────
-// FOLDER MAP — fieldname  →  Cloudinary folder
+// FOLDER MAP
 // ──────────────────────────────────────────────────────────
 const FOLDERS = {
   businessDoc:    'futsal/business-docs',
   citizenshipDoc: 'futsal/citizenship-docs',
   groundImages:   'futsal/ground-images',
-  file:           'uploads',            // generic single-file route
+  images:         'venue/images',          // venue images
+  videos:         'venue/videos',          // venue videos
+  file:           'uploads',
 };
 
 // ──────────────────────────────────────────────────────────
-// ALLOWED MIMETYPES — per fieldname
+// ALLOWED MIMETYPES
 // ──────────────────────────────────────────────────────────
 const ALLOWED = {
   businessDoc:    ['application/pdf', 'image/jpeg', 'image/png'],
   citizenshipDoc: ['application/pdf', 'image/jpeg', 'image/png'],
   groundImages:   ['image/jpeg', 'image/png', 'image/webp'],
+  images:         ['image/jpeg', 'image/png', 'image/webp', 'image/gif'],
+  videos:         ['video/mp4', 'video/webm', 'video/quicktime', 'video/x-msvideo'],
   file:           ['image/jpeg', 'image/png', 'image/gif', 'image/webp',
                    'video/mp4', 'video/webm', 'video/quicktime',
                    'application/pdf'],
@@ -41,65 +203,69 @@ const fileFilter = (req, file, cb) => {
   cb(null, true);
 };
 
-// ─── multer instance — memory only, nothing touches disk ─
+// ─── multer instance ──────────────────────────────────────
 const upload = multer({
   storage: multer.memoryStorage(),
   fileFilter,
-  limits: { fileSize: 10 * 1024 * 1024 },   // 10 MB
+  limits: { fileSize: 50 * 1024 * 1024 },   // 50 MB for videos
 });
 
 // ──────────────────────────────────────────────────────────
-// HELPERS
+// resource_type logic
+//   video/*        →  "video"
+//   everything else (images AND PDFs)  →  "image"
 // ──────────────────────────────────────────────────────────
-
-// Cloudinary needs "raw" for PDFs, "video" for videos, "image" for images
 const resourceType = (mimetype) => {
-  if (mimetype === 'application/pdf')  return 'raw';
-  if (mimetype.startsWith('video/'))   return 'video';
+  if (mimetype.startsWith('video/')) return 'video';
   return 'image';
 };
 
-// Stream one buffer → Cloudinary, returns the full result object
+// Stream one buffer → Cloudinary
 const streamOne = (buffer, originalname, mimetype, folder) =>
   new Promise((resolve, reject) => {
     const type = resourceType(mimetype);
     const ext  = originalname.split('.').pop().toLowerCase();
 
+    const uploadOptions = {
+      resource_type: type,
+      folder,
+      format: ext,
+    };
+
+    // Only add transformation for non-PDF images
+    if (type === 'image' && mimetype !== 'application/pdf') {
+      uploadOptions.transformation = { quality: 'auto', fetch_format: 'auto' };
+    }
+
+    // For videos, add eager transformations for thumbnail
+    if (type === 'video') {
+      uploadOptions.eager = [
+        { width: 400, height: 300, crop: 'pad', format: 'jpg' }
+      ];
+      uploadOptions.eager_async = true;
+    }
+
     const stream = cloudinary.uploader.upload_stream(
-      {
-        resource_type: type,
-        folder,
-        format: ext,
-        // auto-optimise images only
-        ...(type === 'image' && {
-          transformation: { quality: 'auto', fetch_format: 'auto' },
-        }),
-      },
+      uploadOptions,
       (err, result) => (err ? reject(err) : resolve(result))
     );
 
     stream.end(buffer);
   });
 
-// Normalise a single Cloudinary result down to what the controller needs
 const pick = (result) => ({
   url:           result.secure_url,
   public_id:     result.public_id,
   resource_type: result.resource_type,
+  duration:      result.duration || null,  // for videos
 });
 
 // ──────────────────────────────────────────────────────────
-// uploadToCloudinary  — Express middleware
-//
-// Plug this AFTER upload.single / upload.fields / upload.array.
-// It reads the buffers multer put on req, streams every file to
-// Cloudinary, then REPLACES req.file / req.files with the results.
-//
-// Your controller reads exactly the same keys, just .url instead of .path
+// uploadToCloudinary middleware
 // ──────────────────────────────────────────────────────────
 const uploadToCloudinary = async (req, res, next) => {
   try {
-    // ── upload.single("field")  →  req.file  (one object) ──
+    // Single file
     if (req.file) {
       const folder = FOLDERS[req.file.fieldname] || 'uploads';
       const result = await streamOne(
@@ -108,10 +274,10 @@ const uploadToCloudinary = async (req, res, next) => {
         req.file.mimetype,
         folder
       );
-      req.file = pick(result);   // overwrite
+      req.file = pick(result);
     }
 
-    // ── upload.fields([…])  →  req.files  (object of arrays) ──
+    // Multiple fields
     if (req.files && !Array.isArray(req.files)) {
       const out = {};
 
@@ -123,10 +289,10 @@ const uploadToCloudinary = async (req, res, next) => {
         );
       }
 
-      req.files = out;   // overwrite
+      req.files = out;
     }
 
-    // ── upload.array("field")  →  req.files  (plain array) ──
+    // Array of files
     if (req.files && Array.isArray(req.files)) {
       const folder = FOLDERS[req.files[0]?.fieldname] || 'uploads';
 
@@ -137,13 +303,12 @@ const uploadToCloudinary = async (req, res, next) => {
 
     next();
   } catch (err) {
-    next(err);   // hits your global error handler
+    next(err);
   }
 };
 
 // ──────────────────────────────────────────────────────────
-// deleteFromCloudinary(public_id, resource_type)
-//   resource_type  →  "image" | "video" | "raw"
+// deleteFromCloudinary
 // ──────────────────────────────────────────────────────────
 const deleteFromCloudinary = (publicId, resType = 'image') =>
   cloudinary.uploader.destroy(publicId, { resource_type: resType });

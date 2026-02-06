@@ -164,7 +164,7 @@ const login = async (req, res) => {
         // ✅ FUTSAL OWNER SPECIFIC CHECKS (after setting token)
         if (user.role === 'futsalowner') {
             if (!user.registrationCompleted) {
-                return res.status(403).json({
+                return res.status(200).json({
                     success: false,
                     msg: "Please complete your futsal registration form first",
                     requiresRegistration: true,
@@ -183,7 +183,7 @@ const login = async (req, res) => {
             }
 
             if (user.applicationStatus === 'pending') {
-                return res.status(403).json({
+                return res.status(200).json({
                     success: false,
                     msg: "Your application is pending admin approval.",
                     applicationStatus: 'pending',
@@ -202,7 +202,7 @@ const login = async (req, res) => {
             }
 
             if (user.applicationStatus === 'rejected') {
-                return res.status(403).json({
+                return res.status(200).json({
                     success: false,
                     msg: "Your application has been rejected.",
                     applicationStatus: 'rejected',

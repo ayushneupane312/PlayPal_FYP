@@ -12,34 +12,12 @@ dotenv.config();
 
 const app = express();
 
-
-// // Create uploads directory if it doesn't exist
-// const uploadsDir = path.join(__dirname, 'uploads');
-// if (!fs.existsSync(uploadsDir)) {
-//     fs.mkdirSync(uploadsDir, { recursive: true });
-//     console.log(' Created uploads directory');
-// }
-
-// // Create futsal uploads subdirectories
-// const futsalDirs = [
-//     path.join(__dirname, 'uploads/futsal/business-docs'),
-//     path.join(__dirname, 'uploads/futsal/citizenship-docs'),
-//     path.join(__dirname, 'uploads/futsal/ground-images')
-// ];
-
-// futsalDirs.forEach(dir => {
-//     if (!fs.existsSync(dir)) {
-//         fs.mkdirSync(dir, { recursive: true });
-//         console.log(' Created directory:', dir);
-//     }
-// });
-
 // Middleware
 app.use(cors({ origin: 'http://localhost:5173', credentials: true }));
 app.use(express.json());
 app.use(cookieParser());
 
-// ✅ Serve static files from uploads directory
+
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 console.log('✅ Static files served from:', path.join(__dirname, 'uploads'));
 
@@ -55,8 +33,13 @@ app.use('/api/users', userRoutes);
 const formRoutes = require('./routes/FormRoute');
 app.use('/futsal-owners', formRoutes);
 
+const venueRoutes = require('./routes/VenueRoute');
+app.use('/venue', venueRoutes);
+
 const uploadRoutes = require("./routes/UploadRoute");
 app.use("/api/upload", uploadRoutes);
+
+
 
 
 
