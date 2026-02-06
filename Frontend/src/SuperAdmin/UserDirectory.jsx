@@ -127,7 +127,6 @@ const UserManagement = () => {
           showTime={true}
         />
 
-      
 
         {/* Search and Filter Section */}
         <div className="rounded-xl shadow-sm border border-gray-100  mb-7">

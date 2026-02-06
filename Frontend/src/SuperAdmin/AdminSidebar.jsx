@@ -22,7 +22,6 @@ const AdminSidebar = ({ onCollapseChange }) => {
   const location = useLocation();
   const [isCollapsed, setIsCollapsed] = useState(false);
   
-  // ✅ Add confirmation hook
   const { isOpen, isLoading, config, showConfirmation, hideConfirmation, handleConfirm } = useConfirmation();
   
   // Determine active item based on current route

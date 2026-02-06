@@ -5,7 +5,7 @@ import { Link, useNavigate } from "react-router-dom";
 import Input from "../components/Input";
 import { useAuthStore } from "../store/authStore";
 import { showToast } from "../FutsalOwner/components/Toast";
-// ❌ REMOVE THIS LINE: import FormPage from '../FutsalOwner/FormPage.jsx';
+
 
 const LoginPage = () => {
   const [email, setEmail] = useState("");
@@ -38,7 +38,7 @@ const LoginPage = () => {
       if (response?.user?.role === "futsalowner") {
         
         // Check if registration form is completed
-        if (!response.user.registrationCompleted) {
+        if (response.registrationCompleted) {
           showToast.info("Please complete your registration form");
           navigate("/FormPage");
           return;
@@ -58,7 +58,7 @@ const LoginPage = () => {
 
           case 'approved':
             showToast.success("Welcome back!");
-            navigate("/FutsalOwner");
+            navigate("/futsalownerdashboard");
             return;
 
           default:

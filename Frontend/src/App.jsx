@@ -29,6 +29,7 @@ import EarningPage from "./FutsalOwner/EarningsPage.jsx";
 import ToastProvider from "./FutsalOwner/components/ToastProvider.jsx";
 import OwnerDetailPage from "./FutsalOwner/OwnerDetailPage.jsx";
 
+
 import PlayerSettings from "./Players/PlayerSettings.jsx";
 import PlayersTournaments from "./Players/PlayersTournaments.jsx";
 
@@ -41,6 +42,7 @@ import Analytics from "./SuperAdmin/Analytics.jsx";
 import SystemSettings from "./SuperAdmin/SystemSettings.jsx"
 import AdminSidebar from "./SuperAdmin/AdminSidebar.jsx";
 import ApplicationStatus from "./FutsalOwner/ApplicationStatus.jsx";
+import VenueDashboard from "./FutsalOwner/VenueDashboard.jsx";
 
 
 function App() {
@@ -86,10 +88,10 @@ function App() {
             <Route path="/verify-email" element={<EmailVerificationPage />} />
 
             {/* Futsal Owner Routes */}
-            <Route path="/FutsalOwner" element={<FutsalOwner/>} />
+            <Route path="/futsalownerdashboard" element={<FutsalOwner/>} />
             <Route path="/FormPage" element={<FormPage/>} />
-            <Route path="/VenuePage" element={<VenuePage/>} />
-            <Route path="/CourtsAndPricing" element={<CostAndPricing/>} />
+            <Route path="/futsalowner/VenuePage" element={<VenuePage/>} />
+            <Route path="/futsalowner/CourtsAndPricing" element={<CostAndPricing/>} />
             <Route path="/FutsalBooking" element={<FutsalBooking/>}/>
             <Route path="/Tournaments" element={<Tournaments/>}/>
             <Route path="/FutsalFacilities" element={<FutsalFacilities/>}/>
@@ -97,6 +99,7 @@ function App() {
             <Route path="/EarningsPage" element={<EarningPage/>}/>
             <Route path="/futsalownerdetails/:id" element={<OwnerDetailPage/>} />
             <Route path="/applicationstatus" element={<ApplicationStatus/>}/>
+            <Route path="/futsalowner/myvenue" element={<VenueDashboard/>}/>
           
 
 

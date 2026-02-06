@@ -20,12 +20,10 @@ import {
   LayoutDashboard 
 
 
-
-  
 } from 'lucide-react';
 import ConfirmationModal from '../components/ConfirmationModel';
 import { useConfirmation } from '../hooks/useConfirmation';
-import { showToast } from '../FutsalOwner/components/Toast';
+import { showToast } from './components/Toast';
 
 const Sidebar = ({ onCollapseChange }) => {
   const navigate = useNavigate();
@@ -35,13 +33,14 @@ const Sidebar = ({ onCollapseChange }) => {
   // Determine active item based on current route
   const getActiveItem = () => {
     const path = location.pathname;
-    if (path === "/" || path === "/Playerdashboard") return "Dashboard";
-    if (path.includes("/VenuePage")) return "Venue";
-    if (path.includes("/Bookings")) return "Bookings";
-    if (path.includes("/Tournaments")) return "Tournaments";
-    if (path.includes("/Facilities")) return "Facilities";
-    if (path.includes("/Earnings")) return "Earnings";
+    if (path === "/" || path === "/futsalownerdashboard") return "Dashboard";
+    if (path.includes("/futsalowner/VenuePage")) return "Venue";
+    if (path.includes("/futsalowner/Bookings")) return "Bookings";
+    if (path.includes("/futsalowner/Tournaments")) return "Tournaments";
+    if (path.includes("/futsalowner/Facilities")) return "Facilities";
+    if (path.includes("/futsalowner/Earnings")) return "Earnings";
     if (path.includes("/FutsalOwnerSettings")) return "Settings";
+    if (path.includes("/futsalowner/myvenue")) return "MyVenue";
  
     return "Dashboard";
   };
@@ -54,22 +53,25 @@ const Sidebar = ({ onCollapseChange }) => {
     
     switch (name) {
       case "Dashboard":
-        navigate("/Playerdashboard");
+        navigate("/futsalownerdashboard");
         break;
       case "Bookings":
-        navigate("/Bookings");
+        navigate("/futsalowner/Bookings");
         break;
       case "Venue":
-        navigate("/VenuePage");
+        navigate("/futsalowner/VenuePage");
         break;
       case "Tournaments":
-        navigate("/Tournaments");
+        navigate("/futsalowner/Tournaments");
         break;
       case "Facilities":
-        navigate("/Facilities");
+        navigate("/futsalowner/Facilities");
         break;
       case "Earnings":
-        navigate("/Earnings");
+        navigate("/futsalowner/Earnings");
+        break;
+      case "MyVenue":
+        navigate("/futsalowner/MyVenue");
         break;
       case "Settings":
         navigate("/FutsalOwnerSettings");
@@ -88,9 +90,7 @@ const Sidebar = ({ onCollapseChange }) => {
         type: 'warning',
         onConfirm: async () => {
           try {
-            // Add your logout logic here
-            // Example: await authStore.logout();
-            
+        
             showToast.success('Logged out successfully!');
             navigate('/login');
           } catch (error) {
@@ -112,7 +112,7 @@ const Sidebar = ({ onCollapseChange }) => {
   };
 
   const handleLogoClick = () => {
-    navigate("/Playerdashboard");
+    navigate("/futsalownerdashboard");
     setActiveItem("Dashboard");
   };
 
@@ -123,6 +123,7 @@ const Sidebar = ({ onCollapseChange }) => {
     { id: 'earnings', name: 'Earnings', icon: <Users className="w-5 h-5" /> },
     { id: 'tournaments', name: 'Tournaments', icon: <Trophy className="w-5 h-5" /> },
     { id: 'facilities', name: 'Facilities', icon: <Video className="w-5 h-5" /> },
+    { id: 'myvenue', name: 'My Venue', icon: <Video className="w-5 h-5" /> },
    
   ];
 
