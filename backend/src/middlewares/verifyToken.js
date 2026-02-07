@@ -1,9 +1,6 @@
 const jwt = require('jsonwebtoken');
 
 const verifyToken = (req, res, next) => {
-        console.log("🔐 verifyToken HIT");
-    console.log("Headers:", req.headers.authorization);
-    console.log("Cookies:", req.cookies);
     // Check for token in Authorization header (Bearer token) or cookies
     let token = req.headers.authorization?.split(' ')[1]; // Bearer <token>
     

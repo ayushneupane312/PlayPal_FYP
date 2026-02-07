@@ -303,6 +303,17 @@ const forgotPassword = async (req, res) => {
         await user.save();
 
         const resetLink = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
+        console.log(`Reset Link: ${resetLink}`);
+                // ✅ Enhanced console logging for better visibility
+        console.log('\n' + '='.repeat(80));
+        console.log('🔐 PASSWORD RESET LINK GENERATED');
+        console.log('='.repeat(80));
+        console.log(`📧 Email: ${user.email}`);
+        console.log(`🔗 Reset Link: ${resetLink}`);
+    
+        console.log(`⏱️  Valid for: 1 hour`);
+     
+
         await sendPasswordResetEmail(user.email, resetLink);
 
         res.status(200).json({ success: true, message: 'Password reset link sent to your email' }); // ✅ Changed msg to message
@@ -341,6 +352,7 @@ const resetPassword = async (req, res) => {
         await user.save();
 
         await sendPasswordResetSuccessEmail(user.email);
+        console.log ("Resent password link: ")
 
         res.status(200).json({ success: true, message: "Password reset successful" });
     } catch (error) {

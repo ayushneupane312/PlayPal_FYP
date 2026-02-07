@@ -282,7 +282,7 @@ exports.deleteMedia = async (req, res) => {
   }
 };
 
-// ✅ Get all active venues (Public - for players)
+
 exports.getAllVenues = async (req, res) => {
   try {
     const { city, facilities, minPrice, maxPrice, page = 1, limit = 10 } = req.query;
@@ -299,6 +299,7 @@ exports.getAllVenues = async (req, res) => {
     }
 
     const venues = await Venue.find(query)
+      .populate('owner', 'name email phone')
       .select('-__v')
       .limit(limit * 1)
       .skip((page - 1) * limit)

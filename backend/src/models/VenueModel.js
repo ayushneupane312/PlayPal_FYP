@@ -157,6 +157,30 @@ const venueSchema = new mongoose.Schema({
     ]
   }],
 
+    // ✅ ADD THIS NEW FIELD
+  paymentMethods: {
+    cash: {
+      type: Boolean,
+      default: true
+    },
+    esewa: {
+      type: Boolean,
+      default: false
+    },
+    khalti: {
+      type: Boolean,
+      default: false
+    },
+    bankTransfer: {
+      type: Boolean,
+      default: false
+    },
+    card: {
+      type: Boolean,
+      default: false
+    }
+  },
+
   // Media - Cloudinary URLs
   media: {
     images: [{
@@ -199,7 +223,8 @@ const venueSchema = new mongoose.Schema({
   socialMedia: {
     facebook: String,
     instagram: String,
-    twitter: String
+    twitter: String,
+    website: String
   },
 
   // Status
