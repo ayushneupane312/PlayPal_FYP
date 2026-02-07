@@ -40,7 +40,7 @@ const Sidebar = ({ onCollapseChange }) => {
     if (path.includes("/futsalowner/Facilities")) return "Facilities";
     if (path.includes("/futsalowner/Earnings")) return "Earnings";
     if (path.includes("/FutsalOwnerSettings")) return "Settings";
-    if (path.includes("/futsalowner/myvenue")) return "MyVenue";
+    if (path.includes("/futsalowner/myvenue")) return "My Venue";
  
     return "Dashboard";
   };
@@ -70,11 +70,11 @@ const Sidebar = ({ onCollapseChange }) => {
       case "Earnings":
         navigate("/futsalowner/Earnings");
         break;
-      case "MyVenue":
-        navigate("/futsalowner/MyVenue");
-        break;
       case "Settings":
         navigate("/FutsalOwnerSettings");
+        break;
+      case "My Venue":
+        navigate("/futsalowner/myvenue");
         break;
       default:
         break;
@@ -283,7 +283,7 @@ const Sidebar = ({ onCollapseChange }) => {
       </div>
     </div>
 
-    {/* ✅ Confirmation Modal */}
+    {/* Confirmation Modal */}
     <ConfirmationModal
         isOpen={isOpen}
         onClose={hideConfirmation}

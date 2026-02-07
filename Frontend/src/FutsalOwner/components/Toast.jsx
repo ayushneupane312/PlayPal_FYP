@@ -16,7 +16,7 @@ export const showToast = {
         fontWeight: '500',
         boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
       },
-      icon: '✅',
+      icon: '',
       ...options,
     });
   },

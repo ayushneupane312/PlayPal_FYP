@@ -1,10 +1,5 @@
 import axios from 'axios';
 
-// ══════════════════════════════════════════════════════════
-// CONFIGURATION
-// ══════════════════════════════════════════════════════════
-
-// Base API URL
 const API_URL =
   import.meta.env.MODE === 'development'
     ? 'http://localhost:5000/venue'
@@ -15,10 +10,14 @@ axios.defaults.withCredentials = true;
 
 export const getFutsalOwnerData = async () => {
   try {
-    const { data } = await axios.get(`${API_URL}/my-futsal-owner-data`);
+    console.log('🌐 Calling API: /api/venue/my-futsal-owner-data');
+    const { data } = await axios.get(`${API_URL}/my-futsal-owner-data`, {
+      withCredentials: true
+    });
+    console.log('✅ API response received:', data);
     return data;
   } catch (error) {
-    console.error('Get futsal owner data error:', error.response?.data || error.message);
+    console.error('❌ API call failed:', error.response?.data || error.message);
     throw error;
   }
 };
@@ -33,11 +32,6 @@ export const getVenueInfo = async () => {
   }
 };
 
-/**
- * Create or update the authenticated owner's venue
- * @param {Object} venueData - Complete venue information
- * @returns {Promise} Updated venue data
- */
 export const updateVenueInfo = async (venueData) => {
   try {
     const { data } = await axios.post(`${API_URL}/my-venue`, venueData);

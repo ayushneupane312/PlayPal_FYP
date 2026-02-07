@@ -40,15 +40,11 @@ export default function VenueDashboard() {
   };
 
   const handleEditVenue = () => {
-    navigate('/venue-page');
+    navigate('/futsalowner/VenuePage');
   };
 
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-NP', {
-      style: 'currency',
-      currency: 'NPR',
-      minimumFractionDigits: 0
-    }).format(amount);
+  return `Rs ${Math.round(amount).toLocaleString('en-NP')}`;
   };
 
   const getDayShortName = (dayName) => {
@@ -256,7 +252,7 @@ export default function VenueDashboard() {
 
                     <div className="bg-purple-50 rounded-lg p-4">
                       <div className="flex items-center gap-2 text-gray-600 mb-1">
-                        <DollarSign className="w-4 h-4" />
+                 
                         <span className="text-xs">Avg. Price/Hour</span>
                       </div>
                       <p className="text-xl font-bold text-purple-600">
@@ -484,6 +480,57 @@ export default function VenueDashboard() {
                   </p>
                 )}
               </div>
+
+
+              {/* Payment Methods */}
+              {venue.paymentMethods && (
+                <div className="bg-white rounded-lg shadow-md p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                    Payment Methods
+                  </h3>
+                  
+                  <div className="space-y-3">
+                    {venue.paymentMethods.cash && (
+                      <div className="flex items-center gap-2 text-sm text-gray-700">
+                  
+                        <span>Cash</span>
+                      </div>
+                    )}
+                    {venue.paymentMethods.esewa && (
+                      <div className="flex items-center gap-2 text-sm text-gray-700">
+                    
+                        <span>eSewa</span>
+                      </div>
+                    )}
+                    {venue.paymentMethods.khalti && (
+                      <div className="flex items-center gap-2 text-sm text-gray-700">
+                    
+                        <span>Khalti</span>
+                      </div>
+                    )}
+                    {venue.paymentMethods.bankTransfer && (
+                      <div className="flex items-center gap-2 text-sm text-gray-700">
+                       
+                        <span>Bank Transfer</span>
+                      </div>
+                    )}
+                    {venue.paymentMethods.card && (
+                      <div className="flex items-center gap-2 text-sm text-gray-700">
+                        
+                        <span>Credit/Debit Card</span>
+                      </div>
+                    )}
+                    
+                    {!venue.paymentMethods.cash && 
+                    !venue.paymentMethods.esewa && 
+                    !venue.paymentMethods.khalti && 
+                    !venue.paymentMethods.bankTransfer && 
+                    !venue.paymentMethods.card && (
+                      <p className="text-gray-500 text-sm">No payment methods set</p>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {/* Social Media */}
               {(venue.socialMedia?.facebook || venue.socialMedia?.instagram || 
