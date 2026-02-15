@@ -1,0 +1,1006 @@
+const mongoose = require('mongoose');
+const Booking = require('../models/BookingModel');
+const Venue = require('../models/VenueModel');
+const User = require('../models/UserModel');
+const khaltiService = require('../services/khaltiService');
+const { notifyUser } = require('../services/notificationService');
+
+// ═══════════════════════════════════════════════════════════
+// HELPER FUNCTIONS
+// ═══════════════════════════════════════════════════════════
+
+function generateTimeSlots(startTime, endTime, intervalHours = 1) {
+  const slots = [];
+  const [startHour, startMin] = startTime.split(':').map(Number);
+  const [endHour, endMin] = endTime.split(':').map(Number);
+
+  let currentHour = startHour;
+  let currentMin = startMin;
+
+  while (currentHour < endHour || (currentHour === endHour && currentMin < endMin)) {
+    const start = `${String(currentHour).padStart(2, '0')}:${String(currentMin).padStart(2, '0')}`;
+    
+    currentHour += intervalHours;
+    if (currentMin + (intervalHours % 1) * 60 >= 60) {
+      currentHour += 1;
+      currentMin = (currentMin + (intervalHours % 1) * 60) % 60;
+    }
+
+    const end = `${String(currentHour).padStart(2, '0')}:${String(currentMin).padStart(2, '0')}`;
+
+    if (currentHour < endHour || (currentHour === endHour && currentMin <= endMin)) {
+      slots.push({ startTime: start, endTime: end });
+    }
+  }
+
+  return slots;
+}
+
+// ═══════════════════════════════════════════════════════════
+// PLAYER BOOKING ENDPOINTS
+// ═══════════════════════════════════════════════════════════
+
+/**
+ * Get available time slots for a venue on a specific date
+ */
+// In BookingController.js - Update getAvailableSlots
+exports.getAvailableSlots = async (req, res) => {
+  try {
+    const { venueId, courtId, date } = req.query;
+
+    if (!venueId || !courtId || !date) {
+      return res.status(400).json({
+        success: false,
+        message: 'Venue ID, Court ID, and date are required'
+      });
+    }
+
+    const venue = await Venue.findById(venueId);
+    if (!venue) {
+      return res.status(404).json({
+        success: false,
+        message: 'Venue not found'
+      });
+    }
+
+    const court = venue.courts.id(courtId);
+    if (!court) {
+      return res.status(404).json({
+        success: false,
+        message: 'Court not found'
+      });
+    }
+
+    // Get bookings for this court on this date
+    const bookingDate = new Date(date);
+    const existingBookings = await Booking.find({
+      venue: venueId,
+      'court.courtId': courtId,
+      bookingDate: bookingDate,
+      bookingStatus: { $in: ['pending', 'confirmed'] }
+    }).select('timeSlot bookingStatus user playerInfo').populate('user', 'name');
+
+    // Get operating hours
+    const dayName = bookingDate.toLocaleDateString('en-US', { weekday: 'long' });
+    const operatingHours = venue.operatingHours.find(oh => oh.day === dayName);
+
+    if (!operatingHours || !operatingHours.isOpen) {
+      return res.status(200).json({
+        success: true,
+        message: 'Venue is closed on this day',
+        data: {
+          availableSlots: [],
+          bookedSlots: []
+        }
+      });
+    }
+
+    // Generate all possible time slots
+    const allSlots = generateTimeSlots(
+      operatingHours.openTime,
+      operatingHours.closeTime,
+      1
+    );
+
+    // Separate booked and available slots
+    const bookedSlotTimes = existingBookings.map(b => b.timeSlot.startTime);
+    const availableSlots = allSlots.filter(slot => !bookedSlotTimes.includes(slot.startTime));
+    const bookedSlots = allSlots.filter(slot => bookedSlotTimes.includes(slot.startTime));
+
+    // Add pricing to available slots
+    const isWeekend = [0, 6].includes(bookingDate.getDay());
+    const slotsWithPricing = availableSlots.map(slot => {
+      const isPeakHour = operatingHours.peakHours && 
+        slot.startTime >= operatingHours.peakHours.start &&
+        slot.startTime < operatingHours.peakHours.end;
+
+      let price;
+      if (isPeakHour && court.pricing.peakHourRate) {
+        price = court.pricing.peakHourRate;
+      } else if (!isPeakHour && court.pricing.offPeakRate) {
+        price = court.pricing.offPeakRate;
+      } else {
+        price = isWeekend ? court.pricing.weekendRate : court.pricing.weekdayRate;
+      }
+
+      return {
+        ...slot,
+        price,
+        isPeakHour,
+        isWeekend,
+        status: 'available'
+      };
+    });
+
+    // Add info to booked slots
+    const bookedSlotsWithInfo = bookedSlots.map(slot => {
+      const booking = existingBookings.find(b => b.timeSlot.startTime === slot.startTime);
+      return {
+        ...slot,
+        status: 'booked',
+        bookingStatus: booking?.bookingStatus,
+        bookedBy: booking?.playerInfo?.name || booking?.user?.name || 'Someone'
+      };
+    });
+
+    res.status(200).json({
+      success: true,
+      data: {
+        venue: {
+          id: venue._id,
+          name: venue.venueName
+        },
+        court: {
+          id: court._id,
+          name: court.name,
+          surfaceType: court.surfaceType
+        },
+        date: bookingDate,
+        dayName,
+        operatingHours: {
+          openTime: operatingHours.openTime,
+          closeTime: operatingHours.closeTime
+        },
+        availableSlots: slotsWithPricing,
+        bookedSlots: bookedSlotsWithInfo,
+        totalSlots: allSlots.length,
+        availableCount: slotsWithPricing.length,
+        bookedCount: bookedSlotsWithInfo.length
+      }
+    });
+  } catch (error) {
+    console.error('❌ Get available slots error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch available slots',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Create a new booking
+ */
+exports.createBooking = async (req, res) => {
+  try {
+    const userId = req.userId;
+    const {
+      venueId,
+      courtId,
+      bookingDate,
+      startTime,
+      endTime,
+      duration,
+      numberOfPlayers,
+      specialRequests,
+      paymentMethod = 'cash' // Default to cash, can be 'khalti' or 'cash'
+    } = req.body;
+
+    // Validate required fields
+    if (!venueId || !courtId || !bookingDate || !startTime || !endTime) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required booking details'
+      });
+    }
+
+    // Check if slot is still available
+    const isAvailable = await Booking.isSlotAvailable(
+      venueId,
+      courtId,
+      new Date(bookingDate),
+      startTime
+    );
+
+    if (!isAvailable) {
+      return res.status(409).json({
+        success: false,
+        message: 'This time slot is no longer available'
+      });
+    }
+
+    // Get venue and court details
+    const venue = await Venue.findById(venueId);
+    if (!venue) {
+      return res.status(404).json({
+        success: false,
+        message: 'Venue not found'
+      });
+    }
+
+    const court = venue.courts.id(courtId);
+    if (!court) {
+      return res.status(404).json({
+        success: false,
+        message: 'Court not found'
+      });
+    }
+
+    // Get user details
+    const user = await User.findById(userId);
+
+    // Calculate pricing
+    const date = new Date(bookingDate);
+    const isWeekend = [0, 6].includes(date.getDay());
+    const dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
+    const operatingHours = venue.operatingHours.find(oh => oh.day === dayName);
+
+    const isPeakHour = operatingHours?.peakHours &&
+      startTime >= operatingHours.peakHours.start &&
+      startTime < operatingHours.peakHours.end;
+
+    let basePrice;
+    if (isPeakHour && court.pricing.peakHourRate) {
+      basePrice = court.pricing.peakHourRate;
+    } else if (!isPeakHour && court.pricing.offPeakRate) {
+      basePrice = court.pricing.offPeakRate;
+    } else {
+      basePrice = isWeekend ? court.pricing.weekendRate : court.pricing.weekdayRate;
+    }
+
+    const totalAmount = basePrice * (duration || 1);
+
+    // Create booking
+    const booking = await Booking.create({
+      user: userId,
+      venue: venueId,
+      court: {
+        courtId: court._id,
+        name: court.name,
+        surfaceType: court.surfaceType
+      },
+      bookingDate: date,
+      timeSlot: {
+        startTime,
+        endTime
+      },
+      duration: duration || 1,
+      pricing: {
+        basePrice,
+        discount: 0,
+        totalAmount
+      },
+      payment: {
+        method: paymentMethod,
+        status: paymentMethod === 'cash' ? 'pending' : 'pending'
+      },
+      bookingStatus: 'pending',
+      playerInfo: {
+        name: user.name,
+        phone: user.phone || '',
+        email: user.email,
+        numberOfPlayers: numberOfPlayers || 10
+      },
+      specialRequests: specialRequests || ''
+    });
+
+    await booking.populate('venue', 'venueName fullAddress contactInfo');
+
+    try {
+      await notifyUser(venue.owner, {
+        role: 'futsalowner',
+        title: 'New booking request',
+        message: `${user.name} requested ${court.name} on ${bookingDate} at ${startTime}.`,
+        type: 'booking_created',
+        link: '/futsalowner/booking-management',
+        meta: { bookingId: booking._id.toString() }
+      });
+    } catch (notifErr) {
+      console.error('Notification error:', notifErr);
+    }
+
+    console.log('✅ Booking created:', booking._id);
+
+    res.status(201).json({
+      success: true,
+      message: 'Booking created successfully',
+      data: booking
+    });
+  } catch (error) {
+    console.error('❌ Create booking error:', error);
+    
+    if (error.code === 11000) {
+      return res.status(409).json({
+        success: false,
+        message: 'This time slot has just been booked by someone else'
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: 'Failed to create booking',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Initiate Khalti payment for a booking (KPG-2 Web Checkout)
+ */
+exports.initiatePayment = async (req, res) => {
+  try {
+    const { bookingId } = req.body;
+    const userId = req.userId;
+
+    if (!bookingId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Booking ID is required'
+      });
+    }
+
+    const booking = await Booking.findOne({
+      _id: bookingId,
+      user: userId
+    }).populate('venue', 'venueName');
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found or does not belong to you'
+      });
+    }
+
+    if (booking.payment.status === 'paid') {
+      return res.status(400).json({
+        success: false,
+        message: 'Payment already completed for this booking'
+      });
+    }
+
+    if (booking.payment.method !== 'khalti') {
+      return res.status(400).json({
+        success: false,
+        message: 'This booking is set for cash payment. Cannot initiate online payment.'
+      });
+    }
+
+    const user = await User.findById(userId);
+
+    // Prepare payment data according to Khalti KPG-2 specification
+    const totalAmount = booking.pricing.totalAmount;
+    const amountInPaisa = khaltiService.convertToPaisa(totalAmount);
+
+    const paymentData = {
+      amount: amountInPaisa,
+      purchaseOrderId: booking._id.toString(),
+      purchaseOrderName: `${booking.venue.venueName} - ${booking.court.name}`,
+      customerInfo: {
+        name: user.name,
+        email: user.email,
+        phone: user.phone || '9800000000'
+      },
+      returnUrl: `${process.env.FRONTEND_URL}/player/booking/payment-callback`,
+      websiteUrl: process.env.FRONTEND_URL,
+      amountBreakdown: [
+        {
+          label: 'Court Booking Fee',
+          amount: amountInPaisa
+        }
+      ],
+      productDetails: [
+        {
+          identity: booking._id.toString(),
+          name: `${booking.venue.venueName} - ${booking.court.name}`,
+          total_price: amountInPaisa,
+          quantity: 1,
+          unit_price: amountInPaisa
+        }
+      ]
+    };
+
+    const paymentResponse = await khaltiService.initiatePayment(paymentData);
+
+    // Update booking with pidx and payment expiry
+    booking.payment.khaltiPidx = paymentResponse.pidx;
+    booking.payment.paymentExpiresAt = paymentResponse.expiresAt;
+    await booking.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Payment initiated successfully',
+      data: {
+        pidx: paymentResponse.pidx,
+        paymentUrl: paymentResponse.paymentUrl,
+        expiresAt: paymentResponse.expiresAt,
+        expiresIn: paymentResponse.expiresIn,
+        bookingId: booking._id
+      }
+    });
+  } catch (error) {
+    console.error('❌ Initiate payment error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to initiate payment',
+      error: error.error,
+      error_key: error.error_key
+    });
+  }
+};
+
+/**
+ * Verify Khalti payment using Lookup API (KPG-2)
+ */
+exports.verifyPayment = async (req, res) => {
+  try {
+    const { pidx, bookingId } = req.body;
+    const userId = req.userId;
+
+    if (!pidx) {
+      return res.status(400).json({
+        success: false,
+        message: 'Payment index (pidx) is required'
+      });
+    }
+
+    // Verify payment with Khalti Lookup API
+    const verification = await khaltiService.verifyPayment(pidx);
+
+    console.log('📋 Payment Verification Status:', verification.status);
+
+    // Handle different payment statuses
+    if (verification.pending) {
+      return res.status(200).json({
+        success: false,
+        message: 'Payment is still pending. Please wait or contact support.',
+        status: 'pending',
+        data: verification
+      });
+    }
+
+    if (verification.failed) {
+      return res.status(400).json({
+        success: false,
+        message: `Payment ${verification.status.toLowerCase()}. Please try again.`,
+        status: verification.status,
+        data: verification
+      });
+    }
+
+    if (!verification.verified) {
+      return res.status(400).json({
+        success: false,
+        message: 'Payment verification failed',
+        status: verification.status,
+        data: verification
+      });
+    }
+
+    // Find and update booking
+    const booking = await Booking.findOne({
+      _id: bookingId,
+      user: userId,
+      'payment.khaltiPidx': pidx
+    }).populate('venue', 'venueName fullAddress contactInfo');
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found or does not belong to you'
+      });
+    }
+
+    // Check if already processed
+    if (booking.payment.status === 'paid') {
+      return res.status(200).json({
+        success: true,
+        message: 'Payment already verified',
+        data: { booking, payment: verification }
+      });
+    }
+
+    // Update payment status
+    booking.payment.status = 'paid';
+    booking.payment.transactionId = verification.transactionId;
+    booking.payment.paidAt = new Date();
+    booking.payment.khaltiTransactionId = verification.transactionId;
+    booking.payment.khaltiFee = verification.fee;
+    booking.bookingStatus = 'confirmed';
+    booking.notifications.userNotified = false;
+    booking.notifications.ownerNotified = false;
+
+    await booking.save();
+
+    // Update venue stats
+    await Venue.findByIdAndUpdate(booking.venue, {
+      $inc: { 'stats.totalBookings': 1 }
+    });
+
+    console.log('✅ Booking confirmed:', booking._id);
+
+    res.status(200).json({
+      success: true,
+      message: 'Payment verified successfully. Your booking is confirmed!',
+      data: {
+        booking,
+        payment: {
+          status: verification.status,
+          transactionId: verification.transactionId,
+          amount: khaltiService.convertToRupees(verification.amount),
+          fee: khaltiService.convertToRupees(verification.fee),
+          refunded: verification.refunded
+        }
+      }
+    });
+  } catch (error) {
+    console.error('❌ Verify payment error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Payment verification failed',
+      error: error.error
+    });
+  }
+};
+
+/**
+ * Mark cash payment as paid (Owner confirms payment)
+ */
+exports.confirmCashPayment = async (req, res) => {
+  try {
+    const { bookingId } = req.body;
+    const userId = req.userId;
+
+    const booking = await Booking.findById(bookingId);
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found'
+      });
+    }
+
+    // Check if user is the owner
+    const venue = await Venue.findOne({ _id: booking.venue, owner: userId });
+    if (!venue) {
+      return res.status(403).json({
+        success: false,
+        message: 'Unauthorized: You are not the owner of this venue'
+      });
+    }
+
+    if (booking.payment.method !== 'cash') {
+      return res.status(400).json({
+        success: false,
+        message: 'This booking is not set for cash payment'
+      });
+    }
+
+    booking.payment.status = 'paid';
+    booking.payment.paidAt = new Date();
+    booking.bookingStatus = 'confirmed';
+
+    await booking.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Cash payment confirmed successfully',
+      data: booking
+    });
+  } catch (error) {
+    console.error('❌ Confirm cash payment error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to confirm cash payment',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Get user's bookings
+ */
+exports.getMyBookings = async (req, res) => {
+  try {
+    const userId = req.userId;
+    const { status, page = 1, limit = 10 } = req.query;
+
+    const query = { user: userId };
+    
+    if (status && status !== 'all') {
+      query.bookingStatus = status;
+    }
+
+    const bookings = await Booking.find(query)
+      .populate('venue', 'venueName fullAddress contactInfo media')
+      .sort({ bookingDate: -1, createdAt: -1 })
+      .limit(limit * 1)
+      .skip((page - 1) * limit);
+
+    const total = await Booking.countDocuments(query);
+
+    res.status(200).json({
+      success: true,
+      data: bookings,
+      pagination: {
+        total,
+        page: parseInt(page),
+        pages: Math.ceil(total / limit)
+      }
+    });
+  } catch (error) {
+    console.error('❌ Get my bookings error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch bookings',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Get booking by ID
+ */
+exports.getBookingById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.userId;
+
+    const booking = await Booking.findOne({
+      _id: id,
+      user: userId
+    }).populate('venue', 'venueName fullAddress contactInfo media operatingHours');
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: booking
+    });
+  } catch (error) {
+    console.error('❌ Get booking error:', error);
+    res.status(500).json({
+      success: false,
+        message: 'Failed to fetch booking',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Cancel booking
+ */
+ 
+// backend/controllers/BookingController.js
+
+exports.cancelBooking = async (req, res) => {
+  try {
+    const userId = req.userId;
+    const { id } = req.params;
+    const { reason } = req.body;
+
+    console.log('📝 Cancel booking request:', { id, userId, reason });
+
+    if (!reason || !reason.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Cancellation reason is required'
+      });
+    }
+
+    const booking = await Booking.findById(id);
+    
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found'
+      });
+    }
+
+    console.log('📦 Found booking:', booking._id);
+
+    // Check if user owns this booking
+    if (booking.user.toString() !== userId.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to cancel this booking'
+      });
+    }
+
+    // Check if booking can be cancelled
+    if (!booking.canCancel()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Booking cannot be cancelled (Less than 2 hours before booking time)'
+      });
+    }
+
+    console.log('✅ Validation passed, updating booking...');
+
+    // Update booking status
+    booking.bookingStatus = 'cancelled';
+    
+    // ✅ FIX: Match the actual schema structure
+    booking.cancellation = {
+      isCancelled: true,
+      cancelledBy: 'user',  // ✅ String: 'user', 'owner', or 'admin'
+      cancelledAt: new Date(),
+      cancellationReason: reason.trim(),  // ✅ Note: "cancellationReason" not "reason"
+      refundEligible: booking.payment.status === 'paid'
+    };
+
+    // Calculate refund if payment was made
+    if (booking.payment.status === 'paid') {
+      const refundAmount = booking.calculateRefund();
+      booking.payment.refundAmount = refundAmount;
+      booking.payment.refundedAt = new Date();
+      booking.payment.status = 'refunded';
+      console.log('💰 Refund calculated:', refundAmount);
+    }
+
+    await booking.save();
+    console.log('✅ Booking cancelled successfully');
+
+    res.status(200).json({
+      success: true,
+      message: 'Booking cancelled successfully',
+      data: booking
+    });
+  } catch (error) {
+    console.error('❌ Cancel booking error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to cancel booking',
+      error: error.message
+    });
+  }
+};
+// ═══════════════════════════════════════════════════════════
+// FUTSAL OWNER ENDPOINTS
+// ═══════════════════════════════════════════════════════════
+
+/**
+ * Get venue bookings (for owner)
+ */
+exports.getVenueBookings = async (req, res) => {
+  try {
+    const userId = req.userId;
+    const { status, date, page = 1, limit = 20 } = req.query;
+
+    const venue = await Venue.findOne({ owner: userId });
+    if (!venue) {
+      return res.status(404).json({
+        success: false,
+        message: 'No venue found for this owner'
+      });
+    }
+
+    const query = { venue: venue._id };
+
+    if (status && status !== 'all') {
+      query.bookingStatus = status;
+    }
+
+    if (date) {
+      const bookingDate = new Date(date);
+      query.bookingDate = {
+        $gte: new Date(bookingDate.setHours(0, 0, 0, 0)),
+        $lt: new Date(bookingDate.setHours(23, 59, 59, 999))
+      };
+    }
+
+    const bookings = await Booking.find(query)
+      .populate('user', 'name email phone profileImage')
+      .sort({ bookingDate: 1, 'timeSlot.startTime': 1 })
+      .limit(limit * 1)
+      .skip((page - 1) * limit);
+
+    const total = await Booking.countDocuments(query);
+
+    const stats = {
+      total: await Booking.countDocuments({ venue: venue._id }),
+      pending: await Booking.countDocuments({ venue: venue._id, bookingStatus: 'pending' }),
+      confirmed: await Booking.countDocuments({ venue: venue._id, bookingStatus: 'confirmed' }),
+      completed: await Booking.countDocuments({ venue: venue._id, bookingStatus: 'completed' }),
+      cancelled: await Booking.countDocuments({ venue: venue._id, bookingStatus: 'cancelled' })
+    };
+
+    res.status(200).json({
+      success: true,
+      data: bookings,
+      stats,
+      pagination: {
+        total,
+        page: parseInt(page),
+        pages: Math.ceil(total / limit)
+      }
+    });
+  } catch (error) {
+    console.error('❌ Get venue bookings error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch bookings',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Approve booking
+ */
+exports.approveBooking = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.userId;
+
+    const venue = await Venue.findOne({ owner: userId });
+    if (!venue) {
+      return res.status(404).json({
+        success: false,
+        message: 'Venue not found'
+      });
+    }
+
+    const booking = await Booking.findOne({
+      _id: id,
+      venue: venue._id
+    });
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found'
+      });
+    }
+
+    booking.ownerApproval.status = 'approved';
+    booking.ownerApproval.approvedAt = new Date();
+    booking.bookingStatus = 'confirmed';
+    booking.notifications.ownerNotified = true;
+
+    await booking.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Booking approved successfully',
+      data: booking
+    });
+  } catch (error) {
+    console.error('❌ Approve booking error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to approve booking',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Reject booking
+ */
+exports.rejectBooking = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.userId;
+    const { reason } = req.body;
+
+    const venue = await Venue.findOne({ owner: userId });
+    if (!venue) {
+      return res.status(404).json({
+        success: false,
+        message: 'Venue not found'
+      });
+    }
+
+    const booking = await Booking.findOne({
+      _id: id,
+      venue: venue._id
+    });
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found'
+      });
+    }
+
+    booking.ownerApproval.status = 'rejected';
+    booking.ownerApproval.rejectedAt = new Date();
+    booking.ownerApproval.rejectionReason = reason || 'Rejected by owner';
+    booking.bookingStatus = 'rejected';
+
+    // Refund if payment was made
+    if (booking.payment.status === 'paid') {
+      booking.payment.status = 'refunded';
+      booking.payment.refundAmount = booking.pricing.totalAmount;
+      booking.payment.refundedAt = new Date();
+    }
+
+    await booking.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Booking rejected successfully',
+      data: booking
+    });
+  } catch (error) {
+    console.error('❌ Reject booking error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to reject booking',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Get owner earnings/revenue
+ */
+exports.getOwnerEarnings = async (req, res) => {
+  try {
+    const userId = req.userId;
+    const { startDate, endDate } = req.query;
+
+    const venue = await Venue.findOne({ owner: userId });
+    if (!venue) {
+      return res.status(404).json({
+        success: false,
+        message: 'Venue not found'
+      });
+    }
+
+    const query = {
+      venue: venue._id,
+      'payment.status': 'paid'
+    };
+
+    if (startDate && endDate) {
+      query.bookingDate = {
+        $gte: new Date(startDate),
+        $lte: new Date(endDate)
+      };
+    }
+
+    const bookings = await Booking.find(query);
+
+    const totalEarnings = bookings.reduce((sum, booking) => {
+      return sum + booking.pricing.totalAmount;
+    }, 0);
+
+    const monthlyEarnings = {};
+    bookings.forEach(booking => {
+      const month = booking.bookingDate.toISOString().slice(0, 7);
+      monthlyEarnings[month] = (monthlyEarnings[month] || 0) + booking.pricing.totalAmount;
+    });
+
+    res.status(200).json({
+      success: true,
+      data: {
+        totalEarnings,
+        totalBookings: bookings.length,
+        monthlyEarnings,
+        bookings
+      }
+    });
+  } catch (error) {
+    console.error('❌ Get earnings error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch earnings',
+      error: error.message
+    });
+  }
+};

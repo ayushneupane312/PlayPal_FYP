@@ -8,6 +8,7 @@ const {
     sendFutsalOwnerRejectionEmail, 
     sendAdminNewRegistrationNotification
 } = require("../mailtrap/emails");
+const { notifyRole } = require('../services/notificationService');
 
 // ✅ Register Futsal Owner (Protected - requires authentication)
 exports.registerFutsalOwner = async (req, res) => {
@@ -120,6 +121,19 @@ exports.registerFutsalOwner = async (req, res) => {
             await sendAdminNewRegistrationNotification(futsalOwner);
         } catch (emailError) {
             console.error('Failed to send admin notification:', emailError);
+        }
+
+        // ✅ In-app notification for admins
+        try {
+            await notifyRole('admin', {
+                title: 'New futsal owner registration',
+                message: `${futsalOwner.futsalName} (${futsalOwner.fullName}) submitted registration. Review in Futsal Owner Approval.`,
+                type: 'admin_alert',
+                link: '/admin/futsalownerapproval',
+                meta: { applicationId: futsalOwner._id.toString() }
+            });
+        } catch (notifErr) {
+            console.error('Admin in-app notification error:', notifErr);
         }
 
         res.status(201).json({
