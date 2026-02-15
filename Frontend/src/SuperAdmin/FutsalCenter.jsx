@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Bell, MapPin, Calendar, Star, Clock, Eye, Flag, X } from 'lucide-react';
 import AdminSidebar from './AdminSidebar';
-import axios from 'axios';
+import { getAllVenues } from '../store/venueService';
 
 const FutsalCenters = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -9,11 +9,6 @@ const FutsalCenters = () => {
   const [centers, setCenters] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
-  // API Configuration
-  const API_URL = import.meta.env.MODE === 'development'
-    ? 'http://localhost:5000'
-    : '';
 
   // Fetch all venues on component mount
   useEffect(() => {
@@ -25,19 +20,16 @@ const FutsalCenters = () => {
       setLoading(true);
       setError(null);
       
-      // Call your existing backend endpoint
-      const response = await axios.get(`${API_URL}/venue`, {
-        params: {
-          page: 1,
-          limit: 100 // Get all venues for admin panel
-        }
+      // Use the service method - it already handles the correct endpoint
+      const response = await getAllVenues({
+        page: 1,
+        limit: 100
       });
 
-      console.log('Fetched venues:', response.data);
+      console.log('Fetched venues:', response);
       
-      // Your backend returns { success, data, pagination }
-      if (response.data.success) {
-        setCenters(response.data.data || []);
+      if (response.success) {
+        setCenters(response.data || []);
       } else {
         throw new Error('Failed to fetch venues');
       }
@@ -95,7 +87,6 @@ const FutsalCenters = () => {
     if (venue.media?.images && venue.media.images.length > 0) {
       return venue.media.images[0].url;
     }
-    // Default fallback image
     return 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=800&h=400&fit=crop';
   };
 
@@ -121,16 +112,11 @@ const FutsalCenters = () => {
     const confirmed = window.confirm('Are you sure you want to flag this venue for review?');
     if (confirmed) {
       try {
-        // You can implement this endpoint to mark venue for review
-        await axios.patch(`${API_URL}/admin/venues/${venueId}/status`, {
-          isVerified: false,
-          isActive: true
-        }, {
-          withCredentials: true
-        });
-        
-        fetchAllVenues(); // Refresh data
-        alert('Venue flagged for review!');
+        // TODO: Implement admin flag endpoint in venueService
+        alert('Flag functionality needs to be implemented in backend');
+        // After implementation:
+        // await flagVenue(venueId);
+        // fetchAllVenues();
       } catch (err) {
         console.error('Error flagging venue:', err);
         alert('Failed to flag venue. Please try again.');
@@ -143,12 +129,11 @@ const FutsalCenters = () => {
     const confirmed = window.confirm('Are you sure you want to delete this venue? This action cannot be undone.');
     if (confirmed) {
       try {
-        await axios.delete(`${API_URL}/admin/venues/${venueId}`, {
-          withCredentials: true
-        });
-        
-        fetchAllVenues(); // Refresh data
-        alert('Venue deleted successfully!');
+        // TODO: Implement admin delete endpoint in venueService
+        alert('Delete functionality needs to be implemented in backend');
+        // After implementation:
+        // await deleteVenue(venueId);
+        // fetchAllVenues();
       } catch (err) {
         console.error('Error deleting venue:', err);
         alert('Failed to delete venue. Please try again.');
@@ -268,7 +253,7 @@ const FutsalCenters = () => {
                           e.target.src = 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=800&h=400&fit=crop';
                         }}
                       />
-                      {/* Status Badge - All Approved */}
+                      {/* Status Badge */}
                       <div className="absolute top-4 right-4">
                         <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium border bg-green-500/10 text-green-500 border-green-500/20">
                           ✓ Approved

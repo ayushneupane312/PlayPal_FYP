@@ -1,5 +1,5 @@
-import { Navigate, Outlet, Route, Routes, useLocation } from "react-router-dom";
-import { createContext, useEffect, useState } from "react";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
+import { useEffect } from "react";
 import { useAuthStore } from "./store/authStore"; // ✅ Import authStore
 
 import LoginPage from "./pages/LoginPage"
@@ -18,6 +18,8 @@ import BookingPage from "./Players/BookingPage.jsx";
 import PaymentPage from "./Players/SplitPaymentPage.jsx";
 import HighlightsPage from "./Players/HighlightsPage.jsx";
 import HealthPage from "./Players/HealthPage.jsx";
+import VenueDetailsPage from "./Players/VenueDetailsPage.jsx";
+
 import FormPage from "./FutsalOwner/FormPage.jsx";
 import VenuePage from "./FutsalOwner/VenuePage.jsx";
 import CostAndPricing from "./FutsalOwner/CourtsAndPricing.jsx";
@@ -30,10 +32,24 @@ import ToastProvider from "./FutsalOwner/components/ToastProvider.jsx";
 import OwnerDetailPage from "./FutsalOwner/OwnerDetailPage.jsx";
 
 
+
 import PlayerSettings from "./Players/PlayerSettings.jsx";
 import PlayersTournaments from "./Players/PlayersTournaments.jsx";
+import VenuesPage from "./Players/VenuesPage.jsx";
+import BookVenuePage from "./Players/BookVenuePage.jsx";
+import PaymentCallbackPage from "./Players/PaymentCallbackPage.jsx";
+import BookingDetailPage from "./Players/BookingDetailsPage.jsx";
+import BookingList from "./Players/BookingList.jsx"
 
-import FutsalOwnerDetails from "./SuperAdmin/FutsalOwnerDetails.jsx";
+import MatchmakingDashboard from "./Players/TeamMatchMaking/MatchMakingDashboard.jsx";
+import MyTeamsPage from "./Players/TeamMatchMaking/MyTeamsPage.jsx";
+import TeamDetailPage from "./Players/TeamMatchMaking/TeamDetailPage.jsx";
+import ConfirmBookingPage from "./Players/TeamMatchMaking/ConfirmBookingPage.jsx";
+import CreateTeamPage from "./Players/TeamMatchMaking/CreateTeamPage.jsx";
+import SoloQueuePage from "./Players/TeamMatchMaking/SoloQueuePage.jsx";
+import BrowseTeamsPage from "./Players/TeamMatchMaking/BrowseTeamsPage.jsx";
+import BrowsePlayersPage from "./Players/TeamMatchMaking/BrowsePlayerPage.jsx";
+
 import FutsalOwnerApproval from "./SuperAdmin/FutsalOwnerApproval.jsx";
 import AdminDashboard from "./SuperAdmin/AdminDashboard.jsx";
 import FutsalCenter from "./SuperAdmin/FutsalCenter.jsx";
@@ -43,6 +59,8 @@ import SystemSettings from "./SuperAdmin/SystemSettings.jsx"
 import AdminSidebar from "./SuperAdmin/AdminSidebar.jsx";
 import ApplicationStatus from "./FutsalOwner/ApplicationStatus.jsx";
 import VenueDashboard from "./FutsalOwner/VenueDashboard.jsx";
+import BookingManagementPage from "./FutsalOwner/BookingManagementPage.jsx";
+import OwnerBookingDetailPage from "./FutsalOwner/OwnerBookingDetailPage.jsx";
 
 
 function App() {
@@ -51,9 +69,8 @@ function App() {
   // ✅ Get checkAuth and isCheckingAuth from store
   const { checkAuth, isCheckingAuth } = useAuthStore();
 
-  // ✅ Check authentication on app mount
+  // Check authentication on app mount
   useEffect(() => {
-    console.log('🚀 App mounted, checking authentication...');
     checkAuth();
   }, [checkAuth]);
 
@@ -78,8 +95,6 @@ function App() {
         
         <div className="flex-1">
           <Routes>
-            <Route path="*" element={<Navigate to="/" replace />} />
-
             <Route path="/" element={<LandingPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignupPage />} />
@@ -100,9 +115,9 @@ function App() {
             <Route path="/futsalownerdetails/:id" element={<OwnerDetailPage/>} />
             <Route path="/applicationstatus" element={<ApplicationStatus/>}/>
             <Route path="/futsalowner/myvenue" element={<VenueDashboard/>}/>
+            <Route path="/futsalowner/booking-management" element={<BookingManagementPage/>}/>
+            <Route path="/futsalowner/booking-management/:id" element={<OwnerBookingDetailPage/>}/>
           
-
-
             {/* Admin Routes */}
             <Route path="/admin/futsal-centers" element={<FutsalCenter />} />
             <Route path="/admin/user-management" element={<UserDirectory />} />
@@ -114,12 +129,33 @@ function App() {
 
             {/* Player Routes */}
             <Route path="/playerdashboard" element={<PlayerDashboard/>}/>
+            <Route path="/player/venues" element={<VenuesPage/>}/>
+            <Route path="/player/venue/:venueId/book" element={<BookVenuePage/>}/>
+            <Route path="/booking/payment-callback" element={<PaymentCallbackPage/>}/>
+            <Route path="/player/bookings" element={<BookingPage/>}/>
             <Route path="/BookingPage" element={<BookingPage/>}/>
             <Route path="/SplitPaymentPage" element={<PaymentPage/>}/>
             <Route path="/HighlightsPage" element={<HighlightsPage/>}/>
             <Route path="/HealthPage" element={<HealthPage/>}/>
             <Route path="/PlayerSettings" element={<PlayerSettings/>} />
             <Route path="/PlayersTournaments" element={<PlayersTournaments/>} />
+            <Route path="/player/mybookings" element={<BookingList/>} />
+            <Route path="/player/bookings/:id" element={<BookingDetailPage />} />
+            <Route path="/player/venues/:id" element={<VenueDetailsPage />} />
+
+
+            {/* Matchmaking */}
+            <Route path="/player/matchmaking" element={<MatchmakingDashboard />} />
+            <Route path="/player/matchmaking/create-team" element={<CreateTeamPage />} />
+            <Route path="/player/matchmaking/solo-queue" element={<SoloQueuePage />} />
+            <Route path="/player/matchmaking/browse-teams" element={<BrowseTeamsPage />} />
+            <Route path="/player/matchmaking/browse-players" element={<BrowsePlayersPage />} />
+            <Route path="/player/teams" element={<MyTeamsPage />} />
+            <Route path="/player/teams/:id" element={<TeamDetailPage />} />
+            <Route path="/player/teams/:teamId/confirm-booking" element={<ConfirmBookingPage />} />
+
+            {/* Catch-all route - MUST BE LAST */}
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </div>
       </div>

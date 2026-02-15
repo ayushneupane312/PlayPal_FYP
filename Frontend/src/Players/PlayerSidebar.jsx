@@ -13,7 +13,8 @@ import {
   LogOut,
   CircleDot,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  LampFloor
 } from 'lucide-react';
 
 const Sidebar = ({ onCollapseChange }) => {
@@ -26,6 +27,7 @@ const Sidebar = ({ onCollapseChange }) => {
     const path = location.pathname;
     if (path === "/" || path === "/Playerdashboard") return "Dashboard";
     if (path.includes("/BookingPage")) return "Bookings";
+    if (path.includes("/player/matchmaking")) return "Matchmaking";
     if (path.includes("/SplitPaymentPage")) return "Payments";
     if (path.includes("/teams")) return "Teams";
     if (path.includes("/PlayersTournaments")) return "Tournaments";
@@ -48,11 +50,14 @@ const Sidebar = ({ onCollapseChange }) => {
       case "Bookings":
         navigate("/BookingPage");
         break;
+        case "Matchmaking":
+        navigate("/player/matchmaking");
+        break;
       case "Payments":
         navigate("/SplitPaymentPage");
         break;
       case "Teams":
-        navigate("/teams");
+        navigate("/player/teams");
         break;
       case "Tournaments":
         navigate("/PlayersTournaments");
@@ -93,8 +98,9 @@ const Sidebar = ({ onCollapseChange }) => {
 
   const navigationItems = [
     { id: 'dashboard', name: 'Dashboard', icon: <Home className="w-5 h-5" /> },
-    { id: 'bookings', name: 'Bookings', icon: <CalendarDays className="w-5 h-5" />, badge: 3 },
-    { id: 'payments', name: 'Payments', icon: <CreditCard className="w-5 h-5" />, badge: 2 },
+    { id: 'bookings', name: 'Bookings', icon: <CalendarDays className="w-5 h-5" />},
+    { id: 'player/matchmaking', name: 'Matchmaking', icon: <CalendarDays className="w-5 h-5" />},
+    { id: 'payments', name: 'Payments', icon: <CreditCard className="w-5 h-5" />,},
     { id: 'teams', name: 'Teams', icon: <Users className="w-5 h-5" /> },
     { id: 'tournaments', name: 'Tournaments', icon: <Trophy className="w-5 h-5" /> },
     { id: 'highlights', name: 'Highlights', icon: <Video className="w-5 h-5" /> },

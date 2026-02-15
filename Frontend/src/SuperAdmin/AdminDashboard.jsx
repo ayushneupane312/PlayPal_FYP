@@ -1,10 +1,63 @@
-import React, { useState } from 'react';
-import { DollarSign, Users, Calendar, AlertTriangle, Building2, Scale, Activity, TrendingUp, TrendingDown, Clock, CheckCircle, UserCheck, CreditCard, Shield, Search, Bell } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { DollarSign, Users, Calendar, AlertTriangle, Building2, Scale, Activity, TrendingUp, TrendingDown, Clock, CheckCircle, UserCheck, CreditCard, Shield, Loader2, Bell } from 'lucide-react';
 import AdminSidebar from './AdminSidebar';
+import SearchAndNotificationBar from '../components/SearchAndNotificationBar';
+import notificationService from '../store/notificationService';
+
+function formatNotificationTime(dateStr) {
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diffMs = now - date;
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+  if (diffMins < 1) return 'Just now';
+  if (diffMins < 60) return `${diffMins} min ago`;
+  if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+  if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+  return date.toLocaleDateString();
+}
+
+const typeToIcon = {
+  admin_alert: AlertTriangle,
+  booking_created: Calendar,
+  booking_status: CheckCircle,
+  system: Bell,
+  team_invite: Users,
+  team_join_request: UserCheck,
+  team_join_result: CheckCircle,
+  match_found: Activity,
+  default: Bell
+};
+
+const typeToStyle = {
+  admin_alert: { bg: 'bg-red-500/10', color: 'text-red-500' },
+  booking_created: { bg: 'bg-blue-500/10', color: 'text-blue-500' },
+  booking_status: { bg: 'bg-green-500/10', color: 'text-green-500' },
+  system: { bg: 'bg-gray-500/10', color: 'text-gray-500' },
+  default: { bg: 'bg-cyan-500/10', color: 'text-cyan-500' }
+};
 
 const Dashboard = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  
+  const [notifications, setNotifications] = useState([]);
+  const [notificationsLoading, setNotificationsLoading] = useState(true);
+
+  const fetchNotifications = useCallback(async () => {
+    try {
+      setNotificationsLoading(true);
+      const res = await notificationService.getNotifications();
+      setNotifications(res?.data ?? []);
+    } catch (_) {
+      setNotifications([]);
+    } finally {
+      setNotificationsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchNotifications();
+  }, [fetchNotifications]);
 
   // Stats data
   const stats = [
@@ -63,43 +116,6 @@ const Dashboard = () => {
     }
   ];
 
-  const recentActivities = [
-    {
-      icon: AlertTriangle,
-      iconBg: 'bg-red-500/10',
-      iconColor: 'text-red-500',
-      title: 'Suspicious payment detected from user #4521',
-      time: '2 min ago'
-    },
-    {
-      icon: Building2,
-      iconBg: 'bg-blue-500/10',
-      iconColor: 'text-blue-500',
-      title: 'New futsal owner registered: Arena Sports',
-      time: '15 min ago'
-    },
-    {
-      icon: CreditCard,
-      iconBg: 'bg-green-500/10',
-      iconColor: 'text-green-500',
-      title: 'Payment of $250 processed successfully',
-      time: '32 min ago'
-    },
-    {
-      icon: UserCheck,
-      iconBg: 'bg-cyan-500/10',
-      iconColor: 'text-cyan-500',
-      title: 'Account verified: john.doe@email.com',
-      time: '1 hr ago'
-    },
-    {
-      icon: CheckCircle,
-      iconBg: 'bg-green-500/10',
-      iconColor: 'text-green-500',
-      title: 'Dispute #892 resolved - Refund issued',
-      time: '2 hr ago'
-    }
-  ];
 
   // Generate chart data points
   const generateChartData = () => {
@@ -123,23 +139,13 @@ const Dashboard = () => {
       }`}
       style={{ width: `calc(100% - ${isSidebarCollapsed ? '5rem' : '16rem'})` }}
     >
-        {/* Header */}
-        <div className="bg-white border-b border-gray-200 px-8 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4 flex-1 max-w-xl">
-            <Search className="text-gray-400" size={20} />
-            <input
-              type="text"
-              placeholder="Search anything..."
-              className="flex-1 outline-none text-gray-700"
-            />
-          </div>
-          <div className="flex items-center gap-4">
-            <button className="relative">
-              <Bell className="text-gray-600" size={20} />
-              <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-white text-xs flex items-center justify-center">3</span>
-            </button>
-            <span className="text-gray-600 text-sm">08:35 AM</span>
-          </div>
+        {/* Search & Notification Bar */}
+        <div className="bg-white border-b border-gray-200 px-8 py-4">
+          <SearchAndNotificationBar
+            searchPlaceholder="Search anything..."
+            showSearch={true}
+            showTime={true}
+          />
         </div>
 
         {/* Main Content */}
@@ -284,36 +290,54 @@ const Dashboard = () => {
               </div>
             </div>
 
-            {/* Recent Activity */}
+            {/* Notifications */}
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
               <div className="flex items-center justify-between mb-6">
                 <div>
-                  <h2 className="text-xl font-bold text-gray-900 mb-1">Recent Activity</h2>
-                  <p className="text-gray-500 text-sm">Real-time platform updates</p>
+                  <h2 className="text-xl font-bold text-gray-900 mb-1">Notifications</h2>
+                  <p className="text-gray-500 text-sm">System updates and alerts</p>
                 </div>
-                <button className="text-cyan-500 text-sm font-medium hover:text-cyan-600 transition-colors">
-                  View All
+                <button
+                  onClick={fetchNotifications}
+                  className="text-cyan-500 text-sm font-medium hover:text-cyan-600 transition-colors"
+                >
+                  Refresh
                 </button>
               </div>
 
               <div className="space-y-4">
-                {recentActivities.map((activity, index) => {
-                  const Icon = activity.icon;
-                  return (
-                    <div key={index} className="flex items-start gap-3 pb-4 border-b border-gray-200 last:border-0 last:pb-0">
-                      <div className={`w-10 h-10 ${activity.iconBg} rounded-lg flex items-center justify-center flex-shrink-0`}>
-                        <Icon className={activity.iconColor} size={18} />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-gray-700 text-sm mb-1">{activity.title}</p>
-                        <div className="flex items-center gap-1 text-gray-500 text-xs">
-                          <Clock size={12} />
-                          <span>{activity.time}</span>
+                {notificationsLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="w-8 h-8 animate-spin text-cyan-500" />
+                  </div>
+                ) : notifications.length === 0 ? (
+                  <div className="py-8 text-center text-gray-500 text-sm">
+                    No notifications yet. Updates will appear here.
+                  </div>
+                ) : (
+                  notifications.slice(0, 8).map((notif) => {
+                    const Icon = typeToIcon[notif.type] || typeToIcon.default;
+                    const style = typeToStyle[notif.type] || typeToStyle.default;
+                    return (
+                      <div
+                        key={notif._id}
+                        className={`flex items-start gap-3 pb-4 border-b border-gray-200 last:border-0 last:pb-0 ${!notif.isRead ? 'bg-cyan-50/50 -mx-2 px-2 rounded-lg' : ''}`}
+                      >
+                        <div className={`w-10 h-10 ${style.bg} rounded-lg flex items-center justify-center flex-shrink-0`}>
+                          <Icon className={style.color} size={18} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-gray-900 font-medium text-sm mb-0.5">{notif.title}</p>
+                          <p className="text-gray-600 text-sm mb-1 line-clamp-2">{notif.message}</p>
+                          <div className="flex items-center gap-1 text-gray-500 text-xs">
+                            <Clock size={12} />
+                            <span>{formatNotificationTime(notif.createdAt)}</span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })
+                )}
               </div>
             </div>
           </div>

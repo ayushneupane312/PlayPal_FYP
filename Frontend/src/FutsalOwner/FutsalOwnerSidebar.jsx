@@ -35,7 +35,7 @@ const Sidebar = ({ onCollapseChange }) => {
     const path = location.pathname;
     if (path === "/" || path === "/futsalownerdashboard") return "Dashboard";
     if (path.includes("/futsalowner/VenuePage")) return "Venue";
-    if (path.includes("/futsalowner/Bookings")) return "Bookings";
+    if (path.includes("/futsalowner/booking-management")) return "Bookings";
     if (path.includes("/futsalowner/Tournaments")) return "Tournaments";
     if (path.includes("/futsalowner/Facilities")) return "Facilities";
     if (path.includes("/futsalowner/Earnings")) return "Earnings";
@@ -56,7 +56,7 @@ const Sidebar = ({ onCollapseChange }) => {
         navigate("/futsalownerdashboard");
         break;
       case "Bookings":
-        navigate("/futsalowner/Bookings");
+        navigate("/futsalowner/booking-management");
         break;
       case "Venue":
         navigate("/futsalowner/VenuePage");
@@ -118,8 +118,8 @@ const Sidebar = ({ onCollapseChange }) => {
 
   const navigationItems = [
     { id: 'dashboard', name: 'Dashboard', icon: <Home className="w-5 h-5" /> },
-    { id: 'bookings', name: 'Bookings', icon: <CalendarDays className="w-5 h-5" />, badge: 3 },
-    { id: 'venue', name: 'Venue', icon: <CreditCard className="w-5 h-5" />, badge: 2 },
+    { id: 'bookings', name: 'Bookings', icon: <CalendarDays className="w-5 h-5" />},
+    { id: 'venue', name: 'Venue', icon: <CreditCard className="w-5 h-5" />},
     { id: 'earnings', name: 'Earnings', icon: <Users className="w-5 h-5" /> },
     { id: 'tournaments', name: 'Tournaments', icon: <Trophy className="w-5 h-5" /> },
     { id: 'facilities', name: 'Facilities', icon: <Video className="w-5 h-5" /> },

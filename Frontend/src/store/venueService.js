@@ -1,12 +1,18 @@
 import axios from 'axios';
 
-const API_URL =
-  import.meta.env.MODE === 'development'
-    ? 'http://localhost:5000/venue'
-    : '/venue';
+// API Configuration - matches backend /api/venue
+const API_BASE = import.meta.env.MODE === 'development'
+  ? 'http://localhost:5000'
+  : '';
+
+const API_URL = `${API_BASE}/api/venue`;
 
 // IMPORTANT: Allow cookies (JWT stored in httpOnly cookie)
 axios.defaults.withCredentials = true;
+
+// ══════════════════════════════════════════════════════════
+// OWNER-SPECIFIC METHODS
+// ══════════════════════════════════════════════════════════
 
 export const getFutsalOwnerData = async () => {
   try {
@@ -42,11 +48,6 @@ export const updateVenueInfo = async (venueData) => {
   }
 };
 
-/**
- * Create or update venue (alias for consistency)
- * @param {Object} venueData - Complete venue information
- * @returns {Promise} Updated venue data
- */
 export const createOrUpdateVenue = async (venueData) => {
   return updateVenueInfo(venueData);
 };
@@ -55,33 +56,22 @@ export const createOrUpdateVenue = async (venueData) => {
 // MEDIA MANAGEMENT (IMAGES + VIDEOS)
 // ══════════════════════════════════════════════════════════
 
-/**
- * Upload images and/or videos to venue gallery
- * @param {Object} params - Upload parameters
- * @param {File[]} params.images - Array of image files (optional)
- * @param {File[]} params.videos - Array of video files (optional)
- * @param {string} params.category - Media category (optional, default: 'general')
- * @returns {Promise} Updated media data
- */
 export const uploadMedia = async ({ images = [], videos = [], category = 'general' }) => {
   try {
     const formData = new FormData();
 
-    // Append images
     if (images.length > 0) {
       images.forEach((file) => {
         formData.append('images', file);
       });
     }
 
-    // Append videos
     if (videos.length > 0) {
       videos.forEach((file) => {
         formData.append('videos', file);
       });
     }
 
-    // Append category
     formData.append('category', category);
 
     const { data } = await axios.post(
@@ -91,7 +81,6 @@ export const uploadMedia = async ({ images = [], videos = [], category = 'genera
         headers: {
           'Content-Type': 'multipart/form-data'
         },
-        // Optional: Track upload progress
         onUploadProgress: (progressEvent) => {
           const percentCompleted = Math.round(
             (progressEvent.loaded * 100) / progressEvent.total
@@ -108,30 +97,14 @@ export const uploadMedia = async ({ images = [], videos = [], category = 'genera
   }
 };
 
-/**
- * Upload only images (convenience wrapper)
- * @param {File[]} files - Array of image files
- * @param {string} category - Image category (optional)
- * @returns {Promise} Updated media data
- */
 export const uploadImages = async (files, category = 'general') => {
   return uploadMedia({ images: files, category });
 };
 
-/**
- * Upload only videos (convenience wrapper)
- * @param {File[]} files - Array of video files
- * @returns {Promise} Updated media data
- */
 export const uploadVideos = async (files) => {
   return uploadMedia({ videos: files });
 };
 
-/**
- * Delete image or video from venue gallery
- * @param {string} publicId - Cloudinary public_id of the media
- * @returns {Promise} Updated media data
- */
 export const deleteMedia = async (publicId) => {
   try {
     const { data } = await axios.delete(`${API_URL}/my-venue/delete-media`, {
@@ -144,50 +117,43 @@ export const deleteMedia = async (publicId) => {
   }
 };
 
-/**
- * Delete image (convenience wrapper)
- * @param {string} publicId - Cloudinary public_id
- * @returns {Promise} Updated media data
- */
 export const deleteImage = async (publicId) => {
   return deleteMedia(publicId);
 };
 
-/**
- * Delete video (convenience wrapper)
- * @param {string} publicId - Cloudinary public_id
- * @returns {Promise} Updated media data
- */
 export const deleteVideo = async (publicId) => {
   return deleteMedia(publicId);
 };
 
+// ══════════════════════════════════════════════════════════
+// PUBLIC VENUE METHODS - FIXED TO USE /api/venue
+// ══════════════════════════════════════════════════════════
 
 /**
  * Get all active venues with optional filters
- * @param {Object} params - Query parameters
- * @param {string} params.city - Filter by city
- * @param {string} params.facilities - Comma-separated facilities
- * @param {number} params.minPrice - Minimum price filter
- * @param {number} params.maxPrice - Maximum price filter
- * @param {number} params.page - Page number (default: 1)
- * @param {number} params.limit - Items per page (default: 10)
- * @returns {Promise} List of venues with pagination
+ * @route GET /api/venue
  */
 export const getAllVenues = async (params = {}) => {
   try {
-    const { data } = await axios.get(`${API_URL}`, { params });
+    console.log('📡 Calling:', `${API_URL}`);
+    console.log('📦 Params:', params);
+    
+    const { data } = await axios.get(API_URL, { 
+      params,
+      withCredentials: true 
+    });
+    
+    console.log('✅ Response:', data);
     return data;
   } catch (error) {
-    console.error('Get venues error:', error.response?.data || error.message);
+    console.error('❌ Get venues error:', error.response?.data || error.message);
     throw error;
   }
 };
 
 /**
  * Get a single venue by ID
- * @param {string} id - Venue ID
- * @returns {Promise} Venue details
+ * @route GET /api/venue/:id
  */
 export const getVenueById = async (id) => {
   try {
@@ -201,14 +167,10 @@ export const getVenueById = async (id) => {
 
 /**
  * Search venues by location
- * @param {number} longitude - Longitude coordinate
- * @param {number} latitude - Latitude coordinate
- * @param {number} maxDistance - Maximum distance in meters (default: 10000)
- * @returns {Promise} Nearby venues
  */
 export const findNearbyVenues = async (longitude, latitude, maxDistance = 10000) => {
   try {
-    const { data } = await axios.get(`${API_URL}`, {
+    const { data } = await axios.get(API_URL, {
       params: {
         longitude,
         latitude,
@@ -224,13 +186,10 @@ export const findNearbyVenues = async (longitude, latitude, maxDistance = 10000)
 
 /**
  * Search venues by name or description
- * @param {string} searchTerm - Search query
- * @param {Object} additionalParams - Additional filters
- * @returns {Promise} Matching venues
  */
 export const searchVenues = async (searchTerm, additionalParams = {}) => {
   try {
-    const { data } = await axios.get(`${API_URL}`, {
+    const { data } = await axios.get(API_URL, {
       params: {
         search: searchTerm,
         ...additionalParams
@@ -244,14 +203,79 @@ export const searchVenues = async (searchTerm, additionalParams = {}) => {
 };
 
 // ══════════════════════════════════════════════════════════
-// HELPER FUNCTIONS
+// ADMIN-SPECIFIC METHODS
 // ══════════════════════════════════════════════════════════
 
 /**
- * Validate image file before upload
- * @param {File} file - Image file
- * @returns {Object} Validation result
+ * Flag a venue for review (admin only)
  */
+export const flagVenue = async (venueId, reason = '') => {
+  try {
+    const { data } = await axios.patch(
+      `${API_BASE}/admin/venues/${venueId}/flag`,
+      { reason },
+      { withCredentials: true }
+    );
+    return data;
+  } catch (error) {
+    console.error('Flag venue error:', error.response?.data || error.message);
+    throw error;
+  }
+};
+
+/**
+ * Update venue status (admin only)
+ */
+export const updateVenueStatus = async (venueId, statusData) => {
+  try {
+    const { data } = await axios.patch(
+      `${API_BASE}/admin/venues/${venueId}/status`,
+      statusData,
+      { withCredentials: true }
+    );
+    return data;
+  } catch (error) {
+    console.error('Update venue status error:', error.response?.data || error.message);
+    throw error;
+  }
+};
+
+/**
+ * Delete a venue (admin only)
+ */
+export const deleteVenue = async (venueId) => {
+  try {
+    const { data } = await axios.delete(
+      `${API_BASE}/admin/venues/${venueId}`,
+      { withCredentials: true }
+    );
+    return data;
+  } catch (error) {
+    console.error('Delete venue error:', error.response?.data || error.message);
+    throw error;
+  }
+};
+
+/**
+ * Get all venues for admin (includes inactive/unverified)
+ */
+export const getAllVenuesAdmin = async (params = {}) => {
+  try {
+    const { data } = await axios.get(`${API_BASE}/admin/venues`, { 
+      params,
+      withCredentials: true 
+    });
+    return data;
+  } catch (error) {
+    console.error('Get admin venues error:', error.response?.data || error.message);
+    throw error;
+  }
+};
+
+// ══════════════════════════════════════════════════════════
+// HELPER FUNCTIONS
+// ══════════════════════════════════════════════════════════
+
 export const validateImageFile = (file) => {
   const maxSize = 10 * 1024 * 1024; // 10MB
   const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
@@ -273,11 +297,6 @@ export const validateImageFile = (file) => {
   return { valid: true };
 };
 
-/**
- * Validate video file before upload
- * @param {File} file - Video file
- * @returns {Object} Validation result
- */
 export const validateVideoFile = (file) => {
   const maxSize = 50 * 1024 * 1024; // 50MB
   const allowedTypes = ['video/mp4', 'video/webm', 'video/quicktime'];
@@ -299,12 +318,6 @@ export const validateVideoFile = (file) => {
   return { valid: true };
 };
 
-/**
- * Validate multiple files before upload
- * @param {File[]} files - Array of files
- * @param {string} type - 'image' or 'video'
- * @returns {Object} Validation result with valid and invalid files
- */
 export const validateFiles = (files, type = 'image') => {
   const validator = type === 'image' ? validateImageFile : validateVideoFile;
   const results = {
@@ -329,7 +342,7 @@ export const validateFiles = (files, type = 'image') => {
 // ══════════════════════════════════════════════════════════
 
 const venueService = {
-  // Venue Info
+  // Owner Methods
   getFutsalOwnerData,
   getVenueInfo,
   updateVenueInfo,
@@ -348,6 +361,12 @@ const venueService = {
   getVenueById,
   findNearbyVenues,
   searchVenues,
+  
+  // Admin Methods
+  flagVenue,
+  updateVenueStatus,
+  deleteVenue,
+  getAllVenuesAdmin,
   
   // Helpers
   validateImageFile,
