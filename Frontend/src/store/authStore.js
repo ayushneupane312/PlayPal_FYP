@@ -47,6 +47,15 @@ export const useAuthStore = create((set) => ({
     set({ isLoading: true, error: null });
     try {
       const response = await axios.post(`${API_URL}/login`, { email, password });
+      
+      // ✅ DEBUG LOGS ADDED
+      console.log('=== LOGIN DEBUG ===');
+      console.log('Response from backend:', response.data.user);
+      console.log('Email logged in:', email);
+      console.log('User name:', response.data.user.name);
+      console.log('User role:', response.data.user.role);
+      console.log('==================');
+      
       set({
         isAuthenticated: true,
         user: response.data.user,
@@ -93,6 +102,14 @@ export const useAuthStore = create((set) => ({
       const response = await axios.get(`${API_URL}/check-auth`, {
         timeout: 8000,
       });
+      
+      // ✅ DEBUG LOGS ADDED
+      console.log('=== CHECK AUTH DEBUG ===');
+      console.log('User from checkAuth:', response.data.user);
+      console.log('User name:', response.data.user?.name);
+      console.log('User role:', response.data.user?.role);
+      console.log('========================');
+      
       set({ user: response.data.user, isAuthenticated: true, isCheckingAuth: false });
     } catch (error) {
       const isNetworkError = !error.response && (error.code === 'ECONNABORTED' || error.code === 'ERR_NETWORK' || error.code === 'ECONNREFUSED' || error.message?.includes('Network Error'));
@@ -135,10 +152,6 @@ export const useAuthStore = create((set) => ({
         }
     },
 
-
-   
-
-    // Add this to your store
     uploadFile: async (user_id, file) => {
         set({ isLoading: true, error: null });
         const formData = new FormData();
@@ -179,7 +192,5 @@ export const useAuthStore = create((set) => ({
             throw error;
         }
     },
-
-
 
 }));

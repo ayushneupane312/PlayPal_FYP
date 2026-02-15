@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
 import { Calendar, DollarSign, Users, TrendingUp, Clock, Trophy, Bell, Search, Settings, LayoutDashboard, MapPin, CreditCard, BarChart3, Menu, X } from 'lucide-react';
 import FutsalOwnerSidebar from './FutsalOwnerSidebar';
-import Header from '../FutsalOwner/components/Header'
+import Header from '../FutsalOwner/components/Header';
+import { useAuthStore } from '../store/authStore'; // ✅ ADD THIS IMPORT
 
 export default function FutsalDashboard() {
+  // ✅ ADD THIS LINE - Get user from auth store
+  const { user } = useAuthStore();
+  
   // ✅ Add the missing state
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  
-
   
   const [notifications, setNotifications] = useState([
     { id: 1, title: 'New booking request', desc: 'Team Alpha requested Court 1 for tomorrow at 6 PM', time: 'Just now' },
@@ -72,7 +74,10 @@ export default function FutsalDashboard() {
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-2xl font-bold text-gray-800">Dashboard Overview</h1>
-            <p className="text-gray-500">Welcome back, Raj! Here's what's happening at your venue.</p>
+            {/* ✅ FIXED - Now uses actual user name */}
+            <p className="text-gray-500">
+              Welcome back, {user?.name || 'User'}! Here's what's happening at your venue.
+            </p>
           </div>
         </div>
       

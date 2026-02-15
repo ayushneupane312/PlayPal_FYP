@@ -98,7 +98,7 @@ const FutsalDashboard = () => {
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-2xl font-bold text-gray-800">Player Dashboard</h1>
-            <p className="text-gray-500">Welcome back! Here's your futsal overview</p>
+            <p className="text-gray-500">Welcome back, {user?.name || 'User'}! Here's your futsal overview</p>
           </div>
 
           <div className="flex items-center gap-3">
