@@ -357,3 +357,177 @@ exports.getVenueById = async (req, res) => {
 
 
 };
+
+// ────────────────────────────────────────────────────────────
+// ADMIN VENUE MANAGEMENT
+// ────────────────────────────────────────────────────────────
+
+// Get all venues for admin (includes inactive / unverified / flagged)
+exports.getAllVenuesAdmin = async (req, res) => {
+  try {
+    const {
+      search,
+      city,
+      isActive,
+      isVerified,
+      page = 1,
+      limit = 20
+    } = req.query;
+
+    const query = {};
+
+    if (typeof isActive !== 'undefined') {
+      query.isActive = isActive === 'true';
+    }
+
+    if (typeof isVerified !== 'undefined') {
+      query.isVerified = isVerified === 'true';
+    }
+
+    if (city) {
+      query['address.city'] = new RegExp(city, 'i');
+    }
+
+    if (search) {
+      const searchRegex = new RegExp(search, 'i');
+      query.$or = [
+        { venueName: searchRegex },
+        { fullAddress: searchRegex },
+        { 'address.city': searchRegex }
+      ];
+    }
+
+    const venues = await Venue.find(query)
+      .populate('owner', 'name email phone')
+      .select('-__v')
+      .limit(limit * 1)
+      .skip((page - 1) * limit)
+      .sort({ createdAt: -1 });
+
+    const total = await Venue.countDocuments(query);
+
+    res.status(200).json({
+      success: true,
+      data: venues,
+      pagination: {
+        total,
+        page: parseInt(page),
+        pages: Math.ceil(total / limit)
+      }
+    });
+  } catch (error) {
+    console.error('Get admin venues error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch venues for admin',
+      error: error.message
+    });
+  }
+};
+
+// Flag or unflag a venue for review
+exports.flagVenueByAdmin = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { reason = '' } = req.body;
+
+    const venue = await Venue.findById(id);
+    if (!venue) {
+      return res.status(404).json({
+        success: false,
+        message: 'Venue not found'
+      });
+    }
+
+    const currentlyFlagged = venue.adminReview?.isFlagged;
+
+    venue.adminReview = {
+      isFlagged: !currentlyFlagged,
+      reason: reason || venue.adminReview?.reason || 'Flagged by admin',
+      flaggedAt: !currentlyFlagged ? new Date() : venue.adminReview?.flaggedAt,
+      flaggedBy: req.userId
+    };
+
+    await venue.save();
+
+    res.status(200).json({
+      success: true,
+      message: currentlyFlagged ? 'Venue unflagged successfully' : 'Venue flagged for review',
+      data: venue
+    });
+  } catch (error) {
+    console.error('Flag venue error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update venue flag status',
+      error: error.message
+    });
+  }
+};
+
+// Update venue active / verified status
+exports.updateVenueStatusByAdmin = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { isActive, isVerified } = req.body;
+
+    const venue = await Venue.findById(id);
+    if (!venue) {
+      return res.status(404).json({
+        success: false,
+        message: 'Venue not found'
+      });
+    }
+
+    if (typeof isActive === 'boolean') {
+      venue.isActive = isActive;
+    }
+    if (typeof isVerified === 'boolean') {
+      venue.isVerified = isVerified;
+    }
+
+    await venue.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Venue status updated successfully',
+      data: venue
+    });
+  } catch (error) {
+    console.error('Update venue status error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update venue status',
+      error: error.message
+    });
+  }
+};
+
+// Delete a venue (and its media references)
+exports.deleteVenueByAdmin = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const venue = await Venue.findById(id);
+    if (!venue) {
+      return res.status(404).json({
+        success: false,
+        message: 'Venue not found'
+      });
+    }
+
+    await Venue.findByIdAndDelete(id);
+
+    res.status(200).json({
+      success: true,
+      message: 'Venue deleted successfully'
+    });
+  } catch (error) {
+    console.error('Delete venue error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete venue',
+      error: error.message
+    });
+  }
+};
