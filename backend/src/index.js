@@ -53,6 +53,9 @@ app.use('/api/team', teamRoutes);
 const matchmakingRoutes = require('./routes/MatchmakingRoutes');
 app.use('/api/matchmaking', matchmakingRoutes);
 
+const opponentMatchmakingRoutes = require('./routes/OpponentMatchmakingRoute');
+app.use('/api/opponent-matchmaking', opponentMatchmakingRoutes);
+
 const notificationRoutes = require('./routes/NotificationRoutes');
 app.use('/api/notifications', notificationRoutes);
 

@@ -1,377 +1,277 @@
+const MatchQueue = require('../models/MatchQueueModel');
 const Team = require('../models/TeamModel');
 const Match = require('../models/MatchModel');
 const User = require('../models/UserModel');
-const { notifyUser } = require('../services/notificationService');
 
-/**
- * GET /api/opponent-matchmaking/browse
- * List "ready" public teams that can receive challenges.
- * Filters: matchFormat, skillLevel, page, limit
- * Excludes teams the current user is already in.
- */
-exports.browseOpponentTeams = async (req, res) => {
-  try {
-    const userId = req.userId;
-    const { matchFormat, skillLevel, page = 1, limit = 12 } = req.query;
+const REQUIRED_PLAYERS = { '5v5': 10, '6v6': 12, '7v7': 14 };
 
-    const query = {
-      isPublic: true,
-      status: 'ready',          // team must be fully formed
-    };
-    if (matchFormat) query.matchFormat = matchFormat;
-    if (skillLevel)  query.skillLevel  = skillLevel;
-
-    // Exclude teams the user belongs to
-    query['players.user'] = { $ne: userId };
-    query.leader           = { $ne: userId };
-
-    const teams = await Team.find(query)
-      .populate('leader', 'name email')
-      .populate('players.user', 'name email')
-      .select('name skillLevel maxPlayers matchFormat status players leader description createdAt')
-      .sort({ updatedAt: -1 })
-      .limit(parseInt(limit))
-      .skip((parseInt(page) - 1) * parseInt(limit));
-
-    const total = await Team.countDocuments(query);
-
-    return res.status(200).json({
-      success: true,
-      data: teams,
-      pagination: { total, page: parseInt(page), pages: Math.ceil(total / parseInt(limit)) }
-    });
-  } catch (err) {
-    console.error('Browse opponent teams error:', err);
-    return res.status(500).json({ success: false, message: 'Failed to fetch opponent teams', error: err.message });
+/** Ensure at least 1 GK per team when splitting */
+function balanceTeams(players, format) {
+  const required = REQUIRED_PLAYERS[format] || 10;
+  const half = required / 2;
+  const gks = players.filter(p => p.position === 'Goalkeeper');
+  const rest = players.filter(p => p.position !== 'Goalkeeper');
+  const team1 = [];
+  const team2 = [];
+  if (gks.length >= 2) {
+    team1.push(gks[0]);
+    team2.push(gks[1]);
+    gks.splice(0, 2);
+  } else if (gks.length === 1) {
+    team1.push(gks[0]);
   }
-};
+  const remaining = [...gks, ...rest];
+  for (let i = 0; i < remaining.length; i++) {
+    if (team1.length <= team2.length) team1.push(remaining[i]);
+    else team2.push(remaining[i]);
+  }
+  return { team1, team2 };
+}
 
-/**
- * POST /api/opponent-matchmaking/challenge
- * Team leader sends a match challenge to another team's leader.
- * Body: { challengerTeamId, opponentTeamId, message? }
- */
-exports.sendChallenge = async (req, res) => {
+/** Create two teams and a match from queue entries, assign leaders */
+async function runMatchingAlgorithm(slotGroup) {
+  const format = '5v5';
+  const required = REQUIRED_PLAYERS[format];
+  if (slotGroup.length < required) return null;
+
+  const entries = slotGroup.slice(0, required);
+  const players = entries.map(e => ({
+    user: e.user,
+    position: e.position,
+    skillLevel: e.skillLevel
+  }));
+
+  const { team1, team2 } = balanceTeams(players, format);
+  const pickLeader = (arr) => arr[Math.floor(Math.random() * arr.length)].user;
+
+  const half = Math.floor(required / 2);
+  const leader1 = team1.length ? pickLeader(team1) : entries[0].user;
+  const leader2 = team2.length ? pickLeader(team2) : (entries[half] ? entries[half].user : entries[0].user);
+
+  const name1 = `Team A ${Date.now().toString(36)}`;
+  const name2 = `Team B ${Date.now().toString(36)}`;
+
+  const t1 = await Team.create({
+    name: name1,
+    leader: leader1,
+    players: team1.map(p => ({ user: p.user, role: (p.user && p.user.toString()) === leader1.toString() ? 'leader' : 'member', position: p.position })),
+    skillLevel: entries[0].skillLevel,
+    maxPlayers: required / 2,
+    matchFormat: format,
+    isPublic: false,
+    status: 'ready'
+  });
+  const t2 = await Team.create({
+    name: name2,
+    leader: leader2,
+    players: team2.map(p => ({ user: p.user, role: (p.user && p.user.toString()) === leader2.toString() ? 'leader' : 'member', position: p.position })),
+    skillLevel: entries[0].skillLevel,
+    maxPlayers: required / 2,
+    matchFormat: format,
+    isPublic: false,
+    status: 'ready'
+  });
+
+  const match = await Match.create({
+    teamA: t1._id,
+    teamB: t2._id,
+    status: 'pending',
+    assignedLeader: leader1
+  });
+
+  for (const e of entries) {
+    e.status = 'matched';
+    e.matchedAt = new Date();
+    e.matchRef = match._id;
+    await e.save();
+  }
+
+  return { match, teamA: t1, teamB: t2 };
+}
+
+/** POST /matchmaking/join-queue */
+exports.joinQueue = async (req, res) => {
   try {
     const userId = req.userId;
-    const { challengerTeamId, opponentTeamId, message } = req.body;
+    const { skillLevel, position, location, availableDate, startTime, endTime } = req.body;
 
-    if (!challengerTeamId || !opponentTeamId) {
-      return res.status(400).json({ success: false, message: 'challengerTeamId and opponentTeamId are required' });
-    }
-    if (challengerTeamId === opponentTeamId) {
-      return res.status(400).json({ success: false, message: 'Cannot challenge your own team' });
-    }
-
-    const [challenger, opponent] = await Promise.all([
-      Team.findById(challengerTeamId).populate('leader', 'name email').populate('players.user', 'name'),
-      Team.findById(opponentTeamId).populate('leader', 'name email').populate('players.user', 'name')
-    ]);
-
-    if (!challenger) return res.status(404).json({ success: false, message: 'Your team not found' });
-    if (!opponent)   return res.status(404).json({ success: false, message: 'Opponent team not found' });
-
-    // Only the leader of the challenger team can send a challenge
-    if (challenger.leader._id.toString() !== userId) {
-      return res.status(403).json({ success: false, message: 'Only your team leader can send a challenge' });
-    }
-
-    // Challenger team must be ready (fully formed)
-    if (challenger.status !== 'ready') {
-      return res.status(400).json({ success: false, message: 'Your team must be full and ready before challenging opponents' });
-    }
-
-    // Opponent team must be ready
-    if (opponent.status !== 'ready') {
-      return res.status(400).json({ success: false, message: 'Opponent team is not ready yet' });
-    }
-
-    // Match formats must be the same
-    if (challenger.matchFormat !== opponent.matchFormat) {
+    if (!skillLevel || !position || !availableDate || !startTime || !endTime) {
       return res.status(400).json({
         success: false,
-        message: `Format mismatch: your team is ${challenger.matchFormat}, opponent is ${opponent.matchFormat}`
+        message: 'skillLevel, position, availableDate, startTime, endTime are required'
       });
     }
 
-    // Check for an existing pending challenge between these two teams
-    const existingMatch = await Match.findOne({
-      $or: [
-        { teamA: challengerTeamId, teamB: opponentTeamId },
-        { teamA: opponentTeamId,   teamB: challengerTeamId }
-      ],
-      status: { $in: ['pending', 'confirmed'] }
-    });
-    if (existingMatch) {
-      return res.status(400).json({ success: false, message: 'A challenge or match already exists between these teams' });
-    }
-
-    // Create the match record in "pending" (awaiting opponent response)
-    const match = await Match.create({
-      teamA: challengerTeamId,
-      teamB: opponentTeamId,
-      status: 'pending',
-      assignedLeader: userId,
-      challengeMessage: message?.trim() || '',
-      challengedAt: new Date(),
-      challengeStatus: 'pending'   // pending | accepted | declined
-    });
-
-    // Notify the opponent leader
-    await notifyUser(opponent.leader._id, {
-      title: '⚔️ Match Challenge Received!',
-      message: `"${challenger.name}" has challenged your team "${opponent.name}" to a ${challenger.matchFormat} match!`,
-      type: 'match_found',
-      link: `/player/matches/challenges`,
-      meta: {
-        matchId: match._id,
-        challengerTeamId,
-        challengerTeamName: challenger.name,
-        opponentTeamId,
-        matchFormat: challenger.matchFormat,
-        challengeMessage: message?.trim() || ''
-      }
-    });
-
-    const populated = await Match.findById(match._id)
-      .populate('teamA', 'name matchFormat skillLevel players leader')
-      .populate('teamB', 'name matchFormat skillLevel players leader')
-      .populate('assignedLeader', 'name email');
-
-    return res.status(201).json({
-      success: true,
-      message: 'Challenge sent! The opponent leader will be notified.',
-      data: populated
-    });
-  } catch (err) {
-    console.error('Send challenge error:', err);
-    return res.status(500).json({ success: false, message: 'Failed to send challenge', error: err.message });
-  }
-};
-
-/**
- * POST /api/opponent-matchmaking/respond-challenge
- * Opponent leader accepts or declines the challenge.
- * Body: { matchId, accept: true/false, declineReason? }
- */
-exports.respondToChallenge = async (req, res) => {
-  try {
-    const userId = req.userId;
-    const { matchId, accept, declineReason } = req.body;
-
-    if (!matchId) return res.status(400).json({ success: false, message: 'matchId is required' });
-
-    const match = await Match.findById(matchId)
-      .populate('teamA', 'name leader players matchFormat')
-      .populate('teamB', 'name leader players matchFormat');
-
-    if (!match) return res.status(404).json({ success: false, message: 'Match not found' });
-    if (match.status !== 'pending') {
-      return res.status(400).json({ success: false, message: 'This challenge has already been responded to' });
-    }
-
-    // Only the opponent (teamB) leader can respond
-    const opponentLeaderId = match.teamB.leader?.toString?.() || match.teamB.leader;
-    if (opponentLeaderId !== userId) {
-      return res.status(403).json({ success: false, message: 'Only the opponent team leader can respond to this challenge' });
-    }
-
-    const challengerTeam = match.teamA;
-    const opponentTeam   = match.teamB;
-
-    if (accept) {
-      match.status          = 'confirmed';
-      match.challengeStatus = 'accepted';
-      match.confirmedAt     = new Date();
-      match.confirmedByLeader = userId;
-      await match.save();
-
-      // Notify ALL members of BOTH teams
-      const allPlayerIds = [
-        ...challengerTeam.players.map(p => (p.user?._id || p.user).toString()),
-        ...opponentTeam.players.map(p => (p.user?._id || p.user).toString()),
-      ].filter((id, i, arr) => arr.indexOf(id) === i); // deduplicate
-
-      // Notify challenger team leader separately with specific message
-      await notifyUser(challengerTeam.leader, {
-        title: '🎉 Challenge Accepted!',
-        message: `"${opponentTeam.name}" accepted your match challenge! The match is confirmed.`,
-        type: 'match_found',
-        link: `/player/matches/${match._id}`,
-        meta: { matchId: match._id, opponentTeamName: opponentTeam.name, result: 'accepted' }
+    const existingInQueue = await MatchQueue.findOne({ user: userId, status: 'waiting' });
+    if (existingInQueue) {
+      return res.status(400).json({
+        success: false,
+        message: 'You are already in the queue. Leave first to re-join.'
       });
+    }
 
-      // Notify all other members of both teams
-      const othersToNotify = allPlayerIds.filter(
-        id => id !== challengerTeam.leader.toString() && id !== userId
-      );
-      for (const memberId of othersToNotify) {
-        const isChallenger = challengerTeam.players.some(p => (p.user?._id || p.user).toString() === memberId);
-        await notifyUser(memberId, {
-          title: '🎉 Match Confirmed!',
-          message: isChallenger
-            ? `Your team "${challengerTeam.name}" vs "${opponentTeam.name}" match is confirmed!`
-            : `Your team "${opponentTeam.name}" vs "${challengerTeam.name}" match is confirmed!`,
-          type: 'match_found',
-          link: `/player/matches/${match._id}`,
-          meta: { matchId: match._id }
+    const inTeam = await Team.findOne({
+      status: { $in: ['forming', 'ready'] },
+      $or: [{ leader: userId }, { 'players.user': userId }]
+    });
+    if (inTeam) {
+      return res.status(400).json({
+        success: false,
+        message: 'You are already in a team. Leave the team first to join solo queue.'
+      });
+    }
+
+    const entry = await MatchQueue.create({
+      user: userId,
+      skillLevel,
+      position,
+      location: location || '',
+      availableDate: new Date(availableDate),
+      availableTimeSlot: { start: startTime, end: endTime },
+      status: 'waiting'
+    });
+
+    const date = new Date(availableDate);
+    const start = startTime;
+    const sameSlot = await MatchQueue.find({
+      status: 'waiting',
+      skillLevel,
+      availableDate: { $gte: new Date(date.setHours(0, 0, 0, 0)), $lt: new Date(date.setHours(23, 59, 59, 999)) },
+      'availableTimeSlot.start': start
+    }).sort({ createdAt: 1 });
+
+    if (sameSlot.length >= REQUIRED_PLAYERS['5v5']) {
+      const result = await runMatchingAlgorithm(sameSlot);
+      if (result) {
+        const matchPopulated = await Match.findById(result.match._id)
+          .populate('teamA', 'name leader players')
+          .populate('teamB', 'name leader players')
+          .populate('assignedLeader', 'name email');
+        return res.status(200).json({
+          success: true,
+          message: 'Match found!',
+          data: { match: matchPopulated, teamA: result.teamA, teamB: result.teamB },
+          matched: true
         });
       }
-    } else {
-      // Declined
-      match.status          = 'cancelled';
-      match.challengeStatus = 'declined';
-      match.declineReason   = declineReason?.trim() || '';
-      match.declinedAt      = new Date();
-      await match.save();
+    }
 
-      // Notify the challenger leader
-      await notifyUser(challengerTeam.leader, {
-        title: '❌ Challenge Declined',
-        message: `"${opponentTeam.name}" declined your match challenge.${declineReason ? ` Reason: ${declineReason}` : ''}`,
-        type: 'match_found',
-        link: `/player/matches/challenges`,
-        meta: { matchId: match._id, opponentTeamName: opponentTeam.name, result: 'declined', declineReason }
+    const populated = await MatchQueue.findById(entry._id).populate('user', 'name email');
+    return res.status(201).json({
+      success: true,
+      message: 'Added to queue. You will be matched when enough players join.',
+      data: populated,
+      matched: false
+    });
+  } catch (err) {
+    console.error('Join queue error:', err);
+    return res.status(500).json({ success: false, message: 'Failed to join queue', error: err.message });
+  }
+};
+
+/** DELETE /matchmaking/leave-queue */
+exports.leaveQueue = async (req, res) => {
+  try {
+    const userId = req.userId;
+    const entry = await MatchQueue.findOne({ user: userId, status: 'waiting' });
+    if (!entry) {
+      return res.status(404).json({ success: false, message: 'You are not in the queue' });
+    }
+    entry.status = 'cancelled';
+    await entry.save();
+    return res.status(200).json({ success: true, message: 'Left the queue' });
+  } catch (err) {
+    console.error('Leave queue error:', err);
+    return res.status(500).json({ success: false, message: 'Failed to leave queue', error: err.message });
+  }
+};
+
+/** GET /matchmaking/status - current user's queue status or matched match */
+exports.getQueueStatus = async (req, res) => {
+  try {
+    const userId = req.userId;
+    const waiting = await MatchQueue.findOne({ user: userId, status: 'waiting' })
+      .populate('user', 'name email');
+    if (waiting) {
+      const sameSlotCount = await MatchQueue.countDocuments({
+        status: 'waiting',
+        skillLevel: waiting.skillLevel,
+        availableDate: waiting.availableDate,
+        'availableTimeSlot.start': waiting.availableTimeSlot.start
+      });
+      return res.status(200).json({
+        success: true,
+        data: {
+          inQueue: true,
+          entry: waiting,
+          playersInSlot: sameSlotCount,
+          required: REQUIRED_PLAYERS['5v5']
+        }
       });
     }
 
-    const populated = await Match.findById(match._id)
-      .populate('teamA', 'name leader players matchFormat skillLevel')
-      .populate('teamB', 'name leader players matchFormat skillLevel')
-      .populate('assignedLeader', 'name email')
-      .populate('confirmedByLeader', 'name email');
+    const matched = await MatchQueue.findOne({ user: userId, status: 'matched' }).populate('matchRef');
+    if (matched && matched.matchRef) {
+      const match = await Match.findById(matched.matchRef)
+        .populate('teamA', 'name leader players status')
+        .populate('teamB', 'name leader players status')
+        .populate('assignedLeader', 'name email');
+      return res.status(200).json({
+        success: true,
+        data: { inQueue: false, matched: true, match }
+      });
+    }
 
     return res.status(200).json({
       success: true,
-      message: accept ? 'Challenge accepted! Match is now confirmed.' : 'Challenge declined.',
-      data: populated
+      data: { inQueue: false, matched: false }
     });
   } catch (err) {
-    console.error('Respond to challenge error:', err);
-    return res.status(500).json({ success: false, message: 'Failed to respond to challenge', error: err.message });
+    console.error('Queue status error:', err);
+    return res.status(500).json({ success: false, message: 'Failed to get status', error: err.message });
   }
 };
 
-/**
- * GET /api/opponent-matchmaking/my-challenges
- * Returns all challenges involving the current user's teams:
- * - challenges SENT (user is leader of teamA)
- * - challenges RECEIVED (user is leader of teamB, status pending)
- */
-exports.getMyChallenges = async (req, res) => {
+/** GET browse players (for invite) - list users who are players, not already in this team */
+/** GET browse players (for invite) - list users who are players, not already in this team */
+exports.getBrowsePlayers = async (req, res) => {
   try {
+    const { teamId } = req.query;
     const userId = req.userId;
 
-    // Find all teams where this user is leader
-    const myTeams = await Team.find({ leader: userId }).select('_id name');
-    const myTeamIds = myTeams.map(t => t._id);
+    const filter = {
+      role: 'player',      // exact enum value from UserModel
+      isVerified: true,    // must have completed email verification
+      status: 'active',    // must be active (not inactive/suspended)
+      _id: { $ne: userId } // never show yourself
+    };
 
-    if (myTeamIds.length === 0) {
-      return res.status(200).json({ success: true, data: { sent: [], received: [], confirmed: [] } });
+    if (teamId) {
+      const team = await Team.findById(teamId);
+      if (team) {
+        // Exclude current members
+        const memberIds = [
+          team.leader.toString(),
+          ...team.players.map(p => (p.user?._id || p.user).toString())
+        ];
+        // Exclude players already invited (pending invite)
+        const pendingInviteIds = (team.joinRequests || [])
+          .filter(r => r.status === 'pending' && r.type === 'invite')
+          .map(r => r.user.toString());
+
+        const excludeIds = [...new Set([...memberIds, ...pendingInviteIds, userId])];
+        filter._id = { $nin: excludeIds };
+      }
     }
 
-    const allMatches = await Match.find({
-      $or: [{ teamA: { $in: myTeamIds } }, { teamB: { $in: myTeamIds } }],
-      status: { $in: ['pending', 'confirmed', 'cancelled'] }
-    })
-      .populate('teamA', 'name leader players matchFormat skillLevel maxPlayers status')
-      .populate('teamB', 'name leader players matchFormat skillLevel maxPlayers status')
-      .populate({ path: 'teamA', populate: { path: 'leader', select: 'name email' } })
-      .populate({ path: 'teamB', populate: { path: 'leader', select: 'name email' } })
-      .sort({ createdAt: -1 });
+    const users = await User.find(filter)
+      .select('name email profileImage')
+      .limit(100)
+      .sort({ name: 1 });
 
-    const sent      = allMatches.filter(m => myTeamIds.some(id => id.toString() === m.teamA?._id?.toString()) && m.status === 'pending');
-    const received  = allMatches.filter(m => myTeamIds.some(id => id.toString() === m.teamB?._id?.toString()) && m.status === 'pending');
-    const confirmed = allMatches.filter(m => m.status === 'confirmed');
-
-    return res.status(200).json({
-      success: true,
-      data: { sent, received, confirmed }
-    });
+    return res.status(200).json({ success: true, data: users });
   } catch (err) {
-    console.error('Get my challenges error:', err);
-    return res.status(500).json({ success: false, message: 'Failed to fetch challenges', error: err.message });
-  }
-};
-
-/**
- * GET /api/opponent-matchmaking/match/:matchId
- * Get full details of a specific match
- */
-exports.getMatchById = async (req, res) => {
-  try {
-    const { matchId } = req.params;
-    const userId = req.userId;
-
-    const match = await Match.findById(matchId)
-      .populate({ path: 'teamA', populate: [{ path: 'leader', select: 'name email' }, { path: 'players.user', select: 'name email' }] })
-      .populate({ path: 'teamB', populate: [{ path: 'leader', select: 'name email' }, { path: 'players.user', select: 'name email' }] })
-      .populate('assignedLeader', 'name email')
-      .populate('confirmedByLeader', 'name email');
-
-    if (!match) return res.status(404).json({ success: false, message: 'Match not found' });
-
-    // Must be a member of one of the teams
-    const teamAPlayerIds = match.teamA?.players?.map(p => (p.user?._id || p.user).toString()) || [];
-    const teamBPlayerIds = match.teamB?.players?.map(p => (p.user?._id || p.user).toString()) || [];
-    const allIds = [...teamAPlayerIds, ...teamBPlayerIds];
-
-    const isMember = allIds.includes(userId) ||
-      match.teamA?.leader?._id?.toString() === userId ||
-      match.teamB?.leader?._id?.toString() === userId;
-
-    if (!isMember) {
-      return res.status(403).json({ success: false, message: 'You are not part of this match' });
-    }
-
-    return res.status(200).json({ success: true, data: match });
-  } catch (err) {
-    console.error('Get match by id error:', err);
-    return res.status(500).json({ success: false, message: 'Failed to fetch match', error: err.message });
-  }
-};
-
-/**
- * POST /api/opponent-matchmaking/cancel-challenge
- * Challenger leader cancels a pending challenge they sent.
- * Body: { matchId }
- */
-exports.cancelChallenge = async (req, res) => {
-  try {
-    const userId = req.userId;
-    const { matchId } = req.body;
-
-    if (!matchId) return res.status(400).json({ success: false, message: 'matchId is required' });
-
-    const match = await Match.findById(matchId)
-      .populate('teamA', 'name leader')
-      .populate('teamB', 'name leader');
-
-    if (!match) return res.status(404).json({ success: false, message: 'Match not found' });
-    if (match.status !== 'pending') {
-      return res.status(400).json({ success: false, message: 'Can only cancel a pending challenge' });
-    }
-    if (match.teamA.leader.toString() !== userId) {
-      return res.status(403).json({ success: false, message: 'Only the challenger leader can cancel the challenge' });
-    }
-
-    match.status          = 'cancelled';
-    match.challengeStatus = 'cancelled';
-    match.cancelledAt     = new Date();
-    await match.save();
-
-    // Notify opponent leader
-    await notifyUser(match.teamB.leader, {
-      title: 'Challenge Withdrawn',
-      message: `"${match.teamA.name}" has withdrawn their match challenge against your team.`,
-      type: 'match_found',
-      link: `/player/matches/challenges`,
-      meta: { matchId: match._id }
-    });
-
-    return res.status(200).json({ success: true, message: 'Challenge cancelled successfully' });
-  } catch (err) {
-    console.error('Cancel challenge error:', err);
-    return res.status(500).json({ success: false, message: 'Failed to cancel challenge', error: err.message });
+    console.error('Browse players error:', err);
+    return res.status(500).json({ success: false, message: 'Failed to load players', error: err.message });
   }
 };

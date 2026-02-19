@@ -2,21 +2,17 @@ const express = require('express');
 const router = express.Router();
 const verifyToken = require('../middlewares/verifyToken');
 const {
-  browseOpponentTeams,
-  sendChallenge,
-  respondToChallenge,
-  getMyChallenges,
-  getMatchById,
-  cancelChallenge
-} = require('../controllers/OpponentMatchmakingController');
+  joinQueue,
+  leaveQueue,
+  getQueueStatus,
+  getBrowsePlayers
+} = require('../controllers/MatchmakingController');
 
 router.use(verifyToken);
 
-router.get('/browse',            browseOpponentTeams);
-router.post('/challenge',        sendChallenge);
-router.post('/respond-challenge', respondToChallenge);
-router.get('/my-challenges',     getMyChallenges);
-router.get('/match/:matchId',    getMatchById);
-router.post('/cancel-challenge', cancelChallenge);
+router.post('/join-queue', joinQueue);
+router.delete('/leave-queue', leaveQueue);
+router.get('/status', getQueueStatus);
+router.get('/players', getBrowsePlayers);
 
 module.exports = router;

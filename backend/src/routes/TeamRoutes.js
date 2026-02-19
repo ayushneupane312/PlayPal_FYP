@@ -23,12 +23,12 @@ router.use(verifyToken);
 router.post('/create', createTeam);
 router.get('/my-teams', getMyTeams);
 router.get('/public', getPublicTeams);
+router.get('/my-invitations', getMyInvitations);
 router.get('/:id', getTeamById);
 
 // Invitations
 router.post('/invite', inviteToTeam);
 router.post('/respond-invite', respondToInvite);
-router.get('/my-invitations', getMyInvitations);
 
 // Join requests (player-initiated)
 router.post('/request-join', requestJoin);

@@ -43,37 +43,24 @@ router.post('/payment/verify', verifyToken, verifyPayment);
 // Get user's bookings
 router.get('/my-bookings', verifyToken, getMyBookings);
 
+// ═══════════════════════════════════════════════════════════
+// FUTSAL OWNER ROUTES (must be before /:id so /owner/bookings is not matched as :id)
+// ═══════════════════════════════════════════════════════════
+
+router.get('/owner/bookings', verifyToken, getVenueBookings);
+router.patch('/owner/:id/approve', verifyToken, approveBooking);
+router.patch('/owner/:id/reject', verifyToken, rejectBooking);
+router.post('/owner/confirm-cash-payment', verifyToken, confirmCashPayment);
+router.get('/owner/earnings', verifyToken, getOwnerEarnings);
+
 // Split payment – verify (no :id) must come before /:id routes
 router.post('/verify-split-payment', verifyToken, verifySplitPayment);
 
-// Split payment by booking id
+// Booking by id (these must come after /owner/... routes)
 router.post('/:id/initiate-split-payment', verifyToken, initiateSplitPayment);
 router.post('/:id/pay-share', verifyToken, payShare);
 router.patch('/:id/cancel-by-leader', verifyToken, cancelBookingByLeader);
-
-// Get specific booking
 router.get('/:id', verifyToken, getBookingById);
-
-// Cancel booking
 router.patch('/:id/cancel', verifyToken, cancelBooking);
-
-// ═══════════════════════════════════════════════════════════
-// FUTSAL OWNER ROUTES (Protected)
-// ═══════════════════════════════════════════════════════════
-
-// Get all bookings for owner's venue
-router.get('/owner/bookings', verifyToken, getVenueBookings);
-
-// Approve booking
-router.patch('/owner/:id/approve', verifyToken, approveBooking);
-
-// Reject booking
-router.patch('/owner/:id/reject', verifyToken, rejectBooking);
-
-// Confirm cash payment (owner confirms player paid in cash)
-router.post('/owner/confirm-cash-payment', verifyToken, confirmCashPayment);
-
-// Get earnings/revenue
-router.get('/owner/earnings', verifyToken, getOwnerEarnings);
 
 module.exports = router;

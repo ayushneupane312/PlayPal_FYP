@@ -99,6 +99,10 @@ const verifyEmail = async (req, res) => {
         user.isVerified = true;
         user.verificationToken = undefined;
         user.verificationTokenExpires = undefined;
+
+        if (user.role === 'player') {
+            user.status = 'active';
+          }
         await user.save();
 
         await sendWelcomeEmail(user.email, user.name);

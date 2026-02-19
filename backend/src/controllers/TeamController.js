@@ -6,7 +6,7 @@ const Venue = require('../models/VenueModel');
 const { calculateSplit } = require('../utils/splitPayment');
 const { notifyUser } = require('../services/notificationService');
 
-const MAX_PLAYERS_BY_FORMAT = { '5v5': 10, '6v6': 12, '7v7': 14, '2v2':4 };
+const MAX_PLAYERS_BY_FORMAT = { '5v5': 5, '6v6': 6, '7v7': 7, '2v2': 2, '1v1': 1 };
 const SPLIT_PAYMENT_DEADLINE_MINUTES = 30;
 const INVITE_EXPIRY_MINUTES = 30;
 
