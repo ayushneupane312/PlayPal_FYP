@@ -20,6 +20,7 @@ const ConfirmBookingPage = () => {
   const [slots, setSlots] = useState([]);
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [paymentMethod, setPaymentMethod] = useState('khalti');
+  const [paymentType, setPaymentType] = useState('full'); // 'full' | 'split'
   const [loading, setLoading] = useState(false);
   const [createdBooking, setCreatedBooking] = useState(null);
 
@@ -86,10 +87,16 @@ const ConfirmBookingPage = () => {
         startTime,
         endTime,
         duration,
-        paymentMethod
+        paymentMethod,
+        paymentType
       });
-      setCreatedBooking(res.data?.booking);
-      showToast.success('Booking created');
+      const booking = res.data?.booking;
+      setCreatedBooking(booking);
+      showToast.success(booking?.paymentType === 'split' ? 'Split booking created. Share the link with your team.' : 'Booking created');
+      if (booking?.paymentType === 'split' && booking?._id) {
+        navigate(`/player/booking/split/${booking._id}`, { replace: true });
+        return;
+      }
     } catch (e) {
       showToast.error(e.response?.data?.message || 'Failed to create booking');
     } finally {
@@ -176,7 +183,21 @@ const ConfirmBookingPage = () => {
                 </div>
               )}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Payment</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Payment type</label>
+                <div className="flex gap-4 mb-2">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="radio" name="paymentType" checked={paymentType === 'full'} onChange={() => setPaymentType('full')} className="rounded" />
+                    <span>Full payment (I pay total)</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="radio" name="paymentType" checked={paymentType === 'split'} onChange={() => setPaymentType('split')} className="rounded" />
+                    <span>Split payment (each player pays share)</span>
+                  </label>
+                </div>
+                <p className="text-xs text-gray-500 mb-2">Split: all players must pay within 30 minutes or booking is cancelled.</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Payment method</label>
                 <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2">
                   <option value="khalti">Khalti</option>
                   <option value="cash">Cash at venue</option>

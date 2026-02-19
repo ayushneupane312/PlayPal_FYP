@@ -125,6 +125,36 @@ export const cancelBooking = async (bookingId, reason) => {
 };
 
 // ═══════════════════════════════════════════════════════════
+// SPLIT PAYMENT (after matchmaking)
+// ═══════════════════════════════════════════════════════════
+
+/** Initiate Khalti for current user's split share */
+export const initiateSplitPayment = async (bookingId) => {
+  const { data } = await axios.post(`${API_URL}/${bookingId}/initiate-split-payment`);
+  return data;
+};
+
+/** Verify Khalti split payment (after return from Khalti) */
+export const verifySplitPayment = async (pidx) => {
+  const { data } = await axios.post(`${API_URL}/verify-split-payment`, { pidx });
+  return data;
+};
+
+/** Mark own share as paid (e.g. cash) */
+export const payShare = async (bookingId, transactionId) => {
+  const { data } = await axios.post(`${API_URL}/${bookingId}/pay-share`, {
+    transactionId: transactionId || undefined
+  });
+  return data;
+};
+
+/** Leader cancels split/full team booking */
+export const cancelBookingByLeader = async (bookingId) => {
+  const { data } = await axios.patch(`${API_URL}/${bookingId}/cancel-by-leader`);
+  return data;
+};
+
+// ═══════════════════════════════════════════════════════════
 // FUTSAL OWNER FUNCTIONS
 // ═══════════════════════════════════════════════════════════
 
@@ -304,7 +334,11 @@ const bookingStore = {
   getMyBookings,
   getBookingById,
   cancelBooking,
-  
+  initiateSplitPayment,
+  verifySplitPayment,
+  payShare,
+  cancelBookingByLeader,
+
   // Owner functions
   getVenueBookings,
   approveBooking,

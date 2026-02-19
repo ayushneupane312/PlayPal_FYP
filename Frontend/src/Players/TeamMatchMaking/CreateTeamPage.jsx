@@ -1,12 +1,43 @@
-// src/pages/player/CreateTeamPage.jsx
+// src/pages/player/TeamMatchMaking/CreateTeamPage.jsx
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PlayerSidebar from '../PlayerSidebar';
-import {
-  Users, ArrowLeft, Info, CheckCircle
-} from 'lucide-react';
+import { Users, ArrowLeft, Info, CheckCircle, Shield, Zap, Star } from 'lucide-react';
 import { showToast } from '../../FutsalOwner/components/Toast';
 import matchmakingService from '../../store/matchmakingService';
+
+const MATCH_FORMATS = [
+  { value: '5v5', label: '5 vs 5', players: 10, description: 'Standard futsal format', icon: '⚽' },
+  { value: '7v7', label: '7 vs 7', players: 14, description: 'Large field format', icon: '🏟️' },
+  { value: '2v2', label: '2 vs 2', players: 4,  description: 'One-on-one challenge',  icon: '🎯' },
+];
+
+const SKILL_LEVELS = [
+  {
+    value: 'Beginner',
+    label: 'Beginner',
+    desc: 'New to the game, learning the basics',
+    icon: <Shield className="w-5 h-5" />,
+    color: 'border-green-300 bg-green-50 text-green-700',
+    active: 'border-green-500 bg-green-100 ring-2 ring-green-400'
+  },
+  {
+    value: 'Intermediate',
+    label: 'Intermediate',
+    desc: 'Comfortable with core skills',
+    icon: <Zap className="w-5 h-5" />,
+    color: 'border-blue-300 bg-blue-50 text-blue-700',
+    active: 'border-blue-500 bg-blue-100 ring-2 ring-blue-400'
+  },
+  {
+    value: 'Advanced',
+    label: 'Advanced',
+    desc: 'Competitive, high-level play',
+    icon: <Star className="w-5 h-5" />,
+    color: 'border-purple-300 bg-purple-50 text-purple-700',
+    active: 'border-purple-500 bg-purple-100 ring-2 ring-purple-400'
+  },
+];
 
 const CreateTeamPage = () => {
   const navigate = useNavigate();
@@ -16,212 +47,237 @@ const CreateTeamPage = () => {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    matchFormat: '5v5', // 5v5, 6v6, 7v7
-    allowAutoFill: false
+    matchFormat: '5v5',
+    skillLevel: 'Intermediate',
+    allowAutoFill: false,
   });
-
-  const matchFormats = [
-    { value: '5v5', label: '5 vs 5', players: 10, description: 'Standard futsal format' },
-    { value: '6v6', label: '6 vs 6', players: 12, description: 'Medium field format' },
-    { value: '7v7', label: '7 vs 7', players: 14, description: 'Large field format' }
-  ];
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
     if (!formData.name.trim()) {
       showToast.error('Please enter a team name');
       return;
     }
-
     try {
       setCreating(true);
-      const maxPlayers = matchFormats.find(f => f.value === formData.matchFormat).players;
+      const fmt = MATCH_FORMATS.find(f => f.value === formData.matchFormat);
       const res = await matchmakingService.createTeam({
         name: formData.name.trim(),
         description: formData.description?.trim() || '',
         matchFormat: formData.matchFormat,
-        maxPlayers,
+        maxPlayers: fmt.players,
+        skillLevel: formData.skillLevel,
         isPublic: true,
-        allowAutoFill: formData.allowAutoFill
+        allowAutoFill: formData.allowAutoFill,
       });
       const teamId = res?.data?._id || res?._id;
       if (!teamId) throw new Error('No team ID returned');
-      showToast.success('Team created successfully!');
+      showToast.success('Team created! Now invite your players.');
       navigate(`/player/teams/${teamId}`);
-    } catch (error) {
-      showToast.error(error.response?.data?.message || 'Failed to create team');
+    } catch (err) {
+      showToast.error(err.response?.data?.message || 'Failed to create team');
     } finally {
       setCreating(false);
     }
   };
 
+  const set = (key, val) => setFormData(prev => ({ ...prev, [key]: val }));
+
   return (
     <div className="flex min-h-screen bg-gray-50">
       <PlayerSidebar onCollapseChange={setIsSidebarCollapsed} />
-      
-      <div 
-        className={`flex-1 p-6 transition-all duration-300 ease-in-out ${
-          isSidebarCollapsed ? 'ml-20' : 'ml-64'
-        }`}
+
+      <div
+        className={`flex-1 p-6 transition-all duration-300 ${isSidebarCollapsed ? 'ml-20' : 'ml-64'}`}
         style={{ width: `calc(100% - ${isSidebarCollapsed ? '5rem' : '16rem'})` }}
       >
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-3xl mx-auto">
+
           {/* Header */}
-          <div className="mb-6">
+          <div className="mb-7">
             <button
               onClick={() => navigate('/player/matchmaking')}
-              className="flex items-center text-gray-600 hover:text-gray-900 mb-4"
+              className="flex items-center text-gray-500 hover:text-gray-800 mb-4 text-sm font-medium transition"
             >
-              <ArrowLeft className="w-5 h-5 mr-2" />
-              Back to Matchmaking
+              <ArrowLeft className="w-4 h-4 mr-1.5" /> Back to Matchmaking
             </button>
-            
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">Create Your Team</h1>
-            <p className="text-gray-600">Set up your team and invite players to join</p>
+            <h1 className="text-2xl font-bold text-gray-900">Create Your Team</h1>
+            <p className="text-gray-500 text-sm mt-1">Set up your squad and start inviting players</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Team Name */}
-            <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Team Information</h2>
-              
+          <form onSubmit={handleSubmit} className="space-y-5">
+
+            {/* ── Team Info ─────────────────────────────────── */}
+            <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+              <h2 className="text-base font-semibold text-gray-800 mb-4">Team Information</h2>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Team Name *
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    Team Name <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
                     value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="Enter team name (e.g., Thunder Strikers)"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                    onChange={e => set('name', e.target.value)}
+                    placeholder="e.g. Thunder Strikers, FC Elite…"
+                    maxLength={40}
+                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition"
                     required
                   />
+                  <p className="text-xs text-gray-400 mt-1 text-right">{formData.name.length}/40</p>
                 </div>
-
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Description (Optional)
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    Description <span className="text-gray-400 font-normal">(optional)</span>
                   </label>
                   <textarea
                     value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    placeholder="Tell others about your team, play style, or what you're looking for..."
-                    rows="4"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                    onChange={e => set('description', e.target.value)}
+                    placeholder="Tell players about your team's style, goals, or any requirements…"
+                    rows={3}
+                    maxLength={300}
+                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent resize-none transition"
                   />
+                  <p className="text-xs text-gray-400 mt-1 text-right">{formData.description.length}/300</p>
                 </div>
               </div>
             </div>
 
-            {/* Match Format */}
-            <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Match Format</h2>
-              <p className="text-sm text-gray-600 mb-4">Choose the team size for your matches</p>
-              
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {matchFormats.map((format) => (
-                  <div
-                    key={format.value}
-                    onClick={() => setFormData({ ...formData, matchFormat: format.value })}
-                    className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${
-                      formData.matchFormat === format.value
-                        ? 'border-emerald-600 bg-emerald-50'
-                        : 'border-gray-200 hover:border-emerald-300'
+            {/* ── Match Format ──────────────────────────────── */}
+            <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+              <h2 className="text-base font-semibold text-gray-800 mb-1">Match Format</h2>
+              <p className="text-xs text-gray-400 mb-4">Choose how many players per side</p>
+              <div className="grid grid-cols-3 gap-3">
+                {MATCH_FORMATS.map(fmt => (
+                  <button
+                    key={fmt.value}
+                    type="button"
+                    onClick={() => set('matchFormat', fmt.value)}
+                    className={`relative border-2 rounded-xl p-4 text-left transition-all ${
+                      formData.matchFormat === fmt.value
+                        ? 'border-emerald-500 bg-emerald-50'
+                        : 'border-gray-200 hover:border-emerald-200 hover:bg-gray-50'
                     }`}
                   >
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className="font-semibold text-lg">{format.label}</h3>
-                      {formData.matchFormat === format.value && (
-                        <CheckCircle className="w-5 h-5 text-emerald-600" />
-                      )}
+                    {formData.matchFormat === fmt.value && (
+                      <CheckCircle className="absolute top-3 right-3 w-4 h-4 text-emerald-600" />
+                    )}
+                    <span className="text-2xl mb-2 block">{fmt.icon}</span>
+                    <p className="font-bold text-gray-900 text-sm">{fmt.label}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">{fmt.description}</p>
+                    <div className="flex items-center gap-1 mt-2 text-xs text-gray-600">
+                      <Users className="w-3.5 h-3.5" />
+                      <span>{fmt.players} total players</span>
                     </div>
-                    <p className="text-sm text-gray-600 mb-2">{format.description}</p>
-                    <div className="flex items-center gap-2 text-sm text-gray-700">
-                      <Users className="w-4 h-4" />
-                      <span>{format.players} total players</span>
-                    </div>
-                  </div>
+                  </button>
                 ))}
               </div>
             </div>
 
-            {/* Team Settings */}
-            <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Team Settings</h2>
-              
-              <div className="space-y-4">
-                {/* Auto-fill */}
-                <div className="flex items-start gap-4 p-4 bg-gray-50 rounded-lg">
+            {/* ── Skill Level ───────────────────────────────── */}
+            <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+              <h2 className="text-base font-semibold text-gray-800 mb-1">Skill Level</h2>
+              <p className="text-xs text-gray-400 mb-4">Helps match you with suitable opponents</p>
+              <div className="grid grid-cols-3 gap-3">
+                {SKILL_LEVELS.map(skill => (
+                  <button
+                    key={skill.value}
+                    type="button"
+                    onClick={() => set('skillLevel', skill.value)}
+                    className={`relative border-2 rounded-xl p-4 text-left transition-all ${
+                      formData.skillLevel === skill.value
+                        ? skill.active
+                        : `${skill.color} hover:opacity-80`
+                    }`}
+                  >
+                    {formData.skillLevel === skill.value && (
+                      <CheckCircle className="absolute top-3 right-3 w-4 h-4" />
+                    )}
+                    <span className="mb-2 block">{skill.icon}</span>
+                    <p className="font-bold text-sm">{skill.label}</p>
+                    <p className="text-xs mt-0.5 opacity-75">{skill.desc}</p>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* ── Settings ──────────────────────────────────── */}
+            <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+              <h2 className="text-base font-semibold text-gray-800 mb-4">Settings</h2>
+
+              {/* Auto-fill toggle */}
+              <label className="flex items-start gap-4 p-4 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100 transition">
+                <div className="relative mt-0.5">
                   <input
                     type="checkbox"
                     id="allowAutoFill"
                     checked={formData.allowAutoFill}
-                    onChange={(e) => setFormData({ ...formData, allowAutoFill: e.target.checked })}
-                    className="mt-1 w-5 h-5 text-emerald-600 rounded focus:ring-emerald-500"
+                    onChange={e => set('allowAutoFill', e.target.checked)}
+                    className="sr-only"
                   />
-                  <div className="flex-1">
-                    <label htmlFor="allowAutoFill" className="font-medium text-gray-900 cursor-pointer">
-                      Allow auto-fill from solo queue
-                    </label>
-                    <p className="text-sm text-gray-600 mt-1">
-                      If your team is incomplete, the system will automatically match you with solo queue players to fill remaining spots
-                    </p>
+                  <div className={`w-10 h-6 rounded-full transition-colors ${formData.allowAutoFill ? 'bg-emerald-500' : 'bg-gray-300'}`}>
+                    <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${formData.allowAutoFill ? 'translate-x-5' : 'translate-x-1'}`} />
                   </div>
                 </div>
+                <div>
+                  <p className="font-medium text-gray-900 text-sm">Allow auto-fill from solo queue</p>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    System will fill empty spots with solo queue players of matching skill level
+                  </p>
+                </div>
+              </label>
 
-                {/* Public Team Info */}
-                <div className="flex items-start gap-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                  <Info className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                  <div className="text-sm text-blue-800">
-                    <p className="font-medium mb-1">Your team will be public</p>
-                    <p>All teams are visible to other players. You can invite specific players or accept join requests from interested players.</p>
-                  </div>
-                </div>
+              {/* Public info */}
+              <div className="flex items-start gap-3 p-4 bg-blue-50 border border-blue-100 rounded-xl mt-3">
+                <Info className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
+                <p className="text-xs text-blue-700">
+                  Your team will be <strong>public</strong> by default. Other players can find and request to join it.
+                  You can make it private at any time from the team page.
+                </p>
               </div>
             </div>
 
-            {/* Leader Info Box */}
-            <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 flex items-start gap-3">
+            {/* ── Leader Reminder ───────────────────────────── */}
+            <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-5 flex items-start gap-3">
               <CheckCircle className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
               <div className="text-sm text-emerald-800">
-                <p className="font-medium mb-1">As team leader, you will:</p>
-                <ul className="space-y-1 ml-4 list-disc">
-                  <li>Have full control over team management</li>
-                  <li>Invite players and approve/reject join requests</li>
-                  <li>Select venue, date, and time for matches</li>
-                  <li>Confirm booking and make payment</li>
-                  <li>Manage team roster and player positions</li>
-                </ul>
+                <p className="font-semibold mb-2">As team leader you can:</p>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                  {[
+                    'Invite & remove players',
+                    'Approve join requests',
+                    'Set match venue & time',
+                    'Confirm & pay booking',
+                    'Transfer leadership',
+                    'Delete the team'
+                  ].map(item => (
+                    <div key={item} className="flex items-center gap-1.5">
+                      <span className="w-1 h-1 rounded-full bg-emerald-500 flex-shrink-0" />
+                      {item}
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
 
-            {/* Submit Button */}
-            <div className="flex gap-4">
+            {/* ── Actions ───────────────────────────────────── */}
+            <div className="flex gap-3 pb-8">
               <button
                 type="button"
                 onClick={() => navigate('/player/matchmaking')}
-                className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium"
+                className="flex-1 px-6 py-3 border border-gray-200 text-gray-600 rounded-xl font-medium hover:bg-gray-50 transition text-sm"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                disabled={creating}
-                className="flex-1 px-6 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 font-medium disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                disabled={creating || !formData.name.trim()}
+                className="flex-1 px-6 py-3 bg-emerald-600 text-white rounded-xl font-semibold hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition text-sm flex items-center justify-center gap-2 shadow-sm"
               >
                 {creating ? (
-                  <>
-                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    Creating...
-                  </>
+                  <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Creating…</>
                 ) : (
-                  <>
-                    <Users className="w-5 h-5" />
-                    Create Team
-                  </>
+                  <><Users className="w-4 h-4" /> Create Team</>
                 )}
               </button>
             </div>

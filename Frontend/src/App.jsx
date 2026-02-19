@@ -38,6 +38,8 @@ import PlayersTournaments from "./Players/PlayersTournaments.jsx";
 import VenuesPage from "./Players/VenuesPage.jsx";
 import BookVenuePage from "./Players/BookVenuePage.jsx";
 import PaymentCallbackPage from "./Players/PaymentCallbackPage.jsx";
+import SplitPaymentCallbackPage from "./Players/SplitPaymentCallbackPage.jsx";
+import SplitPaymentPage from "./Players/SplitPaymentPage.jsx";
 import BookingDetailPage from "./Players/BookingDetailsPage.jsx";
 import BookingList from "./Players/BookingList.jsx"
 
@@ -49,6 +51,12 @@ import CreateTeamPage from "./Players/TeamMatchMaking/CreateTeamPage.jsx";
 import SoloQueuePage from "./Players/TeamMatchMaking/SoloQueuePage.jsx";
 import BrowseTeamsPage from "./Players/TeamMatchMaking/BrowseTeamsPage.jsx";
 import BrowsePlayersPage from "./Players/TeamMatchMaking/BrowsePlayerPage.jsx";
+import TeamInvitePage from "./Players/TeamMatchMaking/TeamInvitePage.jsx";
+import MyInvitationPage from "./Players/TeamMatchMaking/MyInvitationPage.jsx";
+
+import BrowseOpponentPage from "./Players/TeamMatchMaking/BrowseOpponentPage.jsx";
+import MatchDetailPage from "./Players/TeamMatchMaking/MatchDetailPage.jsx";
+import MyChallengesPage from "./Players/TeamMatchMaking/MyChallangesPage.jsx";
 
 import FutsalOwnerApproval from "./SuperAdmin/FutsalOwnerApproval.jsx";
 import AdminDashboard from "./SuperAdmin/AdminDashboard.jsx";
@@ -132,6 +140,8 @@ function App() {
             <Route path="/player/venues" element={<VenuesPage/>}/>
             <Route path="/player/venue/:venueId/book" element={<BookVenuePage/>}/>
             <Route path="/booking/payment-callback" element={<PaymentCallbackPage/>}/>
+            <Route path="/player/booking/split-payment-callback" element={<SplitPaymentCallbackPage/>}/>
+            <Route path="/player/booking/split/:bookingId" element={<SplitPaymentPage/>}/>
             <Route path="/player/bookings" element={<BookingPage/>}/>
             <Route path="/BookingPage" element={<BookingPage/>}/>
             <Route path="/SplitPaymentPage" element={<PaymentPage/>}/>
@@ -153,6 +163,13 @@ function App() {
             <Route path="/player/teams" element={<MyTeamsPage />} />
             <Route path="/player/teams/:id" element={<TeamDetailPage />} />
             <Route path="/player/teams/:teamId/confirm-booking" element={<ConfirmBookingPage />} />
+
+            <Route path="/player/team-invite/:teamId" element={<TeamInvitePage />} />   
+            <Route path="/player/my-invitations" element={<MyInvitationPage />} />
+            
+            <Route path="/player/matchmaking/browse-opponents" element={<BrowseOpponentPage />} />
+            <Route path="/player/matches/challenges"           element={<MyChallengesPage />} />
+            <Route path="/player/matches/:matchId"             element={<MatchDetailPage />} />
 
             {/* Catch-all route - MUST BE LAST */}
             <Route path="*" element={<Navigate to="/" replace />} />
