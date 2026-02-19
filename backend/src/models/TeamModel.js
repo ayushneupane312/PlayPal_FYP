@@ -22,10 +22,18 @@ const teamMemberSchema = new mongoose.Schema({
 const joinRequestSchema = new mongoose.Schema({
   user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   position: { type: String, default: 'Any' },
+  // 'request' = player asked to join, 'invite' = leader sent invite
+  type: {
+    type: String,
+    enum: ['request', 'invite'],
+    default: 'request'
+  },
   status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
   requestedAt: { type: Date, default: Date.now },
   respondedAt: Date,
-  respondedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
+  respondedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  // Invitation expiry (30 min for invites)
+  expiresAt: { type: Date }
 });
 
 const teamSchema = new mongoose.Schema({
@@ -52,7 +60,7 @@ const teamSchema = new mongoose.Schema({
   },
   matchFormat: {
     type: String,
-    enum: ['5v5', '6v6', '7v7'],
+    enum: ['5v5', '2v2', '7v7'],
     default: '5v5'
   },
   isPublic: {
@@ -70,7 +78,6 @@ const teamSchema = new mongoose.Schema({
     enum: ['forming', 'ready', 'booked', 'cancelled'],
     default: 'forming'
   },
-  // For match link when status is booked
   matchRef: { type: mongoose.Schema.Types.ObjectId, ref: 'Match' },
   bookingRef: { type: mongoose.Schema.Types.ObjectId, ref: 'Booking' }
 }, { timestamps: true });
@@ -79,5 +86,6 @@ teamSchema.index({ leader: 1 });
 teamSchema.index({ status: 1 });
 teamSchema.index({ isPublic: 1, status: 1 });
 teamSchema.index({ 'players.user': 1 });
+teamSchema.index({ 'joinRequests.user': 1, 'joinRequests.status': 1 });
 
 module.exports = mongoose.model('Team', teamSchema);

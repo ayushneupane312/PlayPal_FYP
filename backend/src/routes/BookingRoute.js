@@ -10,10 +10,14 @@ const {
   getMyBookings,
   getBookingById,
   cancelBooking,
+  cancelBookingByLeader,
   getVenueBookings,
   approveBooking,
   rejectBooking,
-  getOwnerEarnings
+  getOwnerEarnings,
+  initiateSplitPayment,
+  verifySplitPayment,
+  payShare
 } = require('../controllers/BookingController');
 
 // ═══════════════════════════════════════════════════════════
@@ -38,6 +42,14 @@ router.post('/payment/verify', verifyToken, verifyPayment);
 
 // Get user's bookings
 router.get('/my-bookings', verifyToken, getMyBookings);
+
+// Split payment – verify (no :id) must come before /:id routes
+router.post('/verify-split-payment', verifyToken, verifySplitPayment);
+
+// Split payment by booking id
+router.post('/:id/initiate-split-payment', verifyToken, initiateSplitPayment);
+router.post('/:id/pay-share', verifyToken, payShare);
+router.patch('/:id/cancel-by-leader', verifyToken, cancelBookingByLeader);
 
 // Get specific booking
 router.get('/:id', verifyToken, getBookingById);

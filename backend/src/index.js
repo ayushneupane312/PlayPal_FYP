@@ -23,6 +23,9 @@ app.use(cookieParser());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 console.log('✅ Static files served from:', path.join(__dirname, 'uploads'));
 
+// DB connection
+dbConnect();
+
 // Routes
 const authRoutes = require('./routes/AuthRoutes');
 app.use('/auth', authRoutes);
@@ -71,8 +74,11 @@ app.use((err, req, res, next) => {
   });
 });
 
-// DB connection
-dbConnect();
+
+
+// Auto-cancel split payments past deadline (every 1 min)
+const { startAutoCancelJob } = require('./services/splitPaymentAutoCancel');
+startAutoCancelJob();
 
 // Create HTTP server & Socket.io
 const server = http.createServer(app);

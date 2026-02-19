@@ -83,6 +83,31 @@ const bookingSchema = new mongoose.Schema({
     refundAmount: Number
   },
 
+  // Split payment (only after matchmaking; paymentType = 'split')
+  paymentType: {
+    type: String,
+    enum: ['full', 'split'],
+    default: 'full'
+  },
+  leaderId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  teamRef: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Team'
+  },
+  paymentDeadline: {
+    type: Date
+  },
+  splitPlayers: [{
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    amountAssigned: { type: Number, required: true, min: 0 },
+    paymentStatus: { type: String, enum: ['pending', 'paid'], default: 'pending' },
+    paidAt: Date,
+    transactionId: String
+  }],
+
   // Booking status
   bookingStatus: {
     type: String,

@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const Booking = require('../models/BookingModel');
 const Venue = require('../models/VenueModel');
 const User = require('../models/UserModel');
+const Team = require('../models/TeamModel');
 const khaltiService = require('../services/khaltiService');
 const { notifyUser } = require('../services/notificationService');
 
@@ -552,6 +553,286 @@ exports.verifyPayment = async (req, res) => {
   }
 };
 
+// ═══════════════════════════════════════════════════════════
+// SPLIT PAYMENT (after matchmaking)
+// ═══════════════════════════════════════════════════════════
+
+/**
+ * Initiate Khalti payment for current user's split share
+ */
+exports.initiateSplitPayment = async (req, res) => {
+  try {
+    const { id: bookingId } = req.params;
+    const userId = req.userId;
+
+    const booking = await Booking.findById(bookingId)
+      .populate('venue', 'venueName')
+      .populate('splitPlayers.userId', 'name email phone');
+    if (!booking) {
+      return res.status(404).json({ success: false, message: 'Booking not found' });
+    }
+    if (booking.paymentType !== 'split') {
+      return res.status(400).json({ success: false, message: 'Not a split payment booking' });
+    }
+    if (booking.bookingStatus !== 'pending') {
+      return res.status(400).json({ success: false, message: 'Booking is no longer pending' });
+    }
+    if (booking.paymentDeadline && new Date() > booking.paymentDeadline) {
+      return res.status(400).json({ success: false, message: 'Payment deadline has passed' });
+    }
+
+    const playerEntry = booking.splitPlayers.find(
+      p => (p.userId && p.userId._id ? p.userId._id.toString() : p.userId.toString()) === userId
+    );
+    if (!playerEntry) {
+      return res.status(403).json({ success: false, message: 'You are not assigned to pay for this booking' });
+    }
+    if (playerEntry.paymentStatus === 'paid') {
+      return res.status(400).json({ success: false, message: 'Your share is already paid' });
+    }
+
+    const amountInPaisa = khaltiService.convertToPaisa(playerEntry.amountAssigned);
+    if (amountInPaisa < 1000) {
+      return res.status(400).json({
+        success: false,
+        message: 'Amount too small for Khalti (min Rs 10). Pay at venue or contact leader.'
+      });
+    }
+
+    const user = await User.findById(userId);
+    const purchaseOrderId = `split:${bookingId}:${userId}`;
+    const paymentData = {
+      amount: amountInPaisa,
+      purchaseOrderId,
+      purchaseOrderName: `Split: ${booking.venue.venueName} - Your share Rs ${playerEntry.amountAssigned}`,
+      customerInfo: {
+        name: user.name,
+        email: user.email,
+        phone: user.phone || '9800000000'
+      },
+      returnUrl: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/player/booking/split-payment-callback`,
+      websiteUrl: process.env.FRONTEND_URL || 'http://localhost:5173',
+      productDetails: [
+        {
+          identity: purchaseOrderId,
+          name: `Split share - ${booking.venue.venueName}`,
+          total_price: amountInPaisa,
+          quantity: 1,
+          unit_price: amountInPaisa
+        }
+      ]
+    };
+
+    const paymentResponse = await khaltiService.initiatePayment(paymentData);
+
+    res.status(200).json({
+      success: true,
+      message: 'Payment initiated for your share',
+      data: {
+        pidx: paymentResponse.pidx,
+        paymentUrl: paymentResponse.paymentUrl,
+        expiresAt: paymentResponse.expiresAt,
+        bookingId: booking._id,
+        amount: playerEntry.amountAssigned
+      }
+    });
+  } catch (error) {
+    console.error('Initiate split payment error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.response?.data?.message || error.message || 'Failed to initiate split payment'
+    });
+  }
+};
+
+/**
+ * Verify Khalti split payment and mark that player's share as paid
+ */
+exports.verifySplitPayment = async (req, res) => {
+  try {
+    const { pidx } = req.body;
+    const userId = req.userId;
+
+    if (!pidx) {
+      return res.status(400).json({ success: false, message: 'pidx is required' });
+    }
+
+    const verification = await khaltiService.verifyPayment(pidx);
+    if (verification.pending) {
+      return res.status(200).json({ success: false, message: 'Payment still pending', status: 'pending' });
+    }
+    if (verification.failed || !verification.verified) {
+      return res.status(400).json({ success: false, message: 'Payment failed or not verified' });
+    }
+
+    const purchaseOrderId = verification.data?.purchase_order_id || verification.purchase_order_id;
+    if (!purchaseOrderId || !purchaseOrderId.startsWith('split:')) {
+      return res.status(400).json({ success: false, message: 'Invalid split payment reference' });
+    }
+    const [, bookingId, payUserId] = purchaseOrderId.split(':');
+    if (payUserId !== userId) {
+      return res.status(403).json({ success: false, message: 'Unauthorized' });
+    }
+
+    const booking = await Booking.findById(bookingId);
+    if (!booking || booking.paymentType !== 'split' || booking.bookingStatus !== 'pending') {
+      return res.status(404).json({ success: false, message: 'Booking not found or not pending' });
+    }
+
+    const playerIndex = booking.splitPlayers.findIndex(
+      p => (p.userId && p.userId.toString()) === userId
+    );
+    if (playerIndex === -1) {
+      return res.status(403).json({ success: false, message: 'You are not in this split booking' });
+    }
+    if (booking.splitPlayers[playerIndex].paymentStatus === 'paid') {
+      return res.status(200).json({
+        success: true,
+        message: 'Share already marked paid',
+        data: { booking }
+      });
+    }
+
+    booking.splitPlayers[playerIndex].paymentStatus = 'paid';
+    booking.splitPlayers[playerIndex].paidAt = new Date();
+    booking.splitPlayers[playerIndex].transactionId = verification.transactionId || verification.data?.transaction_id;
+
+    const allPaid = booking.splitPlayers.every(p => p.paymentStatus === 'paid');
+    if (allPaid) {
+      booking.bookingStatus = 'confirmed';
+      booking.payment.status = 'paid';
+      booking.payment.paidAt = new Date();
+      booking.payment.transactionId = `split:${booking.splitPlayers.map(p => p.transactionId).filter(Boolean).join(',')}`;
+    }
+    await booking.save();
+
+    const populated = await Booking.findById(booking._id)
+      .populate('venue', 'venueName fullAddress contactInfo')
+      .populate('splitPlayers.userId', 'name email');
+    return res.status(200).json({
+      success: true,
+      message: allPaid ? 'All shares paid. Booking confirmed!' : 'Your share has been recorded.',
+      data: { booking: populated, allPaid }
+    });
+  } catch (error) {
+    console.error('Verify split payment error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Verification failed'
+    });
+  }
+};
+
+/**
+ * Mark own share as paid (e.g. cash at venue). Only the assigned player can call.
+ */
+exports.payShare = async (req, res) => {
+  try {
+    const { id: bookingId } = req.params;
+    const userId = req.userId;
+    const { transactionId: customTxId } = req.body || {};
+
+    const booking = await Booking.findById(bookingId);
+    if (!booking) {
+      return res.status(404).json({ success: false, message: 'Booking not found' });
+    }
+    if (booking.paymentType !== 'split') {
+      return res.status(400).json({ success: false, message: 'Not a split payment booking' });
+    }
+    if (booking.bookingStatus !== 'pending') {
+      return res.status(400).json({ success: false, message: 'Booking is no longer pending' });
+    }
+    if (booking.paymentDeadline && new Date() > booking.paymentDeadline) {
+      return res.status(400).json({ success: false, message: 'Payment deadline has passed' });
+    }
+
+    const playerIndex = booking.splitPlayers.findIndex(
+      p => (p.userId && p.userId.toString()) === userId
+    );
+    if (playerIndex === -1) {
+      return res.status(403).json({ success: false, message: 'You are not assigned to pay for this booking' });
+    }
+    if (booking.splitPlayers[playerIndex].paymentStatus === 'paid') {
+      return res.status(400).json({ success: false, message: 'Your share is already paid' });
+    }
+
+    booking.splitPlayers[playerIndex].paymentStatus = 'paid';
+    booking.splitPlayers[playerIndex].paidAt = new Date();
+    booking.splitPlayers[playerIndex].transactionId = customTxId || `cash-${Date.now()}`;
+
+    const allPaid = booking.splitPlayers.every(p => p.paymentStatus === 'paid');
+    if (allPaid) {
+      booking.bookingStatus = 'confirmed';
+      booking.payment.status = 'paid';
+      booking.payment.paidAt = new Date();
+    }
+    await booking.save();
+
+    const populated = await Booking.findById(booking._id)
+      .populate('venue', 'venueName fullAddress contactInfo')
+      .populate('splitPlayers.userId', 'name email');
+    return res.status(200).json({
+      success: true,
+      message: allPaid ? 'All shares paid. Booking confirmed!' : 'Your share has been recorded.',
+      data: { booking: populated, allPaid }
+    });
+  } catch (error) {
+    console.error('Pay share error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to record payment'
+    });
+  }
+};
+
+/**
+ * Cancel a split (or full) booking - leader only
+ */
+exports.cancelBookingByLeader = async (req, res) => {
+  try {
+    const { id: bookingId } = req.params;
+    const userId = req.userId;
+
+    const booking = await Booking.findById(bookingId);
+    if (!booking) {
+      return res.status(404).json({ success: false, message: 'Booking not found' });
+    }
+    const leaderId = (booking.leaderId || booking.user).toString();
+    if (leaderId !== userId) {
+      return res.status(403).json({ success: false, message: 'Only the team leader can cancel this booking' });
+    }
+    if (!['pending', 'confirmed'].includes(booking.bookingStatus)) {
+      return res.status(400).json({ success: false, message: 'Booking cannot be cancelled' });
+    }
+
+    booking.bookingStatus = 'cancelled';
+    booking.cancellation = {
+      isCancelled: true,
+      cancelledBy: 'user',
+      cancelledAt: new Date(),
+      cancellationReason: 'Cancelled by leader',
+      refundEligible: false
+    };
+    await booking.save();
+
+    if (booking.teamRef) {
+      await Team.findByIdAndUpdate(booking.teamRef, { $unset: { bookingRef: 1 }, status: 'ready' });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Booking cancelled',
+      data: { booking }
+    });
+  } catch (error) {
+    console.error('Cancel booking by leader error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to cancel'
+    });
+  }
+};
+
 /**
  * Mark cash payment as paid (Owner confirms payment)
  */
@@ -606,15 +887,20 @@ exports.confirmCashPayment = async (req, res) => {
 };
 
 /**
- * Get user's bookings
+ * Get user's bookings (including split bookings where user is leader or in splitPlayers)
  */
 exports.getMyBookings = async (req, res) => {
   try {
     const userId = req.userId;
     const { status, page = 1, limit = 10 } = req.query;
 
-    const query = { user: userId };
-    
+    const query = {
+      $or: [
+        { user: userId },
+        { leaderId: userId },
+        { 'splitPlayers.userId': userId }
+      ]
+    };
     if (status && status !== 'all') {
       query.bookingStatus = status;
     }
@@ -647,7 +933,7 @@ exports.getMyBookings = async (req, res) => {
 };
 
 /**
- * Get booking by ID
+ * Get booking by ID (allowed if user is booker, leader, or in splitPlayers)
  */
 exports.getBookingById = async (req, res) => {
   try {
@@ -656,8 +942,14 @@ exports.getBookingById = async (req, res) => {
 
     const booking = await Booking.findOne({
       _id: id,
-      user: userId
-    }).populate('venue', 'venueName fullAddress contactInfo media operatingHours');
+      $or: [
+        { user: userId },
+        { leaderId: userId },
+        { 'splitPlayers.userId': userId }
+      ]
+    })
+      .populate('venue', 'venueName fullAddress contactInfo media operatingHours')
+      .populate('splitPlayers.userId', 'name email');
 
     if (!booking) {
       return res.status(404).json({

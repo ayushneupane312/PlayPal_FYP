@@ -19,14 +19,29 @@ const matchSchema = new mongoose.Schema({
     enum: ['pending', 'confirmed', 'completed', 'cancelled'],
     default: 'pending'
   },
-  // Leader who will confirm booking (from teamA or teamB - e.g. first team's leader)
-  confirmedByLeader: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  bookingRef: { type: mongoose.Schema.Types.ObjectId, ref: 'Booking' },
-  // Auto-match: which leader was assigned (e.g. highest rating or random)
-  assignedLeader: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
+
+  // ── Challenge system ──────────────────────────────────────
+  challengeStatus: {
+    type: String,
+    enum: ['pending', 'accepted', 'declined', 'cancelled'],
+    default: 'pending'
+  },
+  challengeMessage:   { type: String, trim: true, default: '' },
+  declineReason:      { type: String, trim: true, default: '' },
+  challengedAt:       { type: Date },
+  confirmedAt:        { type: Date },
+  declinedAt:         { type: Date },
+  cancelledAt:        { type: Date },
+
+  // Leader who will confirm booking (from teamA or teamB)
+  confirmedByLeader:  { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  bookingRef:         { type: mongoose.Schema.Types.ObjectId, ref: 'Booking' },
+  // Auto-match or challenge sender
+  assignedLeader:     { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
 }, { timestamps: true });
 
 matchSchema.index({ status: 1 });
 matchSchema.index({ date: 1 });
+matchSchema.index({ teamA: 1, teamB: 1 });
 
 module.exports = mongoose.model('Match', matchSchema);
