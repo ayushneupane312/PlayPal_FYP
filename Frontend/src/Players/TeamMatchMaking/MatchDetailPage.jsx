@@ -193,7 +193,7 @@ export default function MatchDetailPage() {
                 </p>
               </div>
               <button
-                onClick={() => navigate(`/player/bookings/new?matchId=${matchId}`)}
+                onClick={() => navigate(`/player/venues`)}
                 className="ml-4 px-5 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 flex items-center gap-2 transition flex-shrink-0"
               >
                 Book Venue <ChevronRight className="w-4 h-4" />

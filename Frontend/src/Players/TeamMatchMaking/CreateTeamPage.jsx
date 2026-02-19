@@ -7,9 +7,9 @@ import { showToast } from '../../FutsalOwner/components/Toast';
 import matchmakingService from '../../store/matchmakingService';
 
 const MATCH_FORMATS = [
-  { value: '5v5', label: '5 vs 5', players: 10, description: 'Standard futsal format', icon: '⚽' },
-  { value: '7v7', label: '7 vs 7', players: 14, description: 'Large field format', icon: '🏟️' },
-  { value: '2v2', label: '2 vs 2', players: 4,  description: 'One-on-one challenge',  icon: '🎯' },
+  { value: '5v5', label: '5 vs 5', players: 5, description: 'Standard futsal format', icon: '⚽' },
+  { value: '7v7', label: '7 vs 7', players: 7, description: 'Large field format', icon: '🏟️' },
+  { value: '2v2', label: '2 vs 2', players: 2,  description: 'Small-sided format', icon: '🎯' },
 ];
 
 const SKILL_LEVELS = [
