@@ -3,6 +3,7 @@ const Booking = require('../models/BookingModel');
 const Venue = require('../models/VenueModel');
 const User = require('../models/UserModel');
 const Team = require('../models/TeamModel');
+const Match = require('../models/MatchModel');
 const khaltiService = require('../services/khaltiService');
 const { notifyUser } = require('../services/notificationService');
 
@@ -818,6 +819,8 @@ exports.cancelBookingByLeader = async (req, res) => {
     if (booking.teamRef) {
       await Team.findByIdAndUpdate(booking.teamRef, { $unset: { bookingRef: 1 }, status: 'ready' });
     }
+    // If this booking was linked to a match, clear the match bookingRef so leaders can rebook
+    await Match.findOneAndUpdate({ bookingRef: bookingId }, { $unset: { bookingRef: 1 } });
 
     return res.status(200).json({
       success: true,
@@ -940,14 +943,8 @@ exports.getBookingById = async (req, res) => {
     const { id } = req.params;
     const userId = req.userId;
 
-    const booking = await Booking.findOne({
-      _id: id,
-      $or: [
-        { user: userId },
-        { leaderId: userId },
-        { 'splitPlayers.userId': userId }
-      ]
-    })
+    // First, find the booking by ID
+    const booking = await Booking.findById(id)
       .populate('venue', 'venueName fullAddress contactInfo media operatingHours')
       .populate('splitPlayers.userId', 'name email');
 
@@ -955,6 +952,64 @@ exports.getBookingById = async (req, res) => {
       return res.status(404).json({
         success: false,
         message: 'Booking not found'
+      });
+    }
+
+    const userIdStr = userId?.toString();
+    let isAuthorized = false;
+
+    // 1) Direct ownership: booker, leader, or split-player
+    if (
+      (booking.user && booking.user.toString() === userIdStr) ||
+      (booking.leaderId && booking.leaderId.toString() === userIdStr) ||
+      (booking.splitPlayers || []).some(
+        (p) => p.userId && p.userId._id
+          ? p.userId._id.toString() === userIdStr
+          : p.userId.toString() === userIdStr
+      )
+    ) {
+      isAuthorized = true;
+    }
+
+    // 2) Member of the booked team (for team bookings)
+    if (!isAuthorized && booking.teamRef) {
+      const team = await Team.findById(booking.teamRef).select('leader players.user');
+      if (team) {
+        const leaderStr = team.leader?.toString();
+        const inPlayers = (team.players || []).some(
+          (p) => p.user && p.user.toString() === userIdStr
+        );
+        if (leaderStr === userIdStr || inPlayers) {
+          isAuthorized = true;
+        }
+      }
+    }
+
+    // 3) Member of opponent team in a Match linked to this booking
+    if (!isAuthorized) {
+      const match = await Match.findOne({ bookingRef: booking._id }).select('teamA teamB');
+      if (match) {
+        const teams = await Team.find({
+          _id: { $in: [match.teamA, match.teamB] }
+        }).select('leader players.user');
+
+        for (const team of teams) {
+          const leaderStr = team.leader?.toString();
+          const inPlayers = (team.players || []).some(
+            (p) => p.user && p.user.toString() === userIdStr
+          );
+          if (leaderStr === userIdStr || inPlayers) {
+            isAuthorized = true;
+            break;
+          }
+        }
+      }
+    }
+
+    if (!isAuthorized) {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to view this booking'
       });
     }
 
@@ -966,7 +1021,7 @@ exports.getBookingById = async (req, res) => {
     console.error('❌ Get booking error:', error);
     res.status(500).json({
       success: false,
-        message: 'Failed to fetch booking',
+      message: 'Failed to fetch booking',
       error: error.message
     });
   }

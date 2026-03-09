@@ -30,6 +30,7 @@ async function runAutoCancel() {
           status: 'ready'
         });
       }
+      await Match.findOneAndUpdate({ bookingRef: booking._id }, { $unset: { bookingRef: 1 } });
     }
     if (expired.length > 0) {
       console.log(`[SplitPayment] Auto-cancelled ${expired.length} expired split booking(s)`);

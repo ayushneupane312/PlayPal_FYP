@@ -434,9 +434,20 @@ exports.confirmBooking = async (req, res) => {
   try {
     const userId = req.userId;
     const {
-      teamId, venueId, courtId, bookingDate, startTime, endTime,
-      duration, numberOfPlayers, specialRequests, paymentMethod,
-      paymentType = 'full', serviceCharge = 0, discount = 0
+      teamId,
+      venueId,
+      courtId,
+      bookingDate,
+      startTime,
+      endTime,
+      duration,
+      numberOfPlayers,
+      specialRequests,
+      paymentMethod,
+      paymentType = 'full',
+      serviceCharge = 0,
+      discount = 0,
+      matchId
     } = req.body;
 
     if (!teamId || !venueId || !courtId || !bookingDate || !startTime || !endTime) {
@@ -530,19 +541,51 @@ exports.confirmBooking = async (req, res) => {
     team.status = 'booked';
     await team.save();
 
-    // Notify all team members about the booking
-    const memberIdsToNotify = team.players
-      .map(p => p.user._id?.toString?.() || p.user.toString())
-      .filter(id => id !== userId);
-    for (const memberId of memberIdsToNotify) {
+    // Optionally link booking to an existing confirmed Match
+    let linkedMatch = null;
+    if (matchId) {
+      linkedMatch = await Match.findOne({
+        _id: matchId,
+        $or: [{ teamA: teamId }, { teamB: teamId }]
+      });
+      if (linkedMatch) {
+        linkedMatch.bookingRef = booking._id;
+        await linkedMatch.save();
+      }
+    }
+
+    // Collect all unique players (both teams, if match is linked) to notify
+    const notifiedIds = new Set([userId]);
+    const collectFromTeam = (t) => {
+      if (!t) return;
+      const leaderStr = (t.leader && t.leader._id ? t.leader._id : t.leader)?.toString?.();
+      if (leaderStr && !notifiedIds.has(leaderStr)) notifiedIds.add(leaderStr);
+      (t.players || []).forEach(p => {
+        const id = (p.user && p.user._id ? p.user._id : p.user)?.toString?.();
+        if (id && !notifiedIds.has(id)) notifiedIds.add(id);
+      });
+    };
+
+    if (linkedMatch) {
+      const fullMatch = await Match.findById(linkedMatch._id)
+        .populate('teamA', 'name leader players')
+        .populate('teamB', 'name leader players');
+      collectFromTeam(fullMatch.teamA);
+      collectFromTeam(fullMatch.teamB);
+    } else {
+      collectFromTeam(team);
+    }
+
+    const idsToNotify = Array.from(notifiedIds).filter(id => id !== userId);
+    for (const memberId of idsToNotify) {
       await notifyUser(memberId, {
-        title: isSplit ? 'Split Payment Required' : 'Match Booking Confirmed!',
+        title: isSplit ? 'Split Payment Required' : 'Match booking confirmed',
         message: isSplit
-          ? `Your team "${team.name}" has been booked. Please complete your split payment within 30 minutes.`
-          : `Your team "${team.name}" match has been booked by the leader!`,
+          ? `Your team "${team.name}" has a booked match. Please complete your split payment within 30 minutes.`
+          : `A match for your team "${team.name}" has been booked by the leader.`,
         type: 'booking_created',
         link: `/player/bookings/${booking._id}`,
-        meta: { bookingId: booking._id, teamId }
+        meta: { bookingId: booking._id, teamId, matchId: linkedMatch ? linkedMatch._id : undefined }
       });
     }
 

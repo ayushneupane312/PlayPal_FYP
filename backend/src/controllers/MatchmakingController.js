@@ -1,4 +1,5 @@
 const MatchQueue = require('../models/MatchQueueModel');
+const TeamMatchQueue = require('../models/TeamMatchQueueModel');
 const Team = require('../models/TeamModel');
 const Match = require('../models/MatchModel');
 const User = require('../models/UserModel');
@@ -273,5 +274,232 @@ exports.getBrowsePlayers = async (req, res) => {
   } catch (err) {
     console.error('Browse players error:', err);
     return res.status(500).json({ success: false, message: 'Failed to load players', error: err.message });
+  }
+};
+
+// ═══════════════════════════════════════════════════════════
+// TEAM vs TEAM MATCHMAKING (queue by team)
+// ═══════════════════════════════════════════════════════════
+
+/** POST /matchmaking/find-opponent - leader puts full team into queue, or matches immediately if opponent exists */
+exports.findTeamOpponent = async (req, res) => {
+  try {
+    const userId = req.userId;
+    const { teamId, venueId, date, startTime, endTime } = req.body;
+
+    if (!teamId || !venueId || !date || !startTime || !endTime) {
+      return res.status(400).json({
+        success: false,
+        message: 'teamId, venueId, date, startTime, endTime are required'
+      });
+    }
+
+    const team = await Team.findById(teamId).populate('players.user', 'name email');
+    if (!team) {
+      return res.status(404).json({ success: false, message: 'Team not found' });
+    }
+    if (team.leader.toString() !== userId) {
+      return res.status(403).json({ success: false, message: 'Only the team leader can start matchmaking' });
+    }
+
+    const playerCount = (team.players?.length || 0);
+    if (playerCount !== team.maxPlayers) {
+      return res.status(400).json({
+        success: false,
+        message: `Team must be full to search for opponent (${playerCount}/${team.maxPlayers})`
+      });
+    }
+
+    // Ensure no active queue entry for this team
+    const existingActive = await TeamMatchQueue.findOne({
+      team: teamId,
+      status: { $in: ['searching', 'matched'] }
+    });
+    if (existingActive) {
+      return res.status(400).json({
+        success: false,
+        message: 'This team is already in matchmaking. Cancel existing search or finish current match.'
+      });
+    }
+
+    const searchDate = new Date(date);
+    searchDate.setHours(0, 0, 0, 0);
+
+    // Look for opponent team already searching with same venue/date/slot/teamSize
+    const opponentQueue = await TeamMatchQueue.findOne({
+      status: 'searching',
+      venue: venueId,
+      date: searchDate,
+      'timeSlot.startTime': startTime,
+      'timeSlot.endTime': endTime,
+      teamSize: team.maxPlayers,
+      team: { $ne: teamId }
+    }).sort({ createdAt: 1 });
+
+    if (opponentQueue) {
+      // Found opponent – create Match
+      const match = await Match.create({
+        teamA: opponentQueue.team,
+        teamB: teamId,
+        venue: venueId,
+        date: searchDate,
+        timeSlot: { startTime, endTime },
+        status: 'pending'
+      });
+
+      opponentQueue.status = 'matched';
+      opponentQueue.matchRef = match._id;
+      await opponentQueue.save();
+
+      const myQueue = await TeamMatchQueue.create({
+        team: teamId,
+        leader: userId,
+        venue: venueId,
+        date: searchDate,
+        timeSlot: { startTime, endTime },
+        teamSize: team.maxPlayers,
+        status: 'matched',
+        matchRef: match._id
+      });
+
+      const fullMatch = await Match.findById(match._id)
+        .populate('teamA', 'name skillLevel matchFormat players leader')
+        .populate('teamB', 'name skillLevel matchFormat players leader')
+        .populate('venue', 'venueName fullAddress');
+
+      return res.status(200).json({
+        success: true,
+        matched: true,
+        message: 'Opponent found!',
+        data: {
+          match: fullMatch,
+          queue: myQueue
+        }
+      });
+    }
+
+    // No opponent – create queue entry in searching state
+    const queue = await TeamMatchQueue.create({
+      team: teamId,
+      leader: userId,
+      venue: venueId,
+      date: searchDate,
+      timeSlot: { startTime, endTime },
+      teamSize: team.maxPlayers,
+      status: 'searching'
+    });
+
+    return res.status(200).json({
+      success: true,
+      matched: false,
+      message: 'Searching for opponent...',
+      data: { queue }
+    });
+  } catch (err) {
+    console.error('findTeamOpponent error:', err);
+    return res.status(500).json({ success: false, message: 'Failed to start matchmaking', error: err.message });
+  }
+};
+
+/** GET /matchmaking/status/:teamId - team matchmaking status (searching vs matched) */
+exports.getTeamMatchStatus = async (req, res) => {
+  try {
+    const userId = req.userId;
+    const { teamId } = req.params;
+
+    if (!teamId) {
+      return res.status(400).json({ success: false, message: 'teamId is required' });
+    }
+
+    const team = await Team.findOne({
+      _id: teamId,
+      $or: [{ leader: userId }, { 'players.user': userId }]
+    });
+    if (!team) {
+      return res.status(403).json({ success: false, message: 'You are not a member of this team' });
+    }
+
+    const queue = await TeamMatchQueue.findOne({
+      team: teamId,
+      status: { $in: ['searching', 'matched'] }
+    });
+
+    if (!queue) {
+      // If team already has a matchRef, return that
+      if (team.matchRef) {
+        const match = await Match.findById(team.matchRef)
+          .populate('teamA', 'name skillLevel matchFormat players leader')
+          .populate('teamB', 'name skillLevel matchFormat players leader')
+          .populate('venue', 'venueName fullAddress');
+        return res.status(200).json({
+          success: true,
+          data: { inQueue: false, matched: !!match, match }
+        });
+      }
+      return res.status(200).json({
+        success: true,
+        data: { inQueue: false, matched: false }
+      });
+    }
+
+    if (queue.status === 'searching') {
+      return res.status(200).json({
+        success: true,
+        data: {
+          inQueue: true,
+          matched: false,
+          queue
+        }
+      });
+    }
+
+    // matched
+    const match = await Match.findById(queue.matchRef)
+      .populate('teamA', 'name skillLevel matchFormat players leader')
+      .populate('teamB', 'name skillLevel matchFormat players leader')
+      .populate('venue', 'venueName fullAddress');
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        inQueue: false,
+        matched: !!match,
+        match
+      }
+    });
+  } catch (err) {
+    console.error('getTeamMatchStatus error:', err);
+    return res.status(500).json({ success: false, message: 'Failed to get team matchmaking status', error: err.message });
+  }
+};
+
+/** DELETE /matchmaking/cancel - cancel team matchmaking (leader only) */
+exports.cancelTeamMatchmaking = async (req, res) => {
+  try {
+    const userId = req.userId;
+    const { teamId } = req.body;
+
+    if (!teamId) {
+      return res.status(400).json({ success: false, message: 'teamId is required' });
+    }
+
+    const team = await Team.findById(teamId);
+    if (!team) return res.status(404).json({ success: false, message: 'Team not found' });
+    if (team.leader.toString() !== userId) {
+      return res.status(403).json({ success: false, message: 'Only the leader can cancel matchmaking' });
+    }
+
+    const queue = await TeamMatchQueue.findOne({ team: teamId, status: 'searching' });
+    if (!queue) {
+      return res.status(404).json({ success: false, message: 'No active search to cancel' });
+    }
+
+    queue.status = 'cancelled';
+    await queue.save();
+
+    return res.status(200).json({ success: true, message: 'Matchmaking cancelled' });
+  } catch (err) {
+    console.error('cancelTeamMatchmaking error:', err);
+    return res.status(500).json({ success: false, message: 'Failed to cancel matchmaking', error: err.message });
   }
 };
