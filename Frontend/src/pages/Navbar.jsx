@@ -7,6 +7,7 @@
 
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
+import playpalLogo from "../assets/playpallogo.jpg.png";
 
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -28,9 +29,14 @@ export default function Navbar() {
         {/* Logo */}
         <Link
           to="/"
-          className="text-white font-extrabold text-xl tracking-wide hover:text-emerald-400 transition-colors cursor-pointer"
+          className="flex items-center cursor-pointer"
         >
-          PlayPal
+          <img
+            src={playpalLogo}
+            alt="PlayPal logo"
+            className="w-auto"
+            style={{ height: "72px" }} // slightly larger to better fill navbar
+          />
         </Link>
 
         {/* Desktop Nav */}

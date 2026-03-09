@@ -2,10 +2,7 @@ import React from 'react';
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { Calendar, CreditCard, Users, Bell, User, Trophy, BarChart3, ShieldCheck, MapPin, Star, Phone, Mail, Instagram, Facebook } from "lucide-react";
-import footballVideo from "../Assets/football.mp4";
-
-
-
+import footballVideo from "../assets/football.mp4";
 
 const PlayPalLanding = () => {
   return (

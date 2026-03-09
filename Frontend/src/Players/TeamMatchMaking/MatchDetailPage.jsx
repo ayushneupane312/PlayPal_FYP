@@ -193,7 +193,14 @@ export default function MatchDetailPage() {
                 </p>
               </div>
               <button
-                onClick={() => navigate(`/player/venues`)}
+                onClick={() => {
+                  const myTeamId = myTeam?._id || teamA?._id;
+                  if (!myTeamId) {
+                    showToast.error('Your team information is missing for this match.');
+                    return;
+                  }
+                  navigate(`/player/teams/${myTeamId}/confirm-booking?matchId=${matchId}`);
+                }}
                 className="ml-4 px-5 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 flex items-center gap-2 transition flex-shrink-0"
               >
                 Book Venue <ChevronRight className="w-4 h-4" />

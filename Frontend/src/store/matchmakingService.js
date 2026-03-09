@@ -114,6 +114,24 @@ export const getBrowsePlayersForInvite = async (teamId) => {
   return res;
 };
 
+// ─── Team vs Team matchmaking ────────────────────────────────────────────────────
+export const findOpponentForTeam = async (payload) => {
+  const { data: res } = await axios.post(`${MATCHMAKING_URL}/find-opponent`, payload);
+  return res;
+};
+
+export const getTeamMatchStatus = async (teamId) => {
+  const { data: res } = await axios.get(`${MATCHMAKING_URL}/status/${teamId}`);
+  return res;
+};
+
+export const cancelTeamMatchmaking = async (teamId) => {
+  const { data: res } = await axios.delete(`${MATCHMAKING_URL}/cancel`, {
+    data: { teamId }
+  });
+  return res;
+};
+
 
 export const browseOpponentTeams = async (params = {}) => {
   const { data: res } = await axios.get(`${OPPONENT_URL}/browse`, { params });
@@ -171,6 +189,9 @@ const matchmakingService = {
   getMyChallenges,
   getMatchById,
   cancelChallenge,
+  findOpponentForTeam,
+  getTeamMatchStatus,
+  cancelTeamMatchmaking,
 
 };
 

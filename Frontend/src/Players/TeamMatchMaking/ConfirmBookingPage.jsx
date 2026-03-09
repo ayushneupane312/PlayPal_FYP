@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import PlayerSidebar from '../PlayerSidebar';
 import { ArrowLeft, Loader2, Calendar, Clock, MapPin } from 'lucide-react';
 import { getAllVenues } from '../../store/venueService';
@@ -11,13 +11,15 @@ import { showToast } from '../../FutsalOwner/components/Toast';
 
 const ConfirmBookingPage = () => {
   const { teamId } = useParams();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [venues, setVenues] = useState([]);
   const [venue, setVenue] = useState(null);
   const [selectedVenueId, setSelectedVenueId] = useState('');
   const [selectedCourt, setSelectedCourt] = useState(null);
   const [selectedDate, setSelectedDate] = useState('');
-  const [slots, setSlots] = useState([]);
+  const [availableSlots, setAvailableSlots] = useState([]);
+  const [bookedSlots, setBookedSlots] = useState([]);
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [paymentMethod, setPaymentMethod] = useState('khalti');
   const [paymentType, setPaymentType] = useState('full'); // 'full' | 'split'
@@ -39,7 +41,8 @@ const ConfirmBookingPage = () => {
     if (!selectedVenueId) {
       setVenue(null);
       setSelectedCourt(null);
-      setSlots([]);
+      setAvailableSlots([]);
+      setBookedSlots([]);
       return;
     }
     (async () => {
@@ -47,7 +50,8 @@ const ConfirmBookingPage = () => {
         const res = await getVenueById(selectedVenueId);
         setVenue(res?.data ?? res);
         setSelectedCourt(null);
-        setSlots([]);
+        setAvailableSlots([]);
+        setBookedSlots([]);
       } catch (e) {
         setVenue(null);
       }
@@ -56,15 +60,19 @@ const ConfirmBookingPage = () => {
 
   useEffect(() => {
     if (!venue || !selectedCourt || !selectedDate) {
-      setSlots([]);
+      setAvailableSlots([]);
+      setBookedSlots([]);
       return;
     }
     (async () => {
       try {
         const res = await getAvailableSlots(selectedVenueId, selectedCourt._id, selectedDate);
-        setSlots(res?.availableSlots || res?.data?.availableSlots || []);
+        const data = res?.data ?? res;
+        setAvailableSlots(data?.availableSlots || data || []);
+        setBookedSlots(data?.bookedSlots || []);
       } catch (e) {
-        setSlots([]);
+        setAvailableSlots([]);
+        setBookedSlots([]);
       }
     })();
   }, [venue, selectedCourt, selectedDate]);
@@ -77,7 +85,9 @@ const ConfirmBookingPage = () => {
     }
     try {
       setLoading(true);
-      const [startTime, endTime] = selectedSlot.endTime ? [selectedSlot.startTime, selectedSlot.endTime] : [selectedSlot.startTime, selectedSlot.startTime];
+      const [startTime, endTime] = selectedSlot.endTime
+        ? [selectedSlot.startTime, selectedSlot.endTime]
+        : [selectedSlot.startTime, selectedSlot.startTime];
       const duration = selectedSlot.duration || 1;
       const res = await matchmakingService.confirmTeamBooking({
         teamId,
@@ -88,7 +98,8 @@ const ConfirmBookingPage = () => {
         endTime,
         duration,
         paymentMethod,
-        paymentType
+        paymentType,
+        matchId: searchParams.get('matchId') || undefined
       });
       const booking = res.data?.booking;
       setCreatedBooking(booking);
@@ -160,26 +171,79 @@ const ConfirmBookingPage = () => {
                 <input
                   type="date"
                   value={selectedDate}
-                  onChange={(e) => setSelectedDate(e.target.value)}
+                  onChange={(e) => {
+                    setSelectedDate(e.target.value);
+                    setSelectedSlot(null);
+                  }}
                   min={new Date().toISOString().split('T')[0]}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2"
                 />
               </div>
-              {slots.length > 0 && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Time slot</label>
-                  <div className="flex flex-wrap gap-2">
-                    {slots.map((slot) => (
-                      <button
-                        key={slot.startTime}
-                        type="button"
-                        onClick={() => setSelectedSlot(slot)}
-                        className={`px-3 py-2 rounded-lg border text-sm ${selectedSlot?.startTime === slot.startTime ? 'border-emerald-600 bg-emerald-50 text-emerald-700' : 'border-gray-300'}`}
-                      >
-                        {slot.startTime} {slot.price && `Rs.${slot.price}`}
-                      </button>
-                    ))}
+
+              {selectedCourt && selectedDate && (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-medium text-gray-700">
+                      Time slots
+                      <span className="ml-2 text-xs font-normal text-gray-500">
+                        ({availableSlots.length} available, {bookedSlots.length} booked)
+                      </span>
+                    </p>
                   </div>
+
+                  {/* Available slots */}
+                  {availableSlots.length > 0 ? (
+                    <div>
+                      <p className="text-xs text-gray-500 mb-1">Available slots</p>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                        {availableSlots.map((slot) => (
+                          <button
+                            key={slot.startTime}
+                            type="button"
+                            onClick={() => setSelectedSlot(slot)}
+                            className={`px-3 py-2 rounded-lg border text-sm text-left transition ${
+                              selectedSlot?.startTime === slot.startTime
+                                ? 'border-emerald-600 bg-emerald-50 text-emerald-700'
+                                : 'border-gray-200 hover:border-emerald-500 hover:bg-emerald-50/40'
+                            }`}
+                          >
+                            <div className="font-medium">
+                              {slot.startTime} - {slot.endTime}
+                            </div>
+                            {slot.price && (
+                              <div className="text-xs text-gray-500">Rs. {slot.price}</div>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-gray-500">
+                      No available slots for this court and date. Please choose another date.
+                    </p>
+                  )}
+
+                  {/* Already booked slots */}
+                  {bookedSlots.length > 0 && (
+                    <div>
+                      <p className="text-xs text-gray-500 mt-2 mb-1">Already booked</p>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                        {bookedSlots.map((slot) => (
+                          <div
+                            key={`${slot.startTime}-${slot.bookedBy?.name || 'unknown'}`}
+                            className="px-3 py-2 rounded-lg border text-sm text-gray-400 bg-gray-50 border-gray-200 cursor-not-allowed"
+                          >
+                            <div className="font-medium">
+                              {slot.startTime} - {slot.endTime}
+                            </div>
+                            <div className="text-xs">
+                              Booked{slot.bookedBy?.name ? ` by ${slot.bookedBy.name}` : ''}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
               <div>
