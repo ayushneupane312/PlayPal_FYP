@@ -2,9 +2,15 @@ const express = require('express');
 const venuerouter = express.Router();
 const verifyToken = require('../middlewares/verifyToken.js');
 const { upload, uploadToCloudinary } = require('../middlewares/UploadMiddleware.js');
-const { getMyVenue, getAllVenues, createOrUpdateVenue, uploadMedia, deleteMedia, getVenueById, getMyFutsalOwnerData}
- = require ('../controllers/VenueControlller.js')
-
+const {
+  getMyVenue,
+  getAllVenues,
+  createOrUpdateVenue,
+  uploadMedia,
+  deleteMedia,
+  getVenueById,
+  getMyFutsalOwnerData
+} = require('../controllers/VenueControlller.js');
 
 // ─── Owner Routes (Protected) ───────────────────────────
 venuerouter.get('/my-venue', verifyToken, getMyVenue);

@@ -6,7 +6,7 @@ const notificationSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
-  // Optional: store role to make querying by role easier (player / futsalowner / admin)
+  // Optional: store role (player / futsalowner / admin)
   role: {
     type: String,
     enum: ['player', 'futsalowner', 'admin'],
@@ -32,7 +32,10 @@ const notificationSchema = new mongoose.Schema({
       'team_join_result',
       'match_found',
       'admin_alert',
-      'system'
+      'system',
+      'tournament_created',
+      'tournament_registration',
+      'tournament_update'
     ],
     default: 'system'
   },

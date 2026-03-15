@@ -44,6 +44,9 @@ app.use('/api/venue', venueRoutes);
 const uploadRoutes = require("./routes/UploadRoute");
 app.use("/api/upload", uploadRoutes);
 
+const tournamentRoutes = require('./routes/TournamentRoutes');
+app.use('/api/tournaments', tournamentRoutes);
+
 const bookingRoutes = require('./routes/BookingRoute');
 app.use('/api/bookings', bookingRoutes);
 

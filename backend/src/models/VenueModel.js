@@ -258,9 +258,8 @@ const venueSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Indexes
+// Indexes (location.coordinates already has index: '2dsphere' in schema)
 venueSchema.index({ owner: 1 });
-venueSchema.index({ 'location.coordinates': '2dsphere' });
 venueSchema.index({ venueName: 'text', description: 'text', fullAddress: 'text' });
 
 // Virtual for total courts
