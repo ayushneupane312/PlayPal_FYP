@@ -25,6 +25,8 @@ import VenuePage from "./FutsalOwner/VenuePage.jsx";
 import CostAndPricing from "./FutsalOwner/CourtsAndPricing.jsx";
 import FutsalBooking from "./FutsalOwner/FutsalBooking.jsx";
 import Tournaments from "./FutsalOwner/Tournaments.jsx";
+import TournamentList from "./FutsalOwner/TournamentList.jsx";
+import OwnerTournamentDetailPage from "./FutsalOwner/OwnerTournamentDetailPage.jsx";
 import FutsalFacilities from "./FutsalOwner/FutsalFacilities.jsx";
 import FutsalOwnerSettings from "./FutsalOwner/FutsalOwnerSettings.jsx";
 import EarningPage from "./FutsalOwner/EarningsPage.jsx";
@@ -35,6 +37,8 @@ import OwnerDetailPage from "./FutsalOwner/OwnerDetailPage.jsx";
 
 import PlayerSettings from "./Players/PlayerSettings.jsx";
 import PlayersTournaments from "./Players/PlayersTournaments.jsx";
+import PlayerTournamentDetailPage from "./Players/PlayerTournamentDetailPage.jsx";
+import PlayerTournamentRegisterPage from "./Players/PlayerTournamentRegisterPage.jsx";
 import VenuesPage from "./Players/VenuesPage.jsx";
 import BookVenuePage from "./Players/BookVenuePage.jsx";
 import PaymentCallbackPage from "./Players/PaymentCallbackPage.jsx";
@@ -116,7 +120,9 @@ function App() {
             <Route path="/futsalowner/VenuePage" element={<VenuePage/>} />
             <Route path="/futsalowner/CourtsAndPricing" element={<CostAndPricing/>} />
             <Route path="/FutsalBooking" element={<FutsalBooking/>}/>
-            <Route path="/Tournaments" element={<Tournaments/>}/>
+            <Route path="/futsalowner/my-tournaments" element={<TournamentList/>}/>
+            <Route path="/futsalowner/my-tournaments/:id" element={<OwnerTournamentDetailPage/>}/>
+            <Route path="/futsalowner/Tournaments" element={<Tournaments/>}/>
             <Route path="/FutsalFacilities" element={<FutsalFacilities/>}/>
             <Route path="/FutsalOwnerSettings" element={<FutsalOwnerSettings/>} />
             <Route path="/EarningsPage" element={<EarningPage/>}/>
@@ -149,6 +155,8 @@ function App() {
             <Route path="/HealthPage" element={<HealthPage/>}/>
             <Route path="/PlayerSettings" element={<PlayerSettings/>} />
             <Route path="/PlayersTournaments" element={<PlayersTournaments/>} />
+            <Route path="/PlayersTournaments/:id" element={<PlayerTournamentDetailPage/>} />
+            <Route path="/PlayersTournaments/:id/register" element={<PlayerTournamentRegisterPage/>} />
             <Route path="/player/mybookings" element={<BookingList/>} />
             <Route path="/player/bookings/:id" element={<BookingDetailPage />} />
             <Route path="/player/venues/:id" element={<VenueDetailsPage />} />

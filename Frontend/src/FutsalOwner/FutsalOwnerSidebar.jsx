@@ -17,7 +17,7 @@ import {
   BarChart3, 
   Calendar ,
   MapPin,
-  LayoutDashboard 
+  LayoutDashboard
 
 
 } from 'lucide-react';
@@ -36,8 +36,7 @@ const Sidebar = ({ onCollapseChange }) => {
     if (path === "/" || path === "/futsalownerdashboard") return "Dashboard";
     if (path.includes("/futsalowner/VenuePage")) return "Venue";
     if (path.includes("/futsalowner/booking-management")) return "Bookings";
-    if (path.includes("/futsalowner/Tournaments")) return "Tournaments";
-    if (path.includes("/futsalowner/Facilities")) return "Facilities";
+    if (path.includes("/futsalowner/my-tournaments") || path.includes("/futsalowner/Tournaments")) return "Tournaments";
     if (path.includes("/futsalowner/Earnings")) return "Earnings";
     if (path.includes("/FutsalOwnerSettings")) return "Settings";
     if (path.includes("/futsalowner/myvenue")) return "My Venue";
@@ -62,10 +61,7 @@ const Sidebar = ({ onCollapseChange }) => {
         navigate("/futsalowner/VenuePage");
         break;
       case "Tournaments":
-        navigate("/futsalowner/Tournaments");
-        break;
-      case "Facilities":
-        navigate("/futsalowner/Facilities");
+        navigate("/futsalowner/my-tournaments");
         break;
       case "Earnings":
         navigate("/futsalowner/Earnings");
@@ -122,7 +118,6 @@ const Sidebar = ({ onCollapseChange }) => {
     { id: 'venue', name: 'Venue', icon: <CreditCard className="w-5 h-5" />},
     { id: 'earnings', name: 'Earnings', icon: <Users className="w-5 h-5" /> },
     { id: 'tournaments', name: 'Tournaments', icon: <Trophy className="w-5 h-5" /> },
-    { id: 'facilities', name: 'Facilities', icon: <Video className="w-5 h-5" /> },
     { id: 'myvenue', name: 'My Venue', icon: <Video className="w-5 h-5" /> },
    
   ];

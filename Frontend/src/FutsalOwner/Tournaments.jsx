@@ -1,1370 +1,942 @@
-import React, { useState } from 'react';
-import { Calendar, DollarSign, Users, TrendingUp, Clock, Trophy, Bell, Search, Settings, LayoutDashboard, MapPin, CreditCard, BarChart3, Menu, X, Image as ImageIcon, Phone, Mail, Upload, User, Check, Filter, Edit, Eye } from 'lucide-react';
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  CalendarDays,
+  MapPin,
+  Users,
+  BadgeDollarSign,
+  Bell,
+  Trophy,
+  Medal,
+  Star,
+  Target,
+  Shield,
+  TrendingUp,
+  Shuffle,
+  Clock3,
+  PauseCircle,
+  CalendarClock,
+  CreditCard,
+  Banknote,
+  LayoutList,
+  CheckCircle2,
+  List,
+} from "lucide-react";
+import FutsalOwnerSidebar from "./FutsalOwnerSidebar";
+import Header from "./components/Header";
+import { showToast } from "./components/Toast";
+import axios from "axios";
+import { createTournament } from "../store/tournamentService";
 
-export default function FutsalApp() {
-  const [currentPage, setCurrentPage] = useState('dashboard');
-  const [courts, setCourts] = useState([
-    {
-      id: 1,
-      name: 'Court 1 - Premier',
-      type: 'Indoor',
-      size: '40m x 20m',
-      price: 2500,
-      peakPrice: 3500,
-      status: 'active',
-      amenities: ['LED Lighting', 'AC', 'Scoreboard']
-    },
-    {
-      id: 2,
-      name: 'Court 2 - Standard',
-      type: 'Indoor',
-      size: '40m x 20m',
-      price: 2000,
-      peakPrice: 3000,
-      status: 'active',
-      amenities: ['LED Lighting', 'Fans']
-    },
-    {
-      id: 3,
-      name: 'Court 3 - Outdoor',
-      type: 'Outdoor',
-      size: '42m x 22m',
-      price: 1500,
-      peakPrice: 2500,
-      status: 'maintenance',
-      amenities: ['Floodlights', 'Turf']
-    },
-    {
-      id: 4,
-      name: 'Court 4 - Training',
-      type: 'Indoor',
-      size: '30m x 15m',
-      price: 1200,
-      peakPrice: 1800,
-      status: 'active',
-      amenities: ['Basic Lighting']
-    }
-  ]);
-  
-  const [selectedCourt, setSelectedCourt] = useState(null);
-  const [enableAllSlots, setEnableAllSlots] = useState(true);
-  const [peakHourSlots, setPeakHourSlots] = useState(['17:00', '18:00', '19:00', '20:00']);
-  const [maintenanceStart, setMaintenanceStart] = useState('');
-  const [maintenanceEnd, setMaintenanceEnd] = useState('');
-  
-  const [bookings, setBookings] = useState([
-    {
-      id: 1,
-      team: 'Team Alpha',
-      bookingId: 'BK001',
-      court: 'Court 1',
-      date: 'Today',
-      time: '6:00 PM - 7:00 PM',
-      contact: 'John Doe',
-      phone: '+977-9841234567',
-      price: 2500,
-      status: 'Confirmed',
-      paymentStatus: 'Paid',
-      initial: 'T'
-    },
-    {
-      id: 2,
-      team: 'Striker FC',
-      bookingId: 'BK002',
-      court: 'Court 2',
-      date: 'Today',
-      time: '7:00 PM - 8:00 PM',
-      contact: 'Mike Smith',
-      phone: '+977-9851234567',
-      price: 2500,
-      status: 'Pending',
-      paymentStatus: 'Unpaid',
-      initial: 'S'
-    },
-    {
-      id: 3,
-      team: 'Goal Getters',
-      bookingId: 'BK003',
-      court: 'Court 1',
-      date: 'Tomorrow',
-      time: '5:00 PM - 6:00 PM',
-      contact: 'Sarah Johnson',
-      phone: '+977-9861234567',
-      price: 2500,
-      status: 'Confirmed',
-      paymentStatus: 'Paid',
-      initial: 'G'
-    },
-    {
-      id: 4,
-      team: 'United FC',
-      bookingId: 'BK004',
-      court: 'Court 2',
-      date: 'Tomorrow',
-      time: '8:00 PM - 9:00 PM',
-      contact: 'David Brown',
-      phone: '+977-9871234567',
-      price: 2500,
-      status: 'Pending',
-      paymentStatus: 'Unpaid',
-      initial: 'U'
-    },
-    {
-      id: 5,
-      team: 'Footie Kings',
-      bookingId: 'BK005',
-      court: 'Court 1',
-      date: 'Dec 29',
-      time: '6:00 PM - 7:00 PM',
-      contact: 'James Wilson',
-      phone: '+977-9881234567',
-      price: 2500,
-      status: 'Cancelled',
-      paymentStatus: 'Failed',
-      initial: 'F'
-    },
-    {
-      id: 6,
-      team: 'Thunder Bolts',
-      bookingId: 'BK006',
-      court: 'Court 3',
-      date: 'Dec 30',
-      time: '4:00 PM - 5:00 PM',
-      contact: 'Chris Lee',
-      phone: '+977-9891234567',
-      price: 1500,
-      status: 'Pending',
-      paymentStatus: 'Unpaid',
-      initial: 'T'
-    }
-  ]);
+const STEPS = [
+  { id: 1, label: "Basic Info" },
+  { id: 2, label: "Details" },
+  { id: 3, label: "Registration" },
+  { id: 4, label: "Prizes" },
+  { id: 5, label: "Fixtures" },
+  { id: 6, label: "Review" },
+];
 
-  const [bookingFilter, setBookingFilter] = useState('All');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [bookingDate, setBookingDate] = useState('');
-  
-  const [tournamentsData, setTournamentsData] = useState([
-    {
-      id: 1,
-      name: 'Weekend Cup 2024',
-      date: 'Dec 28, 2024 - Dec 29, 2024',
-      description: 'Annual weekend futsal championship with exciting matches and prizes.',
-      entryFee: 5000,
-      prizePool: 50000,
-      format: '5v5',
-      status: 'Upcoming',
-      teamsRegistered: 12,
-      maxTeams: 16,
-      icon: '🏆'
-    },
-    {
-      id: 2,
-      name: 'New Year Championship',
-      date: 'Jan 1, 2025 - Jan 2, 2025',
-      description: 'Celebrate the new year with competitive futsal action!',
-      entryFee: 8000,
-      prizePool: 100000,
-      format: '5v5',
-      status: 'Upcoming',
-      teamsRegistered: 8,
-      maxTeams: 24,
-      icon: '🏆'
-    },
-    {
-      id: 3,
-      name: 'Corporate League',
-      date: 'Nov 15, 2024 - Dec 15, 2024',
-      description: 'Inter-company futsal league for corporate teams.',
-      entryFee: 10000,
-      prizePool: 75000,
-      format: '5v5',
-      status: 'Ongoing',
-      teamsRegistered: 16,
-      maxTeams: 16,
-      icon: '🏆'
-    },
-    {
-      id: 4,
-      name: 'Summer Showdown',
-      date: 'Aug 10, 2024 - Aug 12, 2024',
-      description: 'The hottest tournament of the summer season.',
-      entryFee: 6000,
-      prizePool: 60000,
-      format: '5v5',
-      status: 'Completed',
-      teamsRegistered: 20,
-      maxTeams: 20,
-      icon: '🏆'
-    }
-  ]);
+const initialData = {
+  banner: null,
+  name: "",
+  description: "",
+  venue: "",
+  location: "",
+  startDate: "",
+  endDate: "",
+  regDeadline: "",
+  maxTeams: 16,
+  format: "knockout",
+  entryFee: 1500,
+  paymentMethod: "online",
+  prizes: {
+    winner: { enabled: true, amount: 10000, label: "Tournament champion" },
+    runnerUp: { enabled: true, amount: 5000, label: "Second place" },
+    bestPlayer: { enabled: true, amount: 2000, label: "Most valuable player" },
+    topScorer: { enabled: false, amount: 1500, label: "Highest goal scorer" },
+    bestGoalkeeper: { enabled: false, amount: 1500, label: "Best defensive player" },
+    risingPlayer: { enabled: false, amount: 1000, label: "Best emerging talent" },
+  },
+  customPrizes: [],
+  shuffleTeams: true,
+  matchDuration: 20,
+  breakBetween: 5,
+  court: "",
+  timeSlot: "",
+  notifyPlayers: true,
+};
 
-  const handleBookingAction = (bookingId, action) => {
-    if (action === 'confirm') {
-      setBookings(bookings.map(b => 
-        b.id === bookingId ? { ...b, status: 'Confirmed' } : b
-      ));
-    } else if (action === 'cancel') {
-      if (confirm('Are you sure you want to cancel this booking?')) {
-        setBookings(bookings.map(b => 
-          b.id === bookingId ? { ...b, status: 'Cancelled' } : b
-        ));
-      }
-    }
-  };
+const courts = ["Court 1", "Court 2", "Court 3", "Main Ground"];
 
-  const getFilteredBookings = () => {
-    let filtered = bookings;
-    
-    if (bookingFilter !== 'All') {
-      filtered = filtered.filter(b => b.status === bookingFilter);
-    }
-    
-    if (searchQuery) {
-      filtered = filtered.filter(b => 
-        b.team.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        b.contact.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        b.bookingId.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    }
-    
-    return filtered;
-  };
+function StepIndicator({ current, completed }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 0, marginBottom: 32, flexWrap: "wrap" }}>
+      {STEPS.map((step, i) => {
+        const done = completed.includes(step.id);
+        const active = current === step.id;
+        return (
+          <div key={step.id} style={{ display: "flex", alignItems: "center" }}>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+              <div style={{
+                width: 32, height: 32, borderRadius: "50%",
+                background: done ? "#16a34a" : active ? "#16a34a" : "#f3f4f6",
+                border: active ? "2px solid #16a34a" : done ? "none" : "2px solid #e5e7eb",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                color: done || active ? "#fff" : "#9ca3af",
+                fontWeight: 700, fontSize: 13,
+                transition: "all 0.3s",
+              }}>
+                {done ? (
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <path d="M2 7l3.5 3.5L12 3" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                ) : step.id}
+              </div>
+              <span style={{ fontSize: 11, color: active ? "#16a34a" : done ? "#16a34a" : "#9ca3af", fontWeight: active ? 600 : 400, whiteSpace: "nowrap" }}>
+                {step.label}
+              </span>
+            </div>
+            {i < STEPS.length - 1 && (
+              <div style={{ width: 48, height: 2, background: done ? "#16a34a" : "#e5e7eb", margin: "0 4px", marginBottom: 16, flexShrink: 0, transition: "background 0.3s" }} />
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
-  const getBookingCounts = () => {
-    return {
-      all: bookings.length,
-      pending: bookings.filter(b => b.status === 'Pending').length,
-      confirmed: bookings.filter(b => b.status === 'Confirmed').length,
-      cancelled: bookings.filter(b => b.status === 'Cancelled').length
-    };
-  };
-  const [notifications, setNotifications] = useState([
-    { id: 1, title: 'New booking request', desc: 'Team Alpha requested Court 1 for tomorrow at 6 PM', time: 'Just now' },
-    { id: 2, title: 'Payment received', desc: 'Rs. 2,500 received for booking #1234', time: '5 min ago' },
-    { id: 3, title: 'Tournament registration', desc: '5 new teams registered for Weekend Cup', time: '1 hour ago' }
-  ]);
-  const [showNotifications, setShowNotifications] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+function Toggle({ checked, onChange }) {
+  return (
+    <div onClick={() => onChange(!checked)} style={{
+      width: 44, height: 24, borderRadius: 12,
+      background: checked ? "#16a34a" : "#d1d5db",
+      cursor: "pointer", position: "relative", transition: "background 0.2s", flexShrink: 0,
+    }}>
+      <div style={{
+        width: 18, height: 18, borderRadius: "50%", background: "#fff",
+        position: "absolute", top: 3, left: checked ? 23 : 3, transition: "left 0.2s",
+        boxShadow: "0 1px 3px rgba(0,0,0,0.15)",
+      }} />
+    </div>
+  );
+}
 
-  // Venue Management State
-  const [venueInfo, setVenueInfo] = useState({
-    name: 'Champions Arena Futsal',
-    address: '123 Sports Complex, Kathmandu, Nepal',
-    description: 'Premier futsal venue with international-standard courts, professional lighting, and top-notch facilities. Perfect for casual games, league matches, and tournaments.',
-    phoneNumber: '+977-1-4567890',
-    email: 'contact@championsarena.com',
-    openingTime: '06:00',
-    closingTime: '22:00'
-  });
-
-  const [selectedDays, setSelectedDays] = useState(['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']);
-  const [galleryImages, setGalleryImages] = useState([
-    'https://images.unsplash.com/photo-1459865264687-595d652de67e?w=800&q=80',
-    'https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=800&q=80',
-    'https://images.unsplash.com/photo-1431324155629-1a6deb1dec8d?w=800&q=80'
-  ]);
-
-  const stats = [
-    { label: "Today's Bookings", value: '12', change: '+3 from yesterday', icon: Calendar, color: 'bg-blue-500' },
-    { label: 'Monthly Revenue', value: 'Rs. 2.4L', change: '+12% from last month', icon: DollarSign, color: 'bg-green-500' },
-    { label: 'Active Courts', value: '4', change: '2 in maintenance', icon: MapPin, color: 'bg-purple-500' }
-  ];
-
-  const recentBookings = [
-    { team: 'Team Alpha', court: 'Court 1', time: '6:00 PM - 7:00 PM', price: 'Rs. 2,500', status: 'Confirmed', initial: 'T' },
-    { team: 'Striker FC', court: 'Court 2', time: '7:00 PM - 8:00 PM', price: 'Rs. 2,500', status: 'Pending', initial: 'S' },
-    { team: 'Goal Getters', court: 'Court 3', time: '5:00 PM - 6:00 PM', price: 'Rs. 2,500', status: 'Confirmed', initial: 'G' },
-    { team: 'FC Warriors', court: 'Court 1', time: '8:00 PM - 9:00 PM', price: 'Rs. 2,500', status: 'Confirmed', initial: 'F' }
-  ];
-
-  const tournaments = [
-    { name: 'Weekend Cup 2024', date: 'Dec 28-29', prize: 'Rs. 50,000', entry: 'Rs. 5,000', teams: 12, maxTeams: 16 },
-    { name: 'New Year Championship', date: 'Jan 1-2', prize: 'Rs. 100,000', entry: 'Rs. 8,000', teams: 8, maxTeams: 16 }
-  ];
-
-  const peakHours = [
-    { time: '6 AM', bookings: 2 },
-    { time: '8 AM', bookings: 5 },
-    { time: '10 AM', bookings: 4 },
-    { time: '12 PM', bookings: 3 },
-    { time: '2 PM', bookings: 6 },
-    { time: '4 PM', bookings: 8 },
-    { time: '6 PM', bookings: 12 },
-    { time: '8 PM', bookings: 11 },
-    { time: '10 PM', bookings: 7 }
-  ];
-
-  const maxBookings = Math.max(...peakHours.map(h => h.bookings));
-
-  const weekDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-  
-  const timeSlots = [
-    '06:00', '07:00', '08:00', '09:00', '10:00', '11:00', '12:00',
-    '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00',
-    '20:00', '21:00'
-  ];
-
-  const togglePeakHour = (time) => {
-    if (peakHourSlots.includes(time)) {
-      setPeakHourSlots(peakHourSlots.filter(t => t !== time));
-    } else {
-      setPeakHourSlots([...peakHourSlots, time]);
-    }
-  };
-
-  const handleCourtStatusToggle = (courtId) => {
-    setCourts(courts.map(court => 
-      court.id === courtId 
-        ? { ...court, status: court.status === 'active' ? 'inactive' : 'active' }
-        : court
-    ));
-  };
-
-  const handleDeleteCourt = (courtId) => {
-    if (confirm('Are you sure you want to delete this court?')) {
-      setCourts(courts.filter(court => court.id !== courtId));
-    }
-  };
-
-  const handleBlockMaintenance = () => {
-    if (maintenanceStart && maintenanceEnd && selectedCourt) {
-      alert(`Court ${selectedCourt} blocked for maintenance from ${maintenanceStart} to ${maintenanceEnd}`);
-    }
-  };
-
-  const handleDayToggle = (day) => {
-    if (selectedDays.includes(day)) {
-      setSelectedDays(selectedDays.filter(d => d !== day));
-    } else {
-      setSelectedDays([...selectedDays, day]);
-    }
-  };
-
-  const handleInputChange = (field, value) => {
-    setVenueInfo({ ...venueInfo, [field]: value });
-  };
-
-  const handleAddImage = () => {
-    const fileInput = document.createElement('input');
-    fileInput.type = 'file';
-    fileInput.accept = 'image/*';
-    fileInput.onchange = (e) => {
-      const file = e.target.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          setGalleryImages([...galleryImages, reader.result]);
-        };
-        reader.readAsDataURL(file);
-      }
-    };
-    fileInput.click();
-  };
-
-  const handleRemoveImage = (index) => {
-    setGalleryImages(galleryImages.filter((_, i) => i !== index));
-  };
-
-  const handleSaveChanges = () => {
-    alert('Changes saved successfully!');
-  };
-
-  const Sidebar = () => (
-    <div className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 fixed lg:static inset-y-0 left-0 z-50 w-64 bg-gray-900 text-white transition-transform duration-300`}>
-      <div className="flex items-center gap-3 p-6 border-b border-gray-800">
-        <div className="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center">
-          <Users className="w-6 h-6" />
-        </div>
-        <span className="text-xl font-bold">PlayPal</span>
-      </div>
-
-      <nav className="p-4 space-y-2">
-        <button
-          onClick={() => { setCurrentPage('dashboard'); setSidebarOpen(false); }}
-          className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${
-            currentPage === 'dashboard' ? 'bg-green-600' : 'hover:bg-gray-800'
-          }`}
-        >
-          <LayoutDashboard className="w-5 h-5" />
-          <span>Dashboard</span>
-        </button>
-        <button
-          onClick={() => { setCurrentPage('venue'); setSidebarOpen(false); }}
-          className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${
-            currentPage === 'venue' ? 'bg-green-600' : 'hover:bg-gray-800'
-          }`}
-        >
-          <MapPin className="w-5 h-5" />
-          <span>Venue</span>
-        </button>
-        <button
-          onClick={() => { setCurrentPage('courts'); setSidebarOpen(false); }}
-          className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${
-            currentPage === 'courts' ? 'bg-green-600' : 'hover:bg-gray-800'
-          }`}
-        >
-          <Users className="w-5 h-5" />
-          <span>Courts & Pricing</span>
-        </button>
-        <button
-          onClick={() => { setCurrentPage('bookings'); setSidebarOpen(false); }}
-          className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${
-            currentPage === 'bookings' ? 'bg-green-600' : 'hover:bg-gray-800'
-          }`}
-        >
-          <Calendar className="w-5 h-5" />
-          <span>Bookings</span>
-        </button>
-        <button
-          onClick={() => { setCurrentPage('tournaments'); setSidebarOpen(false); }}
-          className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${
-            currentPage === 'tournaments' ? 'bg-green-600' : 'hover:bg-gray-800'
-          }`}
-        >
-          <Trophy className="w-5 h-5" />
-          <span>Tournaments</span>
-        </button>
-        <button className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-800 rounded-lg transition">
-          <MapPin className="w-5 h-5" />
-          <span>Facilities</span>
-        </button>
-        <button className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-800 rounded-lg transition">
-          <BarChart3 className="w-5 h-5" />
-          <span>Earnings</span>
-        </button>
-        <button className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-800 rounded-lg transition">
-          <Settings className="w-5 h-5" />
-          <span>Settings</span>
-        </button>
-      </nav>
-
-      <div className="absolute bottom-4 left-4 right-4">
-        <button className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-800 rounded-lg transition text-gray-400">
-          <span>Logout</span>
-        </button>
+function Input({ label, value, onChange, placeholder, type = "text", prefix, style }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 6, ...style }}>
+      {label && (
+        <label style={{ color: "#374151", fontSize: 13, fontWeight: 500 }}>{label}</label>
+      )}
+      <div style={{
+        display: "flex", alignItems: "center",
+        background: "#ffffff", border: "1px solid #e5e7eb",
+        borderRadius: 8, overflow: "hidden",
+      }}>
+        {prefix && (
+          <span style={{ padding: "0 10px", color: "#6b7280", fontSize: 14, borderRight: "1px solid #e5e7eb", paddingTop: 10, paddingBottom: 10 }}>{prefix}</span>
+        )}
+        <input
+          type={type}
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          placeholder={placeholder}
+          style={{
+            flex: 1, background: "transparent", border: "none", outline: "none",
+            color: "#111827", padding: "10px 12px", fontSize: 14,
+          }}
+        />
       </div>
     </div>
   );
+}
 
-  const Header = () => (
-    <header className="bg-white border-b border-gray-200 sticky top-0 z-40">
-      <div className="flex items-center justify-between px-6 py-4">
-        <div className="flex items-center gap-4">
-          <button onClick={() => setSidebarOpen(!sidebarOpen)} className="lg:hidden">
-            {sidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-          </button>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search..."
-              className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg w-64 focus:outline-none focus:ring-2 focus:ring-green-500"
-            />
-          </div>
-        </div>
-
-        <div className="flex items-center gap-4">
-          <div className="relative">
-            <button
-              onClick={() => setShowNotifications(!showNotifications)}
-              className="relative p-2 hover:bg-gray-100 rounded-lg"
-            >
-              <Bell className="w-6 h-6 text-gray-600" />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-yellow-400 rounded-full"></span>
-            </button>
-
-            {showNotifications && (
-              <div className="absolute right-0 mt-2 w-96 bg-white rounded-lg shadow-xl border border-gray-200 z-50">
-                <div className="p-4 border-b border-gray-200">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-semibold text-gray-900">Notifications</h3>
-                    <Trophy className="w-5 h-5 text-yellow-500" />
-                  </div>
-                </div>
-                <div className="max-h-96 overflow-auto">
-                  {notifications.map(notif => (
-                    <div key={notif.id} className="p-4 border-b border-gray-100 hover:bg-gray-50">
-                      <h4 className="font-medium text-gray-900 mb-1">{notif.title}</h4>
-                      <p className="text-sm text-gray-600 mb-1">{notif.desc}</p>
-                      <span className="text-xs text-gray-500">{notif.time}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className="flex items-center gap-3 pl-4 border-l border-gray-200">
-            <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center text-white font-semibold">
-              RK
-            </div>
-            <span className="font-medium text-gray-900">Raj Kumar</span>
-          </div>
-        </div>
-      </div>
-    </header>
+function Select({ label, value, onChange, options, placeholder }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+      {label && (
+        <label style={{ color: "#374151", fontSize: 13, fontWeight: 500 }}>{label}</label>
+      )}
+      <select
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        style={{
+          background: "#ffffff", border: "1px solid #e5e7eb",
+          borderRadius: 8, color: value ? "#111827" : "#6b7280",
+          padding: "10px 12px", fontSize: 14, outline: "none", cursor: "pointer",
+        }}
+      >
+        <option value="">{placeholder}</option>
+        {options.map(o => <option key={o} value={o}>{o}</option>)}
+      </select>
+    </div>
   );
+}
 
-  const DashboardPage = () => (
-    <div className="p-6">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Dashboard Overview</h1>
-        <p className="text-gray-600">Welcome back, Raj! Here's what's happening at your venue.</p>
+// ─── STEP 1 ───────────────────────────────────────────────────────────────────
+function Step1({ data, setData }) {
+  return (
+    <div>
+      <h2 style={{ color: "#111827", fontSize: 20, fontWeight: 700, marginBottom: 4 }}>Basic Information</h2>
+      <p style={{ color: "#6b7280", fontSize: 14, marginBottom: 24 }}>Set up the core details for your tournament.</p>
+
+      <div style={{ marginBottom: 20 }}>
+        <label style={{ color: "#374151", fontSize: 13, fontWeight: 500, display: "block", marginBottom: 8 }}>
+          Tournament Banner
+        </label>
+        <div
+          style={{
+            border: "1.5px dashed #d1d5db", borderRadius: 10, padding: "40px 20px",
+            textAlign: "center", cursor: "pointer",
+            background: data.banner ? "#f9fafb" : "#ffffff",
+            transition: "border-color 0.2s",
+          }}
+          onClick={() => document.getElementById("bannerInput").click()}
+        >
+          {data.banner ? (
+            <img src={data.banner} alt="banner" style={{ maxHeight: 140, borderRadius: 6, maxWidth: "100%" }} />
+          ) : (
+            <>
+              <div style={{
+                width: 44, height: 44, background: "#f3f4f6", borderRadius: 10,
+                display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 12px",
+              }}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" />
+                </svg>
+              </div>
+              <p style={{ color: "#4b5563", fontSize: 14, marginBottom: 4 }}>Drag & drop or click to upload</p>
+              <p style={{ color: "#9ca3af", fontSize: 12 }}>PNG, JPG up to 5MB — 800×400 recommended</p>
+            </>
+          )}
+          <input
+            id="bannerInput" type="file" accept="image/*" style={{ display: "none" }}
+            onChange={e => {
+              const file = e.target.files[0];
+              if (!file) return;
+              const r = new FileReader();
+              r.onload = ev => setData(d => ({ ...d, banner: ev.target.result, bannerFile: file }));
+              r.readAsDataURL(file);
+            }}
+          />
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-        {stats.map((stat, idx) => (
-          <div key={idx} className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center justify-between mb-4">
-              <span className="text-gray-600 text-sm">{stat.label}</span>
-              <div className={`${stat.color} w-10 h-10 rounded-lg flex items-center justify-center`}>
-                <stat.icon className="w-5 h-5 text-white" />
-              </div>
+      <Input label="Tournament Name" value={data.name} onChange={v => setData(d => ({ ...d, name: v }))}
+        placeholder="e.g. PlayPal Champions League 2026" style={{ marginBottom: 16 }} />
+
+      <div style={{ marginBottom: 16 }}>
+        <label style={{ color: "#374151", fontSize: 13, fontWeight: 500, display: "block", marginBottom: 6 }}>Description</label>
+        <textarea
+          value={data.description}
+          onChange={e => setData(d => ({ ...d, description: e.target.value }))}
+          placeholder="Describe your tournament, rules, and what makes it special..."
+          maxLength={500}
+          style={{
+            width: "100%", height: 120, background: "#ffffff",
+            border: "1px solid #e5e7eb", borderRadius: 8, color: "#111827",
+            padding: "10px 12px", fontSize: 14, resize: "none", outline: "none", boxSizing: "border-box",
+          }}
+        />
+        <div style={{ textAlign: "right", color: "#9ca3af", fontSize: 12 }}>{data.description.length}/500</div>
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+        {[["Venue", "venue", "Your registered futsal venue"], ["Location", "location", "Auto-filled from your venue address"]].map(([lbl, key, ph]) => (
+          <div key={key} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <label style={{ color: "#374151", fontSize: 13, fontWeight: 500 }}>{lbl}</label>
+            <div style={{
+              background: "#f9fafb", border: "1px solid #e5e7eb", borderRadius: 8,
+              padding: "10px 12px", fontSize: 14, color: data[key] ? "#111827" : "#9ca3af",
+            }}>
+              {data[key] || ph}
             </div>
-            <div className="text-3xl font-bold text-gray-900 mb-2">{stat.value}</div>
-            <div className="text-green-600 text-sm">{stat.change}</div>
           </div>
         ))}
       </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="mb-6">
-            <h2 className="text-lg font-semibold text-gray-900">Weekly Revenue</h2>
-            <p className="text-sm text-gray-600">Revenue and booking trends</p>
-          </div>
-          <div className="h-64">
-            <svg viewBox="0 0 700 200" className="w-full h-full">
-              <defs>
-                <linearGradient id="revenueGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                  <stop offset="0%" style={{ stopColor: '#10b981', stopOpacity: 0.3 }} />
-                  <stop offset="100%" style={{ stopColor: '#10b981', stopOpacity: 0.05 }} />
-                </linearGradient>
-              </defs>
-              
-              <text x="30" y="20" className="text-xs fill-gray-500">Rs.28k</text>
-              <text x="30" y="60" className="text-xs fill-gray-500">Rs.21k</text>
-              <text x="30" y="100" className="text-xs fill-gray-500">Rs.14k</text>
-              <text x="30" y="140" className="text-xs fill-gray-500">Rs.7k</text>
-              <text x="30" y="180" className="text-xs fill-gray-500">Rs.0k</text>
-
-              <path
-                d="M 80,120 L 150,100 L 220,110 L 290,80 L 360,95 L 430,85 L 500,60 L 570,50 L 640,70 L 640,180 L 80,180 Z"
-                fill="url(#revenueGradient)"
-              />
-              <path
-                d="M 80,120 L 150,100 L 220,110 L 290,80 L 360,95 L 430,85 L 500,60 L 570,50 L 640,70"
-                fill="none"
-                stroke="#10b981"
-                strokeWidth="2"
-              />
-
-              <text x="80" y="195" className="text-xs fill-gray-500">Mon</text>
-              <text x="150" y="195" className="text-xs fill-gray-500">Tue</text>
-              <text x="220" y="195" className="text-xs fill-gray-500">Wed</text>
-              <text x="290" y="195" className="text-xs fill-gray-500">Thu</text>
-              <text x="360" y="195" className="text-xs fill-gray-500">Fri</text>
-              <text x="430" y="195" className="text-xs fill-gray-500">Sat</text>
-              <text x="500" y="195" className="text-xs fill-gray-500">Sun</text>
-            </svg>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="mb-6">
-            <h2 className="text-lg font-semibold text-gray-900">Peak Hours</h2>
-            <p className="text-sm text-gray-600">Bookings by time of day</p>
-          </div>
-          <div className="h-64 flex items-end justify-between gap-2">
-            {peakHours.map((hour, idx) => (
-              <div key={idx} className="flex-1 flex flex-col items-center gap-2">
-                <div
-                  className="w-full bg-gradient-to-t from-green-500 to-green-300 rounded-t-lg transition-all hover:from-green-600 hover:to-green-400"
-                  style={{ height: `${(hour.bookings / maxBookings) * 100}%`, minHeight: '20px' }}
-                ></div>
-                <span className="text-xs text-gray-600 whitespace-nowrap">{hour.time}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-lg shadow">
-          <div className="p-6 border-b border-gray-200 flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900">Recent Bookings</h2>
-              <p className="text-sm text-gray-600">Latest booking requests</p>
-            </div>
-            <button className="text-green-600 text-sm font-medium hover:text-green-700">View All</button>
-          </div>
-          <div className="divide-y divide-gray-100">
-            {recentBookings.map((booking, idx) => (
-              <div key={idx} className="p-4 flex items-center justify-between hover:bg-gray-50">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center text-green-600 font-semibold">
-                    {booking.initial}
-                  </div>
-                  <div>
-                    <div className="font-medium text-gray-900">{booking.team}</div>
-                    <div className="text-sm text-gray-600">{booking.court} • Today</div>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="text-sm font-medium text-gray-900 mb-1">{booking.time}</div>
-                  <div className="text-sm text-gray-600">{booking.price}</div>
-                  <span className={`inline-block mt-1 px-2 py-1 text-xs rounded-full ${
-                    booking.status === 'Confirmed' 
-                      ? 'bg-green-100 text-green-700' 
-                      : 'bg-yellow-100 text-yellow-700'
-                  }`}>
-                    {booking.status}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow">
-          <div className="p-6 border-b border-gray-200 flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900">Upcoming Tournaments</h2>
-              <p className="text-sm text-gray-600">Manage your events</p>
-            </div>
-            <button className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition">
-              Create New →
-            </button>
-          </div>
-          <div className="p-6 space-y-4">
-            {tournaments.map((tournament, idx) => (
-              <div key={idx} className="border border-gray-200 rounded-lg p-4">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-start gap-3">
-                    <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
-                      <Trophy className="w-6 h-6 text-yellow-600" />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-gray-900">{tournament.name}</h3>
-                      <p className="text-sm text-gray-600 flex items-center gap-1 mt-1">
-                        <Calendar className="w-4 h-4" />
-                        {tournament.date}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-sm font-medium text-gray-900">Prize: {tournament.prize}</div>
-                    <div className="text-xs text-gray-600">Entry: {tournament.entry}</div>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600">Team Registration</span>
-                    <span className="font-medium text-gray-900">{tournament.teams}/{tournament.maxTeams}</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div
-                      className="bg-green-500 h-2 rounded-full transition-all"
-                      style={{ width: `${(tournament.teams / tournament.maxTeams) * 100}%` }}
-                    ></div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
     </div>
   );
+}
 
-  const VenuePage = () => (
-    <div className="p-6">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Venue Management</h1>
-        <p className="text-gray-600">Manage your futsal venue details and settings</p>
+// ─── STEP 2 ───────────────────────────────────────────────────────────────────
+function Step2({ data, setData }) {
+  const formats = [
+    { id: "knockout", label: "Knockout", sub: "Single elimination bracket", icon: "⚡" },
+    { id: "group_knockout", label: "Group + Knockout", sub: "Group stage followed by knockouts", icon: "🏆" },
+    { id: "round_robin", label: "Round Robin", sub: "Every team plays every other team", icon: "🔄" },
+  ];
+  return (
+    <div>
+      <h2 style={{ color: "#111827", fontSize: 20, fontWeight: 700, marginBottom: 4 }}>Tournament Details</h2>
+      <p style={{ color: "#6b7280", fontSize: 14, marginBottom: 24 }}>Configure dates, team capacity, and format.</p>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16, marginBottom: 20 }}>
+        {[["Start Date", "startDate"], ["End Date", "endDate"], ["Registration Deadline", "regDeadline"]].map(([lbl, key]) => (
+          <Input key={key} label={lbl} type="date" value={data[key]} onChange={v => setData(d => ({ ...d, [key]: v }))} />
+        ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
-          {/* Venue Information */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center gap-2 mb-6">
-              <MapPin className="w-5 h-5 text-green-600" />
-              <h2 className="text-lg font-semibold text-gray-900">Venue Information</h2>
-            </div>
-            <p className="text-sm text-gray-600 mb-6">Update your venue details visible to players</p>
+      <Input label="Maximum Teams" type="number" value={data.maxTeams}
+        onChange={v => setData(d => ({ ...d, maxTeams: parseInt(v) || 0 }))}
+        style={{ marginBottom: 20, maxWidth: 200 }} />
 
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Venue Name</label>
-                  <input
-                    type="text"
-                    value={venueInfo.name}
-                    onChange={(e) => handleInputChange('name', e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
-                  <input
-                    type="text"
-                    value={venueInfo.address}
-                    onChange={(e) => handleInputChange('address', e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
-                <textarea
-                  value={venueInfo.description}
-                  onChange={(e) => handleInputChange('description', e.target.value)}
-                  rows={4}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Venue Gallery */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center gap-2 mb-6">
-              <ImageIcon className="w-5 h-5 text-green-600" />
-              <h2 className="text-lg font-semibold text-gray-900">Venue Gallery</h2>
-            </div>
-            <p className="text-sm text-gray-600 mb-6">Showcase your venue with high-quality images</p>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-              {galleryImages.map((img, idx) => (
-                <div key={idx} className="relative group rounded-lg overflow-hidden aspect-video">
-                  <img src={img} alt={`Gallery ${idx + 1}`} className="w-full h-full object-cover" />
-                  <button
-                    onClick={() => handleRemoveImage(idx)}
-                    className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-              ))}
-            </div>
-
-            <button
-              onClick={handleAddImage}
-              className="w-full border-2 border-dashed border-gray-300 rounded-lg p-8 hover:border-green-500 transition-colors flex flex-col items-center justify-center gap-2 text-gray-500 hover:text-green-600"
-            >
-              <Upload className="w-8 h-8" />
-              <span className="text-sm font-medium">Add Image</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Right Column */}
-        <div className="space-y-6">
-          {/* Contact Information */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center gap-2 mb-6">
-              <Phone className="w-5 h-5 text-green-600" />
-              <h2 className="text-lg font-semibold text-gray-900">Contact Information</h2>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
-                <input
-                  type="text"
-                  value={venueInfo.phoneNumber}
-                  onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
-                <input
-                  type="email"
-                  value={venueInfo.email}
-                  onChange={(e) => handleInputChange('email', e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Operating Hours */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center gap-2 mb-6">
-              <Clock className="w-5 h-5 text-green-600" />
-              <h2 className="text-lg font-semibold text-gray-900">Operating Hours</h2>
-            </div>
-
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Opening Time</label>
-                  <input
-                    type="time"
-                    value={venueInfo.openingTime}
-                    onChange={(e) => handleInputChange('openingTime', e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Closing Time</label>
-                  <input
-                    type="time"
-                    value={venueInfo.closingTime}
-                    onChange={(e) => handleInputChange('closingTime', e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">Operating Days</label>
-                <div className="flex flex-wrap gap-2">
-                  {weekDays.map(day => (
-                    <button
-                      key={day}
-                      onClick={() => handleDayToggle(day)}
-                      className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                        selectedDays.includes(day)
-                          ? 'bg-green-500 text-white'
-                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                      }`}
-                    >
-                      {day}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Save Button */}
-          <button
-            onClick={handleSaveChanges}
-            className="w-full bg-green-600 text-white py-3 rounded-lg font-medium hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
-          >
-            <Settings className="w-5 h-5" />
-            Save Changes
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-
-  const CourtsPage = () => (
-    <div className="p-6">
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Courts & Pricing</h1>
-          <p className="text-gray-600">Manage your courts, pricing, and availability</p>
-        </div>
-        <button className="px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition flex items-center gap-2">
-          <span className="text-xl">+</span>
-          Add Court
-        </button>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column - Courts List */}
-        <div className="lg:col-span-2">
-          <div className="bg-white rounded-lg shadow p-6 mb-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Your Courts</h2>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {courts.map(court => (
-                <div 
-                  key={court.id}
-                  className={`border-2 rounded-lg p-4 transition-all cursor-pointer ${
-                    selectedCourt === court.id 
-                      ? 'border-green-500 bg-green-50' 
-                      : court.status === 'maintenance'
-                      ? 'border-orange-200 bg-orange-50'
-                      : 'border-gray-200 hover:border-green-300'
-                  }`}
-                  onClick={() => setSelectedCourt(court.id)}
-                >
-                  <div className="flex items-start justify-between mb-3">
-                    <div>
-                      <h3 className="font-semibold text-gray-900">{court.name}</h3>
-                      <p className="text-sm text-gray-600">{court.type} • {court.size}</p>
-                    </div>
-                    <span className={`px-2 py-1 text-xs rounded-full ${
-                      court.status === 'active' 
-                        ? 'bg-green-100 text-green-700'
-                        : court.status === 'maintenance'
-                        ? 'bg-orange-100 text-orange-700'
-                        : 'bg-gray-100 text-gray-700'
-                    }`}>
-                      {court.status}
-                    </span>
-                  </div>
-
-                  <div className="space-y-2 mb-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">Regular Price</span>
-                      <span className="font-semibold text-gray-900">₹ {court.price} /hr</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">Peak Price</span>
-                      <span className="font-semibold text-orange-600">₹ {court.peakPrice} /hr (peak)</span>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-wrap gap-2 mb-3">
-                    {court.amenities.map((amenity, idx) => (
-                      <span key={idx} className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded">
-                        {amenity}
-                      </span>
-                    ))}
-                  </div>
-
-                  <div className="flex items-center justify-between pt-3 border-t border-gray-200">
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); }}
-                      className="text-green-600 text-sm font-medium hover:text-green-700 flex items-center gap-1"
-                    >
-                      <Settings className="w-4 h-4" />
-                      Edit
-                    </button>
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); handleDeleteCourt(court.id); }}
-                      className="text-red-600 text-sm font-medium hover:text-red-700"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Right Column - Availability Settings */}
-        <div className="space-y-6">
-          {/* Availability Control */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">
-              Availability - {selectedCourt ? courts.find(c => c.id === selectedCourt)?.name : 'Select Court'}
-            </h2>
-            <p className="text-sm text-gray-600 mb-4">Toggle time slots and set peak hours</p>
-
-            <div className="mb-4">
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-sm font-medium text-gray-700">Enable All Slots</span>
-                <button
-                  onClick={() => setEnableAllSlots(!enableAllSlots)}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                    enableAllSlots ? 'bg-green-500' : 'bg-gray-300'
-                  }`}
-                >
-                  <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                      enableAllSlots ? 'translate-x-6' : 'translate-x-1'
-                    }`}
-                  />
-                </button>
-              </div>
-
-              <div className="grid grid-cols-4 gap-2">
-                {timeSlots.map(time => (
-                  <button
-                    key={time}
-                    onClick={() => togglePeakHour(time)}
-                    disabled={!enableAllSlots}
-                    className={`px-2 py-2 text-sm rounded-lg font-medium transition-colors ${
-                      !enableAllSlots
-                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                        : peakHourSlots.includes(time)
-                        ? 'bg-orange-500 text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    {time}
-                  </button>
-                ))}
-              </div>
-              <p className="text-xs text-gray-500 mt-2">
-                Click to toggle peak hours (highlighted in orange)
-              </p>
-            </div>
-          </div>
-
-          {/* Maintenance Block */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Maintenance Block</h2>
-            <p className="text-sm text-gray-600 mb-4">Block slots for maintenance</p>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
-                <input
-                  type="date"
-                  value={maintenanceStart}
-                  onChange={(e) => setMaintenanceStart(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">End Date</label>
-                <input
-                  type="date"
-                  value={maintenanceEnd}
-                  onChange={(e) => setMaintenanceEnd(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                />
-              </div>
-
-              <button
-                onClick={handleBlockMaintenance}
-                disabled={!selectedCourt || !maintenanceStart || !maintenanceEnd}
-                className="w-full bg-orange-600 text-white py-2 rounded-lg font-medium hover:bg-orange-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                <Settings className="w-4 h-4" />
-                Block for Maintenance
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
-  const BookingsPage = () => {
-    const filteredBookings = getFilteredBookings();
-    const counts = getBookingCounts();
-
-    return (
-      <div className="p-6">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">Booking Management</h1>
-          <p className="text-gray-600">View and manage all booking requests</p>
-        </div>
-
-        {/* Search and Filter Bar */}
-        <div className="bg-white rounded-lg shadow p-4 mb-6">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search bookings by team, captain, or ID..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-              />
-            </div>
-            <input
-              type="date"
-              value={bookingDate}
-              onChange={(e) => setBookingDate(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-            />
-            <button className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center gap-2">
-              <Filter className="w-5 h-5" />
-              Filter
-            </button>
-          </div>
-        </div>
-
-        {/* Filter Tabs */}
-        <div className="flex gap-2 mb-6 overflow-x-auto">
-          <button
-            onClick={() => setBookingFilter('All')}
-            className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap ${
-              bookingFilter === 'All'
-                ? 'bg-green-600 text-white'
-                : 'bg-white text-gray-700 hover:bg-gray-50'
-            }`}
-          >
-            All ({counts.all})
-          </button>
-          <button
-            onClick={() => setBookingFilter('Pending')}
-            className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap ${
-              bookingFilter === 'Pending'
-                ? 'bg-yellow-500 text-white'
-                : 'bg-white text-gray-700 hover:bg-gray-50'
-            }`}
-          >
-            Pending ({counts.pending})
-          </button>
-          <button
-            onClick={() => setBookingFilter('Confirmed')}
-            className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap ${
-              bookingFilter === 'Confirmed'
-                ? 'bg-green-600 text-white'
-                : 'bg-white text-gray-700 hover:bg-gray-50'
-            }`}
-          >
-            Confirmed ({counts.confirmed})
-          </button>
-          <button
-            onClick={() => setBookingFilter('Cancelled')}
-            className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap ${
-              bookingFilter === 'Cancelled'
-                ? 'bg-red-600 text-white'
-                : 'bg-white text-gray-700 hover:bg-gray-50'
-            }`}
-          >
-            Cancelled ({counts.cancelled})
-          </button>
-        </div>
-
-        {/* Bookings Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredBookings.map(booking => (
-            <div key={booking.id} className="bg-white rounded-lg shadow hover:shadow-lg transition-shadow">
-              <div className="p-6">
-                {/* Header */}
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-semibold text-lg ${
-                      booking.status === 'Confirmed' ? 'bg-green-500' :
-                      booking.status === 'Pending' ? 'bg-yellow-500' :
-                      'bg-red-500'
-                    }`}>
-                      {booking.initial}
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-gray-900">{booking.team}</h3>
-                      <p className="text-sm text-gray-600">{booking.bookingId} • {booking.court}</p>
-                    </div>
-                  </div>
-                  <button className="text-gray-400 hover:text-gray-600">
-                    <span className="text-xl">⋮</span>
-                  </button>
-                </div>
-
-                {/* Status Badge */}
-                <div className="mb-4">
-                  <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium ${
-                    booking.status === 'Confirmed' ? 'bg-green-100 text-green-700' :
-                    booking.status === 'Pending' ? 'bg-yellow-100 text-yellow-700' :
-                    'bg-red-100 text-red-700'
-                  }`}>
-                    {booking.status === 'Confirmed' && <Check className="w-4 h-4" />}
-                    {booking.status === 'Pending' && <Clock className="w-4 h-4" />}
-                    {booking.status === 'Cancelled' && <X className="w-4 h-4" />}
-                    {booking.status}
-                  </span>
-                </div>
-
-                {/* Booking Details */}
-                <div className="space-y-3 mb-4">
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <Calendar className="w-4 h-4" />
-                    <span>{booking.date}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <Clock className="w-4 h-4" />
-                    <span>{booking.time}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <User className="w-4 h-4" />
-                    <span>{booking.contact}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <Phone className="w-4 h-4" />
-                    <span>{booking.phone}</span>
-                  </div>
-                </div>
-
-                {/* Payment Info */}
-                <div className="flex items-center justify-between pt-4 border-t border-gray-200 mb-4">
-                  <div className="flex items-center gap-2">
-                    <CreditCard className="w-4 h-4 text-gray-600" />
-                    <span className="font-semibold text-gray-900">Rs. {booking.price}</span>
-                  </div>
-                  <span className={`text-sm font-medium ${
-                    booking.paymentStatus === 'Paid' ? 'text-green-600' :
-                    booking.paymentStatus === 'Failed' ? 'text-red-600' :
-                    'text-orange-600'
-                  }`}>
-                    ({booking.paymentStatus})
-                  </span>
-                </div>
-
-                {/* Action Buttons */}
-                {booking.status === 'Pending' && (
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => handleBookingAction(booking.id, 'cancel')}
-                      className="flex-1 px-4 py-2 border border-red-500 text-red-500 rounded-lg hover:bg-red-50 transition-colors"
-                    >
-                      <X className="w-4 h-4 mx-auto" />
-                    </button>
-                    <button
-                      onClick={() => handleBookingAction(booking.id, 'confirm')}
-                      className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                    >
-                      <Check className="w-4 h-4 mx-auto" />
-                    </button>
-                  </div>
-                )}
-              </div>
+      <div>
+        <label style={{ color: "#374151", fontSize: 13, fontWeight: 500, display: "block", marginBottom: 10 }}>
+          Tournament Format
+        </label>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
+          {formats.map(f => (
+            <div key={f.id} onClick={() => setData(d => ({ ...d, format: f.id }))} style={{
+              padding: 16, borderRadius: 10, cursor: "pointer",
+              border: data.format === f.id ? "1.5px solid #16a34a" : "1px solid #e5e7eb",
+              background: data.format === f.id ? "#f0fdf4" : "#ffffff",
+              transition: "all 0.2s",
+            }}>
+              <div style={{ fontSize: 22, marginBottom: 6 }}>{f.icon}</div>
+              <div style={{ color: data.format === f.id ? "#15803d" : "#111827", fontWeight: 600, fontSize: 14, marginBottom: 2 }}>{f.label}</div>
+              <div style={{ color: "#6b7280", fontSize: 12 }}>{f.sub}</div>
             </div>
           ))}
         </div>
-
-        {filteredBookings.length === 0 && (
-          <div className="text-center py-12">
-            <Calendar className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No bookings found</h3>
-            <p className="text-gray-600">Try adjusting your search or filters</p>
-          </div>
-        )}
       </div>
-    );
+    </div>
+  );
+}
+
+// ─── STEP 3 ───────────────────────────────────────────────────────────────────
+function Step3({ data, setData }) {
+  const prizePool = data.maxTeams * data.entryFee;
+  const methods = [
+    { id: "online", label: "Online Payment", icon: <CreditCard size={15} /> },
+    { id: "cash", label: "Cash Payment", icon: <Banknote size={15} /> },
+    { id: "both", label: "Both", icon: <LayoutList size={15} /> },
+  ];
+  return (
+    <div>
+      <h2 style={{ color: "#111827", fontSize: 20, fontWeight: 700, marginBottom: 4 }}>Registration Settings</h2>
+      <p style={{ color: "#6b7280", fontSize: 14, marginBottom: 24 }}>Set entry fees and payment preferences.</p>
+
+      <Input label="Entry Fee per Team" type="number" value={data.entryFee}
+        onChange={v => setData(d => ({ ...d, entryFee: parseInt(v) || 0 }))}
+        prefix="Rs." style={{ marginBottom: 20, maxWidth: 240 }} />
+
+      <div style={{ marginBottom: 20 }}>
+        <label style={{ color: "#374151", fontSize: 13, fontWeight: 500, display: "block", marginBottom: 10 }}>
+          Payment Method
+        </label>
+        <div style={{ display: "flex", gap: 10 }}>
+          {methods.map(m => (
+            <button key={m.id} onClick={() => setData(d => ({ ...d, paymentMethod: m.id }))} style={{
+              padding: "8px 16px", borderRadius: 8,
+              border: data.paymentMethod === m.id ? "1.5px solid #16a34a" : "1.5px solid #e5e7eb",
+              background: data.paymentMethod === m.id ? "#f0fdf4" : "#ffffff",
+              color: data.paymentMethod === m.id ? "#16a34a" : "#6b7280",
+              cursor: "pointer", fontSize: 14, fontWeight: 500,
+              display: "flex", alignItems: "center", gap: 6,
+            }}>
+              {m.icon} {m.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div style={{
+        background: "#f0fdf4", border: "1px solid #bbf7d0",
+        borderRadius: 10, padding: 20,
+      }}>
+        <div style={{ color: "#6b7280", fontSize: 13, marginBottom: 6 }}>Potential Prize Pool</div>
+        <div style={{ color: "#16a34a", fontSize: 32, fontWeight: 800, marginBottom: 4 }}>
+          Rs. {prizePool.toLocaleString()}
+        </div>
+        <div style={{ color: "#4b5563", fontSize: 13 }}>
+          Based on {data.maxTeams} teams × Rs.{data.entryFee.toLocaleString()} entry fee
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── STEP 4 ───────────────────────────────────────────────────────────────────
+function Step4({ data, setData }) {
+  const prizeKeys = ["winner", "runnerUp", "bestPlayer", "topScorer", "bestGoalkeeper", "risingPlayer"];
+  const prizeLabels = {
+    winner: { label: "Winner", Icon: Trophy, color: "#16a34a" },
+    runnerUp: { label: "Runner-up", Icon: Medal, color: "#f97316" },
+    bestPlayer: { label: "Best Player", Icon: Star, color: "#eab308" },
+    topScorer: { label: "Top Scorer", Icon: Target, color: "#0ea5e9" },
+    bestGoalkeeper: { label: "Best Goalkeeper", Icon: Shield, color: "#6366f1" },
+    risingPlayer: { label: "Rising Player", Icon: TrendingUp, color: "#22c55e" },
   };
 
-  const TournamentsPage = () => {
-    const upcomingTournaments = tournamentsData.filter(t => t.status === 'Upcoming');
-    const ongoingTournaments = tournamentsData.filter(t => t.status === 'Ongoing');
-    const completedTournaments = tournamentsData.filter(t => t.status === 'Completed');
-
-    return (
-      <div className="p-6">
-        <div className="mb-6 flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Tournaments & Events</h1>
-            <p className="text-gray-600">Create and manage futsal tournaments</p>
-          </div>
-          <button className="px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition flex items-center gap-2">
-            <span className="text-xl">+</span>
-            Create Tournament
-          </button>
-        </div>
-
-        {/* Status Badges */}
-        <div className="flex gap-3 mb-6">
-          <span className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg font-medium text-sm">
-            {upcomingTournaments.length} Upcoming
-          </span>
-          <span className="px-4 py-2 bg-green-100 text-green-700 rounded-lg font-medium text-sm">
-            {ongoingTournaments.length} Ongoing
-          </span>
-        </div>
-
-        {/* Tournaments Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {tournamentsData.map(tournament => (
-            <div key={tournament.id} className="bg-white rounded-lg shadow hover:shadow-lg transition-shadow">
-              <div className="p-6">
-                {/* Header */}
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-start gap-3">
-                    <div className="w-14 h-14 bg-orange-500 rounded-lg flex items-center justify-center text-3xl">
-                      {tournament.icon}
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-gray-900 text-lg mb-1">{tournament.name}</h3>
-                      <p className="text-sm text-gray-600 flex items-center gap-1">
-                        <Calendar className="w-4 h-4" />
-                        {tournament.date}
-                      </p>
-                    </div>
-                  </div>
-                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                    tournament.status === 'Upcoming' ? 'bg-blue-100 text-blue-700' :
-                    tournament.status === 'Ongoing' ? 'bg-green-100 text-green-700' :
-                    'bg-gray-100 text-gray-700'
-                  }`}>
-                    {tournament.status}
-                  </span>
-                </div>
-
-                {/* Description */}
-                <p className="text-gray-600 text-sm mb-4">{tournament.description}</p>
-
-                {/* Tournament Info */}
-                <div className="grid grid-cols-3 gap-4 mb-4">
-                  <div>
-                    <p className="text-xs text-gray-500 mb-1">Entry Fee</p>
-                    <p className="font-semibold text-gray-900">Rs. {tournament.entryFee.toLocaleString()}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500 mb-1">Prize Pool</p>
-                    <p className="font-semibold text-orange-600">Rs. {tournament.prizePool.toLocaleString()}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500 mb-1">Format</p>
-                    <p className="font-semibold text-gray-900">{tournament.format}</p>
-                  </div>
-                </div>
-
-                {/* Team Registration Progress */}
-                <div className="mb-4">
-                  <div className="flex items-center justify-between text-sm mb-2">
-                    <span className="text-gray-600 flex items-center gap-1">
-                      <Users className="w-4 h-4" />
-                      Team Registration
-                    </span>
-                    <span className="font-medium text-gray-900">
-                      {tournament.teamsRegistered}/{tournament.maxTeams}
-                    </span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div
-                      className="bg-green-500 h-2 rounded-full transition-all"
-                      style={{ width: `${(tournament.teamsRegistered / tournament.maxTeams) * 100}%` }}
-                    ></div>
-                  </div>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex gap-2 pt-4 border-t border-gray-200">
-                  <button className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center gap-2">
-                    <Eye className="w-4 h-4" />
-                    View Teams
-                  </button>
-                  <button className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center gap-2">
-                    <Edit className="w-4 h-4" />
-                    Edit
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {tournamentsData.length === 0 && (
-          <div className="text-center py-12">
-            <Trophy className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No tournaments yet</h3>
-            <p className="text-gray-600 mb-4">Create your first tournament to get started</p>
-            <button className="px-6 py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition">
-              Create Tournament
-            </button>
-          </div>
-        )}
-      </div>
-    );
+  const updatePrize = (key, field, val) => {
+    setData(d => ({ ...d, prizes: { ...d.prizes, [key]: { ...d.prizes[key], [field]: val } } }));
   };
 
   return (
-    <div className="flex h-screen bg-gray-50">
-      <Sidebar />
+    <div>
+      <h2 style={{ color: "#111827", fontSize: 20, fontWeight: 700, marginBottom: 4 }}>Prize Distribution</h2>
+      <p style={{ color: "#6b7280", fontSize: 14, marginBottom: 24 }}>Configure prizes and rewards for the tournament.</p>
 
-      <div className="flex-1 overflow-auto">
-        <Header />
-        {currentPage === 'dashboard' && <DashboardPage />}
-        {currentPage === 'venue' && <VenuePage />}
-        {currentPage === 'courts' && <CourtsPage />}
-        {currentPage === 'bookings' && <BookingsPage />}
-        {currentPage === 'tournaments' && <TournamentsPage />}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+        {prizeKeys.map(key => {
+          const p = data.prizes[key];
+          const meta = prizeLabels[key];
+          const IconComp = meta.Icon;
+          return (
+            <div key={key} style={{
+              background: "#ffffff", border: "1px solid #e5e7eb",
+              borderRadius: 10, padding: 16,
+              opacity: p.enabled ? 1 : 0.6,
+              transition: "opacity 0.2s, box-shadow 0.2s",
+              boxShadow: p.enabled ? "0 2px 8px rgba(0,0,0,0.06)" : "none",
+            }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{
+                    width: 28, height: 28, borderRadius: "999px",
+                    background: `${meta.color}1A`,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                  }}>
+                    <IconComp size={16} color={meta.color} />
+                  </span>
+                  <span style={{ color: "#111827", fontWeight: 600, fontSize: 14 }}>{meta.label}</span>
+                </div>
+                <Toggle checked={p.enabled} onChange={v => updatePrize(key, "enabled", v)} />
+              </div>
+              <div style={{
+                display: "flex", alignItems: "center",
+                background: p.enabled ? "#ffffff" : "#f9fafb",
+                border: "1px solid #e5e7eb", borderRadius: 6,
+                padding: "6px 10px", marginBottom: 8,
+              }}>
+                <span style={{ color: "#6b7280", marginRight: 6, fontSize: 13 }}>Rs.</span>
+                <input
+                  type="number" value={p.amount}
+                  onChange={e => updatePrize(key, "amount", parseInt(e.target.value) || 0)}
+                  disabled={!p.enabled}
+                  style={{ background: "transparent", border: "none", outline: "none", color: "#111827", fontSize: 14, width: "100%" }}
+                />
+              </div>
+              <input
+                value={p.label}
+                onChange={e => updatePrize(key, "label", e.target.value)}
+                disabled={!p.enabled}
+                style={{
+                  background: p.enabled ? "#ffffff" : "#f9fafb",
+                  border: "1px solid #e5e7eb", borderRadius: 6,
+                  padding: "6px 10px", color: "#4b5563", fontSize: 13,
+                  width: "100%", outline: "none", boxSizing: "border-box",
+                }}
+              />
+            </div>
+          );
+        })}
       </div>
 
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
-          onClick={() => setSidebarOpen(false)}
-        ></div>
+      <button onClick={() => {
+        const name = prompt("Custom prize name:");
+        if (name) setData(d => ({ ...d, customPrizes: [...d.customPrizes, { name, amount: 0, label: "" }] }));
+      }} style={{
+        marginTop: 16, padding: "10px 18px", border: "1.5px dashed #d1d5db",
+        borderRadius: 8, background: "transparent", color: "#6b7280",
+        cursor: "pointer", fontSize: 14, display: "flex", alignItems: "center", gap: 6,
+      }}>
+        + Add Custom Prize
+      </button>
+    </div>
+  );
+}
+
+// ─── STEP 5 ───────────────────────────────────────────────────────────────────
+function Step5({ data, setData }) {
+  return (
+    <div>
+      <h2 style={{ color: "#111827", fontSize: 20, fontWeight: 700, marginBottom: 4 }}>Fixture Settings</h2>
+      <p style={{ color: "#6b7280", fontSize: 14, marginBottom: 24 }}>Configure match scheduling and fixture generation.</p>
+
+      <div style={{
+        background: "#ffffff", border: "1px solid #e5e7eb", borderRadius: 10,
+        padding: 16, marginBottom: 20,
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <div style={{
+            width: 36, height: 36, background: "#f0fdf4",
+            borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center",
+          }}>
+            <Shuffle size={18} color="#16a34a" />
+          </div>
+          <div>
+            <div style={{ color: "#111827", fontWeight: 600, fontSize: 14 }}>Shuffle Teams Automatically</div>
+            <div style={{ color: "#6b7280", fontSize: 12 }}>Randomly assign teams to brackets</div>
+          </div>
+        </div>
+        <Toggle checked={data.shuffleTeams} onChange={v => setData(d => ({ ...d, shuffleTeams: v }))} />
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
+        <Input
+          label={<span style={{ display: "flex", alignItems: "center", gap: 6 }}><Clock3 size={14} color="#4b5563" /><span>Match Duration (minutes)</span></span>}
+          type="number" value={data.matchDuration}
+          onChange={v => setData(d => ({ ...d, matchDuration: parseInt(v) || 0 }))}
+        />
+        <Input
+          label={<span style={{ display: "flex", alignItems: "center", gap: 6 }}><PauseCircle size={14} color="#4b5563" /><span>Break Between Matches (minutes)</span></span>}
+          type="number" value={data.breakBetween}
+          onChange={v => setData(d => ({ ...d, breakBetween: parseInt(v) || 0 }))}
+        />
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 20 }}>
+        <Select
+          label={<span style={{ display: "flex", alignItems: "center", gap: 6 }}><MapPin size={14} color="#4b5563" /><span>Court</span></span>}
+          value={data.court} onChange={v => setData(d => ({ ...d, court: v }))}
+          options={courts} placeholder="Select court"
+        />
+        <Input
+          label={<span style={{ display: "flex", alignItems: "center", gap: 6 }}><CalendarClock size={14} color="#4b5563" /><span>Match Time Slot</span></span>}
+          value={data.timeSlot} onChange={v => setData(d => ({ ...d, timeSlot: v }))}
+          placeholder="e.g. 06:00–07:00 AM"
+        />
+      </div>
+
+      <div style={{
+        background: "#f9fafb", border: "1px solid #e5e7eb",
+        borderRadius: 10, padding: 24, textAlign: "center",
+      }}>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, opacity: 0.3, marginBottom: 12 }}>
+          {[[120], [160, 100], [80, 120, 80]].map((row, ri) => (
+            <div key={ri} style={{ display: "flex", gap: 8 }}>
+              {row.map((w, bi) => (
+                <div key={bi} style={{ height: 18, width: w, background: "#d1d5db", borderRadius: 4 }} />
+              ))}
+            </div>
+          ))}
+        </div>
+        <p style={{ color: "#6b7280", fontSize: 13 }}>Bracket preview will be generated after teams register</p>
+      </div>
+    </div>
+  );
+}
+
+// ─── STEP 6 ───────────────────────────────────────────────────────────────────
+function Step6({ data, setData }) {
+  const enabledPrizes = Object.entries(data.prizes).filter(([, p]) => p.enabled);
+  const formatLabel = { knockout: "Knockout", group_knockout: "Group + Knockout", round_robin: "Round Robin" };
+
+  const prizeIconMap = {
+    winner: <Trophy size={14} color="#16a34a" />,
+    runnerUp: <Medal size={14} color="#f97316" />,
+    bestPlayer: <Star size={14} color="#eab308" />,
+    topScorer: <Target size={14} color="#0ea5e9" />,
+    bestGoalkeeper: <Shield size={14} color="#6366f1" />,
+    risingPlayer: <TrendingUp size={14} color="#22c55e" />,
+  };
+  const prizeNameMap = {
+    winner: "Winner", runnerUp: "Runner-up", bestPlayer: "Best Player",
+    topScorer: "Top Scorer", bestGoalkeeper: "Best Goalkeeper", risingPlayer: "Rising Player",
+  };
+
+  const InfoRow = ({ icon, label, value, sub }) => (
+    <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+      <div style={{
+        width: 32, height: 32, background: "#f3f4f6", borderRadius: 8,
+        display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+      }}>
+        {icon}
+      </div>
+      <div>
+        <div style={{ color: "#9ca3af", fontSize: 11, fontWeight: 500, marginBottom: 2 }}>{label}</div>
+        <div style={{ color: "#111827", fontWeight: 600, fontSize: 13 }}>{value || "—"}</div>
+        {sub && <div style={{ color: "#6b7280", fontSize: 12, marginTop: 1 }}>{sub}</div>}
+      </div>
+    </div>
+  );
+
+  return (
+    <div>
+      <h2 style={{ color: "#111827", fontSize: 20, fontWeight: 700, marginBottom: 4 }}>Review & Publish</h2>
+      <p style={{ color: "#6b7280", fontSize: 14, marginBottom: 24 }}>Review all details before publishing your tournament.</p>
+
+      {/* Banner */}
+      {data.banner ? (
+        <div style={{ marginBottom: 20, borderRadius: 12, overflow: "hidden", border: "1px solid #e5e7eb" }}>
+          <img src={data.banner} alt="Tournament Banner"
+            style={{ width: "100%", maxHeight: 200, objectFit: "cover", display: "block" }} />
+        </div>
+      ) : (
+        <div style={{
+          marginBottom: 20, borderRadius: 12, border: "1.5px dashed #e5e7eb",
+          padding: "28px 20px", textAlign: "center", background: "#f9fafb",
+        }}>
+          <p style={{ color: "#9ca3af", fontSize: 13 }}>No banner uploaded</p>
+        </div>
       )}
+
+      {/* Main Card */}
+      <div style={{ background: "#ffffff", border: "1px solid #e5e7eb", borderRadius: 12, padding: 20, marginBottom: 16 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
+          <div>
+            <h3 style={{ color: "#111827", fontSize: 18, fontWeight: 700, marginBottom: 4 }}>
+              {data.name || "Untitled Tournament"}
+            </h3>
+            <p style={{ color: "#6b7280", fontSize: 13, maxWidth: 480 }}>
+              {data.description || "No description provided."}
+            </p>
+          </div>
+          <span style={{
+            background: "#f3f4f6", color: "#6b7280", borderRadius: 6,
+            padding: "3px 10px", fontSize: 12, fontWeight: 600, whiteSpace: "nowrap",
+          }}>
+            Draft
+          </span>
+        </div>
+
+        <div style={{
+          display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16,
+          paddingTop: 16, borderTop: "1px solid #f3f4f6",
+        }}>
+          <InfoRow
+            icon={<CalendarDays size={15} color="#6b7280" />}
+            label="Tournament Dates"
+            value={data.startDate && data.endDate ? `${data.startDate} → ${data.endDate}` : null}
+          />
+          <InfoRow
+            icon={<CalendarDays size={15} color="#6b7280" />}
+            label="Registration Deadline"
+            value={data.regDeadline}
+          />
+          <InfoRow
+            icon={<MapPin size={15} color="#6b7280" />}
+            label="Venue"
+            value={data.venue}
+            sub={data.location}
+          />
+          <InfoRow
+            icon={<Users size={15} color="#6b7280" />}
+            label="Max Teams"
+            value={`${data.maxTeams} teams`}
+            sub={formatLabel[data.format]}
+          />
+          <InfoRow
+            icon={<BadgeDollarSign size={15} color="#6b7280" />}
+            label="Entry Fee"
+            value={`Rs. ${data.entryFee.toLocaleString()} / team`}
+          />
+          <InfoRow
+            icon={<Clock3 size={15} color="#6b7280" />}
+            label="Match Settings"
+            value={`${data.matchDuration} min matches`}
+            sub={`${data.breakBetween} min break · ${data.court || "—"} · ${data.timeSlot || "—"}`}
+          />
+        </div>
+
+        {/* Prize Pool Banner */}
+        <div style={{
+          marginTop: 16, padding: "12px 16px",
+          background: "#f0fdf4", border: "1px solid #bbf7d0",
+          borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "space-between",
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <Trophy size={18} color="#16a34a" />
+            <span style={{ color: "#15803d", fontWeight: 700, fontSize: 15 }}>
+              Prize Pool: Rs. {(data.maxTeams * data.entryFee).toLocaleString()}
+            </span>
+          </div>
+          <span style={{ color: "#6b7280", fontSize: 13 }}>
+            {enabledPrizes.length} prizes · {formatLabel[data.format]}
+          </span>
+        </div>
+      </div>
+
+      {/* Prizes */}
+      {enabledPrizes.length > 0 && (
+        <div style={{ background: "#ffffff", border: "1px solid #e5e7eb", borderRadius: 12, padding: 20, marginBottom: 16 }}>
+          <h4 style={{ color: "#111827", fontWeight: 600, fontSize: 14, marginBottom: 14 }}>Prize Distribution</h4>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {enabledPrizes.map(([key, p]) => (
+              <div key={key} style={{
+                display: "flex", alignItems: "center", justifyContent: "space-between",
+                padding: "8px 0", borderBottom: "1px solid #f9fafb",
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  {prizeIconMap[key]}
+                  <span style={{ color: "#374151", fontSize: 14, fontWeight: 500 }}>{prizeNameMap[key]}</span>
+                  <span style={{ color: "#9ca3af", fontSize: 12 }}>— {p.label}</span>
+                </div>
+                <span style={{ color: "#111827", fontWeight: 700, fontSize: 14 }}>
+                  Rs. {p.amount.toLocaleString()}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Fixture Summary */}
+      <div style={{ background: "#ffffff", border: "1px solid #e5e7eb", borderRadius: 12, padding: 20, marginBottom: 16 }}>
+        <h4 style={{ color: "#111827", fontWeight: 600, fontSize: 14, marginBottom: 14 }}>Fixture Summary</h4>
+        <div style={{ display: "flex", gap: 24 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <Shuffle size={14} color={data.shuffleTeams ? "#16a34a" : "#9ca3af"} />
+            <span style={{ color: "#374151", fontSize: 13 }}>
+              Team shuffle: <strong>{data.shuffleTeams ? "Enabled" : "Disabled"}</strong>
+            </span>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <Clock3 size={14} color="#6b7280" />
+            <span style={{ color: "#374151", fontSize: 13 }}>
+              {data.matchDuration} min match · {data.breakBetween} min break
+            </span>
+          </div>
+          {data.court && (
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <MapPin size={14} color="#6b7280" />
+              <span style={{ color: "#374151", fontSize: 13 }}>{data.court}</span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Notify Toggle */}
+      <div style={{
+        background: "#ffffff", border: "1px solid #e5e7eb", borderRadius: 12,
+        padding: 16, marginBottom: 16,
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <div style={{
+            width: 36, height: 36, background: "#f3f4f6", borderRadius: 8,
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}>
+            <Bell size={18} color="#6b7280" />
+          </div>
+          <div>
+            <div style={{ color: "#111827", fontWeight: 600, fontSize: 14 }}>Notify all players</div>
+            <div style={{ color: "#6b7280", fontSize: 12 }}>Send push notification after publishing</div>
+          </div>
+        </div>
+        <Toggle checked={data.notifyPlayers} onChange={v => setData(d => ({ ...d, notifyPlayers: v }))} />
+      </div>
+
+      {data.notifyPlayers && (
+        <div style={{
+          background: "#f9fafb", border: "1px solid #e5e7eb",
+          borderRadius: 10, padding: 16, marginBottom: 4,
+        }}>
+          <div style={{ color: "#9ca3af", fontSize: 12, marginBottom: 8 }}>Notification preview</div>
+          <div style={{
+            background: "#ffffff", border: "1px solid #e5e7eb",
+            borderRadius: 8, padding: 14,
+          }}>
+            <div style={{ color: "#111827", fontWeight: 600, fontSize: 14, marginBottom: 2 }}>
+              🏆 New Tournament Alert!
+            </div>
+            <div style={{ color: "#6b7280", fontSize: 13 }}>
+              {data.name || "Tournament"} at {data.venue || "your venue"}. Register your team now!
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+const STEP_COMPONENTS = [Step1, Step2, Step3, Step4, Step5, Step6];
+
+export default function TournamentCreator() {
+  const navigate = useNavigate();
+  const [step, setStep] = useState(1);
+  const [completed, setCompleted] = useState([]);
+  const [data, setData] = useState(initialData);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    const fetchVenue = async () => {
+      try {
+        const base = import.meta.env.MODE === "development" ? "http://localhost:5000" : "";
+        const res = await axios.get(`${base}/api/venue/my-venue`, { withCredentials: true });
+        if (res.data?.success && res.data.data) {
+          const v = res.data.data;
+          setData(d => ({ ...d, venue: v.venueName || "", location: v.fullAddress || "" }));
+        }
+      } catch (err) {
+        console.warn("Unable to load owner venue for tournaments", err.response?.data || err.message);
+      }
+    };
+    fetchVenue();
+  }, []);
+
+  const goNext = () => {
+    if (step === 1) {
+      if (!data.name || !data.description || !data.venue || !data.location) {
+        showToast.error("Please complete all basic information fields before continuing.");
+        return;
+      }
+    }
+    if (step === 2) {
+      if (!data.startDate || !data.endDate || !data.regDeadline || !data.maxTeams || !data.format) {
+        showToast.error("Please fill in dates, max teams and format.");
+        return;
+      }
+      const start = new Date(data.startDate);
+      const end = new Date(data.endDate);
+      const reg = new Date(data.regDeadline);
+      if (end < start) { showToast.error("End date cannot be earlier than the start date."); return; }
+      if (reg >= start) { showToast.error("Registration deadline must be earlier than the start date."); return; }
+    }
+    if (step === 3) {
+      if (!data.entryFee || !data.paymentMethod) {
+        showToast.error("Please set entry fee and payment method.");
+        return;
+      }
+    }
+    if (step === 5) {
+      if (!data.matchDuration || !data.breakBetween || !data.court || !data.timeSlot) {
+        showToast.error("Please fill match duration, break, court and time slot before continuing.");
+        return;
+      }
+    }
+    if (!completed.includes(step)) setCompleted(c => [...c, step]);
+    if (step < 6) setStep(s => s + 1);
+  };
+
+  const goPrev = () => { if (step > 1) setStep(s => s - 1); };
+
+  const handleSubmitToBackend = async () => {
+    try {
+      setSaving(true);
+      if (!data.name || !data.description || !data.startDate || !data.endDate || !data.regDeadline || !data.maxTeams || !data.entryFee) {
+        showToast.error("Please complete all required fields before publishing.");
+        return;
+      }
+      const base = import.meta.env.MODE === "development" ? "http://localhost:5000" : "";
+      const venueRes = await axios.get(`${base}/api/venue/my-venue`, { withCredentials: true });
+      if (!venueRes.data?.success || !venueRes.data.data?._id) {
+        showToast.error("Your venue could not be loaded. Please create or update your venue first.");
+        return;
+      }
+      const venueId = venueRes.data.data._id;
+
+      let bannerImageUrl = null;
+      if (data.bannerFile) {
+        const formData = new FormData();
+        formData.append("file", data.bannerFile);
+        const uploadRes = await axios.post(`${base}/api/upload/file`, formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+          withCredentials: true,
+        });
+        if (!uploadRes.data?.success || !uploadRes.data.url) { showToast.error("Banner upload failed."); return; }
+        bannerImageUrl = uploadRes.data.url;
+      }
+
+      const paymentMethods = [];
+      if (data.paymentMethod === "online" || data.paymentMethod === "both") paymentMethods.push("online");
+      if (data.paymentMethod === "cash" || data.paymentMethod === "both") paymentMethods.push("cash");
+
+      const prizesPayload = Object.entries(data.prizes).map(([key, p]) => ({
+        title: p.label,
+        type: key === "winner" ? "winner" : key === "runnerUp" ? "runner_up" : key === "bestPlayer" ? "best_player"
+          : key === "topScorer" ? "top_scorer" : key === "bestGoalkeeper" ? "best_goalkeeper"
+          : key === "risingPlayer" ? "rising_player" : "custom",
+        enabled: p.enabled,
+        amount: Number(p.amount) || 0,
+        reward: p.label,
+      }));
+
+      const payload = {
+        venueId, name: data.name, description: data.description,
+        bannerImage: bannerImageUrl, startDate: data.startDate,
+        endDate: data.endDate, registrationDeadline: data.regDeadline,
+        maxTeams: Number(data.maxTeams), minPlayersPerTeam: 5,
+        entryFeePerTeam: Number(data.entryFee), paymentMethods,
+        format: data.format, prizes: prizesPayload,
+      };
+
+      const res = await createTournament(payload);
+      if (!res?.success) { showToast.error(res?.message || "Failed to create tournament."); return; }
+      showToast.success("Tournament created successfully.");
+    } catch (err) {
+      console.error("Tournament create error", err);
+      showToast.error(err.response?.data?.message || "Failed to create tournament.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const StepComp = STEP_COMPONENTS[step - 1];
+
+  return (
+    <div className="flex min-h-screen bg-gray-50">
+      <FutsalOwnerSidebar onCollapseChange={setIsSidebarCollapsed} />
+
+      <div className={`flex-1 flex flex-col transition-all duration-300 ${isSidebarCollapsed ? "ml-20" : "ml-64"}`}>
+        <Header />
+
+        <main className="p-6">
+          <div className="mb-6 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+            <div>
+              <h1 className="text-2xl font-semibold text-gray-900">Create Tournament</h1>
+              <p className="text-sm text-gray-500">
+                Set up the tournament details, registration and prizes for your futsal venue.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => navigate("/futsalowner/my-tournaments")}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-medium hover:bg-green-700 transition shrink-0"
+            >
+              <List className="w-4 h-4" />
+              My Tournaments
+            </button>
+          </div>
+
+          <div className="max-w-5xl">
+            <div className="mb-6">
+              <StepIndicator current={step} completed={completed} />
+            </div>
+
+            <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-6 mb-4">
+              <StepComp data={data} setData={setData} />
+            </div>
+
+            <div className="flex justify-between items-center mt-4">
+              <button
+                type="button"
+                onClick={goPrev}
+                disabled={step === 1}
+                className={`px-4 py-2 rounded-lg border text-sm font-medium ${
+                  step === 1
+                    ? "border-gray-200 text-gray-400 bg-white cursor-not-allowed"
+                    : "border-gray-300 text-gray-700 bg-white hover:bg-gray-50"
+                }`}
+              >
+                Previous
+              </button>
+              {step < 6 ? (
+                <button
+                  type="button"
+                  onClick={goNext}
+                  className="px-5 py-2 rounded-lg bg-emerald-600 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700"
+                >
+                  Next step
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleSubmitToBackend}
+                  disabled={saving}
+                  className="px-5 py-2 rounded-lg bg-emerald-600 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 disabled:opacity-60"
+                >
+                  {saving ? "Saving..." : "Create tournament"}
+                </button>
+              )}
+            </div>
+          </div>
+        </main>
+      </div>
     </div>
   );
 }

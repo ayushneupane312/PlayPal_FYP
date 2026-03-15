@@ -23,14 +23,17 @@ function formatNotificationTime(dateStr) {
 
 /** Icon + colour per notification type */
 const NOTIF_CONFIG = {
-  team_invite:       { icon: <Users className="w-4 h-4" />,       color: 'text-emerald-600', bg: 'bg-emerald-50' },
-  team_join_request: { icon: <Users className="w-4 h-4" />,       color: 'text-blue-600',    bg: 'bg-blue-50'    },
-  team_join_result:  { icon: <Trophy className="w-4 h-4" />,      color: 'text-amber-600',   bg: 'bg-amber-50'   },
-  booking_created:   { icon: <Calendar className="w-4 h-4" />,    color: 'text-purple-600',  bg: 'bg-purple-50'  },
-  booking_status:    { icon: <Calendar className="w-4 h-4" />,    color: 'text-purple-600',  bg: 'bg-purple-50'  },
-  match_found:       { icon: <Trophy className="w-4 h-4" />,      color: 'text-emerald-600', bg: 'bg-emerald-50' },
-  admin_alert:       { icon: <AlertCircle className="w-4 h-4" />, color: 'text-red-500',     bg: 'bg-red-50'     },
-  system:            { icon: <AlertCircle className="w-4 h-4" />, color: 'text-gray-500',    bg: 'bg-gray-100'   },
+  team_invite:              { icon: <Users className="w-4 h-4" />,       color: 'text-emerald-600', bg: 'bg-emerald-50' },
+  team_join_request:        { icon: <Users className="w-4 h-4" />,       color: 'text-blue-600',    bg: 'bg-blue-50'    },
+  team_join_result:         { icon: <Trophy className="w-4 h-4" />,      color: 'text-amber-600',   bg: 'bg-amber-50'   },
+  booking_created:          { icon: <Calendar className="w-4 h-4" />,    color: 'text-purple-600',  bg: 'bg-purple-50'  },
+  booking_status:           { icon: <Calendar className="w-4 h-4" />,    color: 'text-purple-600',  bg: 'bg-purple-50'  },
+  match_found:              { icon: <Trophy className="w-4 h-4" />,      color: 'text-emerald-600', bg: 'bg-emerald-50' },
+  tournament_registration:   { icon: <Trophy className="w-4 h-4" />,      color: 'text-emerald-600', bg: 'bg-emerald-50' },
+  tournament_created:       { icon: <Trophy className="w-4 h-4" />,      color: 'text-emerald-600', bg: 'bg-emerald-50' },
+  tournament_update:        { icon: <Trophy className="w-4 h-4" />,      color: 'text-amber-600',   bg: 'bg-amber-50'   },
+  admin_alert:              { icon: <AlertCircle className="w-4 h-4" />, color: 'text-red-500',     bg: 'bg-red-50'     },
+  system:                   { icon: <AlertCircle className="w-4 h-4" />, color: 'text-gray-500',    bg: 'bg-gray-100'   },
 };
 
 function getConfig(type) {
@@ -49,11 +52,14 @@ function resolveLink(notif) {
   if (notif.link) return notif.link;
 
   const fallbacks = {
-    team_join_request: '/player/teams',
-    team_join_result:  '/player/teams',
-    booking_created:   '/player/mybookings',
-    booking_status:    '/player/mybookings',
-    match_found:       '/player/matchmaking',
+    team_join_request:        '/player/teams',
+    team_join_result:         '/player/teams',
+    booking_created:         '/player/mybookings',
+    booking_status:          '/player/mybookings',
+    match_found:             '/player/matchmaking',
+    tournament_registration:  '/PlayersTournaments',
+    tournament_created:       '/PlayersTournaments',
+    tournament_update:       '/PlayersTournaments',
   };
   return fallbacks[notif.type] || null;
 }
