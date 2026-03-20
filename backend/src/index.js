@@ -62,6 +62,9 @@ app.use('/api/opponent-matchmaking', opponentMatchmakingRoutes);
 const notificationRoutes = require('./routes/NotificationRoutes');
 app.use('/api/notifications', notificationRoutes);
 
+const endorsementRoutes = require('./routes/EndorsementRoutes');
+app.use('/api/endorsements', endorsementRoutes);
+
 // const paymentRoutes = require('./routes/PaymentRoutes');
 // app.use ('/api/payments', paymentRoutes);
 
