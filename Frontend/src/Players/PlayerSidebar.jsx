@@ -6,6 +6,7 @@ import {
   CreditCard,
   Trophy,
   Users,
+  User,
   Settings,
   HeartPulse,
   Video,
@@ -34,6 +35,7 @@ const Sidebar = ({ onCollapseChange }) => {
     if (path.includes("/HighlightsPage")) return "Highlights";
     if (path.includes("/HealthPage")) return "Health";
     if (path.includes("/PlayerSettings")) return "Settings";
+    if (path.includes("/player/profile")) return "Profile";
     if (path.includes("/help")) return "Help";
     return "Dashboard";
   };
@@ -74,6 +76,9 @@ const Sidebar = ({ onCollapseChange }) => {
       case "Help":
         navigate("/help");
         break;
+      case "Profile":
+        navigate("/player/profile");
+        break;
       default:
         break;
     }
@@ -105,6 +110,7 @@ const Sidebar = ({ onCollapseChange }) => {
     { id: 'tournaments', name: 'Tournaments', icon: <Trophy className="w-5 h-5" /> },
     { id: 'highlights', name: 'Highlights', icon: <Video className="w-5 h-5" /> },
     { id: 'health', name: 'Health', icon: <HeartPulse className="w-5 h-5" /> },
+    { id: 'profile', name: 'Profile', icon: <User className="w-5 h-5" /> },
   ];
 
   const bottomNavItems = [

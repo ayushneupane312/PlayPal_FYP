@@ -46,6 +46,7 @@ import SplitPaymentCallbackPage from "./Players/SplitPaymentCallbackPage.jsx";
 import SplitPaymentPage from "./Players/SplitPaymentPage.jsx";
 import BookingDetailPage from "./Players/BookingDetailsPage.jsx";
 import BookingList from "./Players/BookingList.jsx"
+import PlayerProfilePage from "./Players/PlayerProfilePage.jsx";
 
 import MatchmakingDashboard from "./Players/TeamMatchMaking/MatchMakingDashboard.jsx";
 import MyTeamsPage from "./Players/TeamMatchMaking/MyTeamsPage.jsx";
@@ -160,6 +161,8 @@ function App() {
             <Route path="/player/mybookings" element={<BookingList/>} />
             <Route path="/player/bookings/:id" element={<BookingDetailPage />} />
             <Route path="/player/venues/:id" element={<VenueDetailsPage />} />
+            <Route path="/player/profile" element={<PlayerProfilePage />} />
+            <Route path="/player/profile/:playerId" element={<PlayerProfilePage />} />
 
 
             {/* Matchmaking */}
