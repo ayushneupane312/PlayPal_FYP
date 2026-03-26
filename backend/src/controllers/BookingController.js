@@ -5,6 +5,7 @@ const User = require('../models/UserModel');
 const Team = require('../models/TeamModel');
 const Match = require('../models/MatchModel');
 const khaltiService = require('../services/khaltiService');
+const esewaService = require('../services/esewaService');
 const { notifyUser } = require('../services/notificationService');
 
 // ═══════════════════════════════════════════════════════════
@@ -195,7 +196,8 @@ exports.createBooking = async (req, res) => {
       duration,
       numberOfPlayers,
       specialRequests,
-      paymentMethod = 'cash' // Default to cash, can be 'khalti' or 'cash'
+      paymentMethod = 'cash', // 'khalti' | 'esewa' | 'cash'
+      cashSplitAmongPlayers // boolean: split court fee equally at venue after game (cash only)
     } = req.body;
 
     // Validate required fields
@@ -262,6 +264,39 @@ exports.createBooking = async (req, res) => {
 
     const totalAmount = basePrice * (duration || 1);
 
+    if (!Number.isFinite(basePrice) || basePrice < 0) {
+      return res.status(400).json({
+        success: false,
+        message:
+          'Court pricing is missing or invalid for this slot. The venue owner must set weekday/weekend (and optional peak/off-peak) rates.'
+      });
+    }
+    if (!Number.isFinite(totalAmount) || totalAmount <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Could not calculate a valid price for this booking. Try another time or contact the venue.'
+      });
+    }
+
+    const splitCount = Math.min(20, Math.max(1, parseInt(numberOfPlayers, 10) || 10));
+    const wantsCashSplit =
+      paymentMethod === 'cash' &&
+      (cashSplitAmongPlayers === true || cashSplitAmongPlayers === 'true');
+    let venueCashSplit;
+    if (paymentMethod === 'cash') {
+      if (wantsCashSplit) {
+        const sharePerPlayer = Math.round((totalAmount / splitCount) * 100) / 100;
+        venueCashSplit = {
+          enabled: true,
+          splittingPlayerCount: splitCount,
+          sharePerPlayer,
+          courtFeeTotal: totalAmount
+        };
+      } else {
+        venueCashSplit = { enabled: false };
+      }
+    }
+
     // Create booking
     const booking = await Booking.create({
       user: userId,
@@ -291,9 +326,10 @@ exports.createBooking = async (req, res) => {
         name: user.name,
         phone: user.phone || '',
         email: user.email,
-        numberOfPlayers: numberOfPlayers || 10
+        numberOfPlayers: splitCount
       },
-      specialRequests: specialRequests || ''
+      specialRequests: specialRequests || '',
+      ...(venueCashSplit ? { venueCashSplit } : {})
     });
 
     await booking.populate('venue', 'venueName fullAddress contactInfo');
@@ -302,7 +338,7 @@ exports.createBooking = async (req, res) => {
       await notifyUser(venue.owner, {
         role: 'futsalowner',
         title: 'New booking request',
-        message: `${user.name} requested ${court.name} on ${bookingDate} at ${startTime}.`,
+        message: `${user.name} requested ${court.name} on ${bookingDate} at ${startTime}.${wantsCashSplit ? ' Group may split the court fee equally at the venue after the game.' : ''}`,
         type: 'booking_created',
         link: '/futsalowner/booking-management',
         meta: { bookingId: booking._id.toString() }
@@ -378,6 +414,7 @@ exports.initiatePayment = async (req, res) => {
     }
 
     const user = await User.findById(userId);
+    const frontendBase = (process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/$/, '');
 
     // Prepare payment data according to Khalti KPG-2 specification
     const totalAmount = booking.pricing.totalAmount;
@@ -392,8 +429,9 @@ exports.initiatePayment = async (req, res) => {
         email: user.email,
         phone: user.phone || '9800000000'
       },
-      returnUrl: `${process.env.FRONTEND_URL}/player/booking/payment-callback`,
-      websiteUrl: process.env.FRONTEND_URL,
+      // bookingId in query helps the SPA verify; sessionStorage is also set on redirect as a fallback
+      returnUrl: `${frontendBase}/player/booking/payment-callback?bookingId=${booking._id}`,
+      websiteUrl: frontendBase,
       amountBreakdown: [
         {
           label: 'Court Booking Fee',
@@ -554,6 +592,170 @@ exports.verifyPayment = async (req, res) => {
   }
 };
 
+/**
+ * Initiate eSewa ePay V2 — returns form POST target + fields for browser submit
+ */
+exports.initiateEsewaPayment = async (req, res) => {
+  try {
+    const { bookingId } = req.body;
+    const userId = req.userId;
+
+    if (!bookingId) {
+      return res.status(400).json({ success: false, message: 'Booking ID is required' });
+    }
+
+    const booking = await Booking.findOne({
+      _id: bookingId,
+      user: userId
+    }).populate('venue', 'venueName');
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found or does not belong to you'
+      });
+    }
+
+    if (booking.payment.status === 'paid') {
+      return res.status(400).json({
+        success: false,
+        message: 'Payment already completed for this booking'
+      });
+    }
+
+    if (booking.payment.method !== 'esewa') {
+      return res.status(400).json({
+        success: false,
+        message: 'This booking is not set for eSewa. Create the booking with eSewa as payment method.'
+      });
+    }
+
+    const frontendBase = (process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/$/, '');
+    const transactionUuid = `${booking._id}-${Date.now()}`;
+
+    const successUrl = `${frontendBase}/player/booking/esewa-callback?bookingId=${booking._id}`;
+    const failureUrl = `${frontendBase}/player/booking/esewa-callback?bookingId=${booking._id}&esewa_failed=1`;
+
+    const { fields, totalAmountStr } = esewaService.buildInitiateFields({
+      subtotal: booking.pricing.totalAmount,
+      transactionUuid,
+      successUrl,
+      failureUrl
+    });
+
+    booking.payment.esewaTransactionUuid = transactionUuid;
+    booking.payment.esewaTotalAmountStr = totalAmountStr;
+    await booking.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'eSewa payment ready',
+      data: {
+        gatewayUrl: esewaService.gatewayUrl,
+        fields,
+        bookingId: booking._id
+      }
+    });
+  } catch (error) {
+    console.error('❌ Initiate eSewa error:', error);
+    const status = error.code === 'ESEWA_CONFIG' ? 503 : 500;
+    res.status(status).json({
+      success: false,
+      message: error.message || 'Failed to initiate eSewa payment'
+    });
+  }
+};
+
+/**
+ * Confirm eSewa payment via eSewa status API (call after user returns from eSewa)
+ */
+exports.verifyEsewaPayment = async (req, res) => {
+  try {
+    const { bookingId } = req.body;
+    const userId = req.userId;
+
+    if (!bookingId) {
+      return res.status(400).json({ success: false, message: 'Booking ID is required' });
+    }
+
+    const booking = await Booking.findOne({
+      _id: bookingId,
+      user: userId
+    }).populate('venue', 'venueName fullAddress contactInfo');
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found or does not belong to you'
+      });
+    }
+
+    if (booking.payment.method !== 'esewa') {
+      return res.status(400).json({
+        success: false,
+        message: 'Not an eSewa booking'
+      });
+    }
+
+    if (booking.payment.status === 'paid') {
+      return res.status(200).json({
+        success: true,
+        message: 'Payment already verified',
+        data: { booking }
+      });
+    }
+
+    const uuid = booking.payment.esewaTransactionUuid;
+    if (!uuid) {
+      return res.status(400).json({
+        success: false,
+        message: 'No eSewa session found for this booking. Start payment again from your booking page.'
+      });
+    }
+
+    const totalStr =
+      booking.payment.esewaTotalAmountStr ||
+      esewaService.formatTotalAmount(booking.pricing.totalAmount);
+
+    const statusData = await esewaService.checkStatus(uuid, totalStr);
+    const st = (statusData && statusData.status) || '';
+
+    if (st !== 'COMPLETE') {
+      return res.status(200).json({
+        success: false,
+        message: st ? `eSewa status: ${st}` : 'Could not verify payment with eSewa yet.',
+        data: statusData
+      });
+    }
+
+    booking.payment.status = 'paid';
+    booking.payment.transactionId =
+      statusData.refId || statusData.transaction_code || statusData.pid || uuid;
+    booking.payment.paidAt = new Date();
+    booking.bookingStatus = 'confirmed';
+    booking.notifications.userNotified = false;
+    booking.notifications.ownerNotified = false;
+
+    await booking.save();
+
+    await Venue.findByIdAndUpdate(booking.venue, {
+      $inc: { 'stats.totalBookings': 1 }
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Payment verified. Your booking is confirmed!',
+      data: { booking, esewa: statusData }
+    });
+  } catch (error) {
+    console.error('❌ Verify eSewa error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'eSewa verification failed'
+    });
+  }
+};
+
 // ═══════════════════════════════════════════════════════════
 // SPLIT PAYMENT (after matchmaking)
 // ═══════════════════════════════════════════════════════════
@@ -574,6 +776,12 @@ exports.initiateSplitPayment = async (req, res) => {
     }
     if (booking.paymentType !== 'split') {
       return res.status(400).json({ success: false, message: 'Not a split payment booking' });
+    }
+    if (booking.payment?.method !== 'khalti') {
+      return res.status(400).json({
+        success: false,
+        message: 'Online Khalti split is only for Khalti bookings. Use cash share for cash splits.'
+      });
     }
     if (booking.bookingStatus !== 'pending') {
       return res.status(400).json({ success: false, message: 'Booking is no longer pending' });

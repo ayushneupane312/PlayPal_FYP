@@ -77,6 +77,8 @@ const bookingSchema = new mongoose.Schema({
       default: 'pending'
     },
     khaltiPidx: String,  // Khalti payment index
+    esewaTransactionUuid: String,
+    esewaTotalAmountStr: String,
     transactionId: String,
     paidAt: Date,
     refundedAt: Date,
@@ -101,7 +103,7 @@ const bookingSchema = new mongoose.Schema({
     type: Date
   },
   splitPlayers: [{
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: false },
     amountAssigned: { type: Number, required: true, min: 0 },
     paymentStatus: { type: String, enum: ['pending', 'paid'], default: 'pending' },
     paidAt: Date,
@@ -137,6 +139,14 @@ const bookingSchema = new mongoose.Schema({
       min: 1,
       max: 20
     }
+  },
+
+  // Cash at venue: group plans to split court fee equally after the game (informational)
+  venueCashSplit: {
+    enabled: { type: Boolean, default: false },
+    splittingPlayerCount: { type: Number, min: 1, max: 20 },
+    sharePerPlayer: { type: Number, min: 0 },
+    courtFeeTotal: { type: Number, min: 0 }
   },
 
   // Special requests

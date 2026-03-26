@@ -502,6 +502,13 @@ exports.confirmBooking = async (req, res) => {
     let paymentDeadline = null;
 
     if (isSplit) {
+      paymentDeadline = new Date(Date.now() + SPLIT_PAYMENT_DEADLINE_MINUTES * 60 * 1000);
+      if (teamSize < 1) {
+        return res.status(400).json({
+          success: false,
+          message: 'Team has no members to split payment across'
+        });
+      }
       const { amounts } = calculateSplit(totalAmount, teamSize);
       splitPlayers = teamMemberIds.map((memberId, index) => ({
         userId: memberId,
@@ -510,7 +517,6 @@ exports.confirmBooking = async (req, res) => {
         paidAt: null,
         transactionId: null
       }));
-      paymentDeadline = new Date(Date.now() + SPLIT_PAYMENT_DEADLINE_MINUTES * 60 * 1000);
     }
 
     const booking = await Booking.create({
@@ -580,9 +586,9 @@ exports.confirmBooking = async (req, res) => {
     for (const memberId of idsToNotify) {
       await notifyUser(memberId, {
         title: isSplit ? 'Split Payment Required' : 'Match booking confirmed',
-        message: isSplit
-          ? `Your team "${team.name}" has a booked match. Please complete your split payment within 30 minutes.`
-          : `A match for your team "${team.name}" has been booked by the leader.`,
+      message: isSplit
+        ? `Your team "${team.name}" has a booked match. Please complete your split payment within 30 minutes.`
+        : `A match for your team "${team.name}" has been booked by the leader.`,
         type: 'booking_created',
         link: `/player/bookings/${booking._id}`,
         meta: { bookingId: booking._id, teamId, matchId: linkedMatch ? linkedMatch._id : undefined }

@@ -60,7 +60,7 @@ const signup = async (req, res) => {
         });
 
         await user.save();
-        generateTokenAndSetCookie(res, user._id);
+        generateTokenAndSetCookie(res, user._id, user.tokenVersion ?? 0);
 
         await sendVerificationEmail(user.email, verificationToken);
 
@@ -161,7 +161,7 @@ const login = async (req, res) => {
         }
 
         // ✅ SET TOKEN BEFORE CHECKING FUTSAL OWNER STATUS
-        generateTokenAndSetCookie(res, user._id);
+        generateTokenAndSetCookie(res, user._id, user.tokenVersion ?? 0);
         user.lastLogin = new Date();
         await user.save();
 
@@ -176,6 +176,7 @@ const login = async (req, res) => {
                         _id: user._id,
                         name: user.name,
                         email: user.email,
+                        profileImage: user.profileImage || "",
                         role: user.role,
                         isVerified: user.isVerified,
                         applicationStatus: user.applicationStatus,
@@ -195,6 +196,7 @@ const login = async (req, res) => {
                         _id: user._id,
                         name: user.name,
                         email: user.email,
+                        profileImage: user.profileImage || "",
                         role: user.role,
                         isVerified: user.isVerified,
                         applicationStatus: user.applicationStatus,
@@ -214,6 +216,7 @@ const login = async (req, res) => {
                         _id: user._id,
                         name: user.name,
                         email: user.email,
+                        profileImage: user.profileImage || "",
                         role: user.role,
                         isVerified: user.isVerified,
                         applicationStatus: user.applicationStatus,
@@ -237,6 +240,7 @@ const login = async (req, res) => {
                 _id: user._id,
                 name: user.name,
                 email: user.email,
+                profileImage: user.profileImage || "",
                 role: user.role,
                 isVerified: user.isVerified,
                 applicationStatus: user.applicationStatus,
@@ -251,6 +255,106 @@ const login = async (req, res) => {
             success: false, 
             msg: "Something went wrong. Please try again" 
         });
+    }
+};
+
+// ------------------- UPDATE CURRENT USER (profile) -------------------
+const updateMe = async (req, res) => {
+    try {
+        const { name, profileImage } = req.body;
+        const user = await User.findById(req.userId);
+
+        if (!user) {
+            return res.status(404).json({ success: false, message: "User not found" });
+        }
+
+        if (typeof name === "string" && name.trim()) {
+            user.name = name.trim();
+        }
+        if (typeof profileImage === "string") {
+            user.profileImage = profileImage.trim();
+        }
+
+        await user.save();
+
+        const safe = user.toObject();
+        delete safe.password;
+
+        res.status(200).json({
+            success: true,
+            user: {
+                ...safe,
+                needsRegistration: user.role === "futsalowner" && !user.registrationCompleted,
+            },
+        });
+    } catch (error) {
+        console.error("updateMe error:", error);
+        res.status(500).json({ success: false, message: error.message || "Server error" });
+    }
+};
+
+// ------------------- CHANGE PASSWORD -------------------
+// Requires authentication (verifyToken middleware sets req.userId).
+const changePassword = async (req, res) => {
+    try {
+        const { currentPassword, newPassword, confirmPassword } = req.body || {};
+
+        if (!currentPassword || !newPassword || !confirmPassword) {
+            return res.status(400).json({ success: false, message: "currentPassword, newPassword and confirmPassword are required" });
+        }
+
+        if (newPassword !== confirmPassword) {
+            return res.status(400).json({ success: false, message: "New password and confirmation do not match" });
+        }
+
+        // Basic password strength requirements
+        const minLength = 8;
+        const hasUppercase = /[A-Z]/.test(newPassword);
+        const hasNumber = /\d/.test(newPassword);
+
+        if (newPassword.length < minLength || !hasUppercase || !hasNumber) {
+            return res.status(400).json({
+                success: false,
+                message: "Password must be at least 8 characters, include at least one uppercase letter and one number",
+            });
+        }
+
+        const user = await User.findById(req.userId);
+        if (!user) {
+            return res.status(404).json({ success: false, message: "User not found" });
+        }
+
+        // 1) Verify current password
+        const isCurrentValid = await user.matchPassword(currentPassword);
+        if (!isCurrentValid) {
+            return res.status(400).json({ success: false, message: "Current password is incorrect" });
+        }
+
+        // 2) Ensure new password is not the same as old password (compare against existing hash)
+        const isNewSameAsCurrent = await user.matchPassword(newPassword);
+        if (isNewSameAsCurrent) {
+            return res.status(400).json({ success: false, message: "New password must be different from the current password" });
+        }
+
+        // 3) Update password (pre-save hook will hash)
+        user.password = newPassword;
+        // 4) Invalidate existing tokens
+        user.tokenVersion = (user.tokenVersion ?? 0) + 1;
+
+        await user.save();
+
+        // Clear auth cookie so user is forced to login again
+        res.clearCookie("token", {
+            httpOnly: true,
+            sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+            secure: process.env.NODE_ENV === "production",
+            path: "/",
+        });
+
+        return res.status(200).json({ success: true, message: "Password changed successfully. Please login again." });
+    } catch (error) {
+        console.error("changePassword error:", error);
+        return res.status(500).json({ success: false, message: error.message || "Server error" });
     }
 };
 
@@ -404,6 +508,8 @@ module.exports = {
     login,
     logout,
     checkAuth,
+    updateMe,
+    changePassword,
     forgotPassword,
     resetPassword,
     uploadFile, 

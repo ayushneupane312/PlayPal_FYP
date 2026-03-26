@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
+const User = require('../models/UserModel.js');
 
-const verifyToken = (req, res, next) => {
+const verifyToken = async (req, res, next) => {
     // Check for token in Authorization header (Bearer token) or cookies
     let token = req.headers.authorization?.split(' ')[1]; // Bearer <token>
     
@@ -21,6 +22,18 @@ const verifyToken = (req, res, next) => {
             return res.status(401).json({ success: false, message: "Not authorized invalid token" });
         }
         
+        const decodedTokenVersion = decoded.tokenVersion ?? 0;
+        const user = await User.findById(decoded.id).select('tokenVersion');
+
+        if (!user) {
+            return res.status(401).json({ success: false, message: "Invalid token user" });
+        }
+
+        const currentTokenVersion = user.tokenVersion ?? 0;
+        if (currentTokenVersion !== decodedTokenVersion) {
+            return res.status(401).json({ success: false, message: "Session invalidated. Please login again." });
+        }
+
         req.userId = decoded.id;
         next();
 

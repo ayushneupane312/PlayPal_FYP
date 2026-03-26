@@ -3,10 +3,12 @@ const axios = require('axios');
 class KhaltiService {
   constructor() {
     this.secretKey = process.env.KHALTI_SECRET_KEY;
-    // Use sandbox URL for testing, production URL for live
-    this.baseURL = process.env.NODE_ENV === 'production' 
-      ? 'https://khalti.com/api/v2'
-      : 'https://a.khalti.com/api/v2';
+    // Sandbox vs live must match your key type. Override explicitly if needed (e.g. live key while NODE_ENV is not production).
+    this.baseURL =
+      process.env.KHALTI_API_BASE_URL ||
+      (process.env.NODE_ENV === 'production'
+        ? 'https://khalti.com/api/v2'
+        : 'https://a.khalti.com/api/v2');
   }
 
   /**
@@ -16,6 +18,15 @@ class KhaltiService {
    */
   async initiatePayment(paymentData) {
     try {
+      if (!this.secretKey || !String(this.secretKey).trim()) {
+        throw {
+          success: false,
+          message:
+            'Khalti is not configured: set KHALTI_SECRET_KEY in the backend .env file.',
+          error_key: 'config_error'
+        };
+      }
+
       const {
         amount,           // Amount in paisa (Rs 100 = 10000 paisa)
         purchaseOrderId,  // Unique order ID

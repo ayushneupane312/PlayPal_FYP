@@ -34,6 +34,11 @@ const userSchema = new mongoose.Schema({
         type: String,
         default: ""
     },
+    // Used to invalidate existing JWT sessions (e.g., after password change)
+    tokenVersion: {
+        type: Number,
+        default: 0,
+    },
     role: {
         type: String,
         enum: ["player", "futsalowner", "admin"],
