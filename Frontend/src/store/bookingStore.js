@@ -39,7 +39,11 @@ export const createBooking = async (bookingData) => {
     return data;
   } catch (error) {
     console.error('❌ Create booking error:', error.response?.data || error.message);
-    throw error.response?.data || error;
+    const data = error.response?.data;
+    if (data && error.response?.status) {
+      data.httpStatus = error.response.status;
+    }
+    throw data || error;
   }
 };
 
@@ -83,6 +87,17 @@ export const verifyPayment = async (pidx, bookingId) => {
   }
 };
 
+/** eSewa ePay V2 — returns { gatewayUrl, fields } for a browser form POST */
+export const initiateEsewaPayment = async (bookingId) => {
+  const { data } = await axios.post(`${API_URL}/payment/initiate-esewa`, { bookingId });
+  return data;
+};
+
+export const verifyEsewaPayment = async (bookingId) => {
+  const { data } = await axios.post(`${API_URL}/payment/verify-esewa`, { bookingId });
+  return data;
+};
+
 /**
  * Get user's bookings
  */
@@ -105,7 +120,11 @@ export const getBookingById = async (bookingId) => {
     return data;
   } catch (error) {
     console.error('❌ Get booking error:', error.response?.data || error.message);
-    throw error.response?.data || error;
+    const payload = error.response?.data;
+    if (payload && error.response?.status) {
+      payload.httpStatus = error.response.status;
+    }
+    throw payload || error;
   }
 };
 
@@ -331,6 +350,8 @@ const bookingStore = {
   createBooking,
   initiatePayment,
   verifyPayment,
+  initiateEsewaPayment,
+  verifyEsewaPayment,
   getMyBookings,
   getBookingById,
   cancelBooking,

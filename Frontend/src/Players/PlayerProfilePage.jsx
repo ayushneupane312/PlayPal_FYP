@@ -266,27 +266,17 @@ function ModalShell({ isOpen, title, onClose, children }) {
   );
 }
 
-function mockPlayerProfile(playerId) {
-  const seed = Number(String(playerId).replace(/\D/g, "").slice(0, 6) || 0);
-  const isCaptain = seed % 4 === 0;
-  const positions = ["Midfielder", "Forward", "Defender", "Goalkeeper", "Winger"];
-  const preferredPosition = positions[seed % positions.length];
-
-  const namePool = ["Aarav", "Sara", "Mike", "Alex", "Emma", "David", "Rahul", "Suman", "Ishan", "Nisha"];
-  const lastPool = ["Khan", "Sharma", "Gautam", "Thapa", "Giri", "Joshi", "Paudel", "Bista", "Koirala", "Adhikari"];
-  const name = `${namePool[seed % namePool.length]} ${lastPool[(seed * 3) % lastPool.length]}`;
-  const username = name.toLowerCase().replace(/\s+/g, "_");
-
-  const avatarSeed = encodeURIComponent(username);
-  const avatar = `https://api.dicebear.com/7.x/avataaars/svg?seed=${avatarSeed}`;
-
+function baseProfile(playerId, user) {
+  const uid = String(playerId || user?._id || user?.id || "");
+  const name = user?.name || "Unknown Player";
+  const username = user?.username || name.toLowerCase().replace(/\s+/g, "_");
   return {
-    _id: String(playerId),
-    avatar,
+    _id: uid,
+    avatar: user?.profileImage || "",
     name,
     username,
-    role: isCaptain ? "Captain" : "Player",
-    preferredPosition,
+    role: user?.role === "captain" ? "Captain" : "Player",
+    preferredPosition: user?.preferredPosition || "Forward",
   };
 }
 
@@ -302,7 +292,7 @@ const PlayerProfilePage = () => {
 
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
-  const [profile, setProfile] = useState(() => mockPlayerProfile(playerId || "unknown"));
+  const [profile, setProfile] = useState(() => baseProfile(playerId, user));
 
   const [summaryLoading, setSummaryLoading] = useState(true);
   const [ratingSummary, setRatingSummary] = useState({
@@ -332,8 +322,8 @@ const PlayerProfilePage = () => {
   }, [ratingSummary.distribution]);
 
   useEffect(() => {
-    setProfile(mockPlayerProfile(playerId || "unknown"));
-  }, [playerId]);
+    setProfile(baseProfile(playerId, user));
+  }, [playerId, user]);
 
   useEffect(() => {
     let mounted = true;
@@ -349,7 +339,6 @@ const PlayerProfilePage = () => {
         setMyEndorsement(my);
       } catch {
         if (!mounted) return;
-        // Keep mock defaults if anything fails.
       } finally {
         if (mounted) setSummaryLoading(false);
       }
@@ -518,11 +507,17 @@ const PlayerProfilePage = () => {
               >
                 <div className="flex items-start gap-4">
                   <div className="relative">
-                    <img
-                      src={profile.avatar}
-                      alt={profile.name}
-                      className="w-16 h-16 rounded-full border border-gray-200 object-cover"
-                    />
+                    {profile.avatar ? (
+                      <img
+                        src={profile.avatar}
+                        alt={profile.name}
+                        className="w-16 h-16 rounded-full border border-gray-200 object-cover"
+                      />
+                    ) : (
+                      <div className="w-16 h-16 rounded-full border border-gray-200 bg-gray-100 flex items-center justify-center">
+                        <User className="w-7 h-7 text-gray-400" />
+                      </div>
+                    )}
                     {/* Future-ready: Verified badge placeholder */}
                     <div className="absolute -bottom-1 -right-1 hidden sm:block">
                       <div className="w-8 h-8 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-700">

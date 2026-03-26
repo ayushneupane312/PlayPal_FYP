@@ -150,15 +150,9 @@ const BrowsePlayersPage = () => {
       setLoading(true);
       const res = await matchmakingService.getBrowsePlayersForInvite();
       setPlayers(res.data || []);
-    } catch {
-      setPlayers([
-        { _id: 'p1', name: 'John Doe', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=John', skillLevel: 'Intermediate', position: 'Forward', rating: 4.5, matchesPlayed: 45, winRate: 68, location: 'Kathmandu', preferredTimes: ['Evening', 'Weekend'], bio: 'Love playing futsal! Looking for a competitive team.', stats: { goals: 23, assists: 15, cleanSheets: 0 } },
-        { _id: 'p2', name: 'Sarah Wilson', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah', skillLevel: 'Advanced', position: 'Goalkeeper', rating: 4.8, matchesPlayed: 78, winRate: 72, location: 'Lalitpur', preferredTimes: ['Morning', 'Evening'], bio: 'Experienced GK, played at college level.', stats: { goals: 0, assists: 2, cleanSheets: 34 } },
-        { _id: 'p3', name: 'Mike Thompson', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Mike', skillLevel: 'Beginner', position: 'Defender', rating: 4.2, matchesPlayed: 12, winRate: 50, location: 'Bhaktapur', preferredTimes: ['Weekend'], bio: 'New to futsal, eager to learn and improve!', stats: { goals: 1, assists: 3, cleanSheets: 5 } },
-        { _id: 'p4', name: 'Alex Rivera', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Alex', skillLevel: 'Intermediate', position: 'Midfielder', rating: 4.6, matchesPlayed: 56, winRate: 64, location: 'Kathmandu', preferredTimes: ['Evening'], bio: 'Playmaker, great at assists and ball control.', stats: { goals: 18, assists: 32, cleanSheets: 0 } },
-        { _id: 'p5', name: 'Emma Chen', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Emma', skillLevel: 'Advanced', position: 'Forward', rating: 4.9, matchesPlayed: 92, winRate: 78, location: 'Kathmandu', preferredTimes: ['Morning', 'Evening', 'Weekend'], bio: 'Top scorer, fast and technical player.', stats: { goals: 67, assists: 28, cleanSheets: 0 } },
-        { _id: 'p6', name: 'David Park', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=David', skillLevel: 'Intermediate', position: 'Defender', rating: 4.4, matchesPlayed: 38, winRate: 61, location: 'Lalitpur', preferredTimes: ['Evening', 'Weekend'], bio: 'Solid defender, good positioning.', stats: { goals: 5, assists: 7, cleanSheets: 16 } },
-      ]);
+    } catch (e) {
+      setPlayers([]);
+      showToast.error(e?.response?.data?.message || 'Failed to load players');
     } finally {
       setLoading(false);
     }

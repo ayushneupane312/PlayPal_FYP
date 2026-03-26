@@ -36,9 +36,17 @@ export default function Header({ onMenuToggle, sidebarOpen }) {
 
         {/* User Profile */}
         <div className="flex items-center gap-3 pl-4 border-l border-gray-200 flex-shrink-0 ml-2">
-          <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center text-white font-semibold">
-            {getInitials(user?.name)}
-          </div>
+          {user?.profileImage ? (
+            <img
+              src={user.profileImage}
+              alt=""
+              className="w-10 h-10 rounded-full object-cover border border-gray-200"
+            />
+          ) : (
+            <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center text-white font-semibold">
+              {getInitials(user?.name)}
+            </div>
+          )}
           <div className="hidden sm:block">
             <div className="font-medium text-gray-900">{user?.name || 'User'}</div>
             <div className="text-xs text-gray-500 capitalize">{user?.role || 'Owner'}</div>

@@ -3,6 +3,8 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Loader2, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { verifyPayment } from '../store/bookingStore';
 
+const KHALTI_BOOKING_KEY = 'playpal_khalti_booking_id';
+
 const PaymentCallbackPage = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -12,45 +14,56 @@ const PaymentCallbackPage = () => {
   const [bookingData, setBookingData] = useState(null);
 
   useEffect(() => {
-  const verifyKhaltiPayment = async () => {
-    try {
-      const pidx = searchParams.get('pidx');
+    const verifyKhaltiPayment = async () => {
+      try {
+        const pidx = searchParams.get('pidx');
+        const bookingId =
+          searchParams.get('bookingId') || sessionStorage.getItem(KHALTI_BOOKING_KEY);
 
-      if (!pidx) {
+        if (!pidx) {
+          setStatus('error');
+          setMessage('Missing payment reference (pidx)');
+          return;
+        }
+
+        if (!bookingId) {
+          setStatus('error');
+          setMessage(
+            'Missing booking reference. If you completed payment, check My Bookings or contact support.'
+          );
+          return;
+        }
+
+        setStatus('verifying');
+        setMessage('Verifying your payment...');
+
+        const response = await verifyPayment(pidx, bookingId);
+
+        if (response.success) {
+          sessionStorage.removeItem(KHALTI_BOOKING_KEY);
+          setStatus('success');
+          setMessage('Payment successful! Your booking is confirmed.');
+          setBookingData(response.data.booking);
+
+          setTimeout(() => {
+            navigate(`/player/bookings/${response.data.booking._id}?success=true`);
+          }, 3000);
+        } else {
+          setStatus('failed');
+          setMessage(response.message || 'Payment verification failed');
+        }
+      } catch (error) {
+        console.error(error);
         setStatus('error');
-        setMessage('Missing payment reference (pidx)');
-        return;
+        setMessage(
+          error.response?.data?.message ||
+          'Payment verification failed. Please contact support.'
+        );
       }
+    };
 
-      setStatus('verifying');
-      setMessage('Verifying your payment...');
-
-      const response = await verifyPayment(pidx);
-
-      if (response.success) {
-        setStatus('success');
-        setMessage('Payment successful! Your booking is confirmed.');
-        setBookingData(response.data.booking);
-
-        setTimeout(() => {
-          navigate(`/player/bookings/${response.data.booking._id}?success=true`);
-        }, 3000);
-      } else {
-        setStatus('failed');
-        setMessage(response.message || 'Payment verification failed');
-      }
-    } catch (error) {
-      console.error(error);
-      setStatus('error');
-      setMessage(
-        error.response?.data?.message ||
-        'Payment verification failed. Please contact support.'
-      );
-    }
-  };
-
-  verifyKhaltiPayment();
-}, []);
+    verifyKhaltiPayment();
+  }, [searchParams, navigate]);
 
 
   return (
@@ -156,7 +169,7 @@ const PaymentCallbackPage = () => {
                 View My Bookings
               </button>
               <button
-                onClick={() => navigate('/player/contact')}
+                onClick={() => navigate('/help')}
                 className="w-full px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium"
               >
                 Contact Support

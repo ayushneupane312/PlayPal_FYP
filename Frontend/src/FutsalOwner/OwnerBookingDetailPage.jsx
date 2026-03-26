@@ -44,7 +44,7 @@ const OwnerBookingDetailPage = () => {
       setBooking(response.data);
     } catch (error) {
       showToast.error(error.response?.data?.message || 'Failed to load booking details');
-      navigate('/futsalowner/bookings');
+      navigate('/futsalowner/booking-management');
     } finally {
       setLoading(false);
     }
@@ -143,7 +143,7 @@ const OwnerBookingDetailPage = () => {
             {/* Header */}
             <div className="mb-6">
               <button
-                onClick={() => navigate('/futsalowner/bookings')}
+                onClick={() => navigate('/futsalowner/booking-management')}
                 className="flex items-center text-gray-600 hover:text-gray-900 mb-4"
               >
                 <ArrowLeft className="w-5 h-5 mr-2" />
@@ -354,6 +354,17 @@ const OwnerBookingDetailPage = () => {
                         <span className="text-green-600">Rs. {booking.pricing.totalAmount}</span>
                       </div>
                     </div>
+
+                    {booking.venueCashSplit?.enabled && (
+                      <div className="rounded-lg bg-amber-50 border border-amber-100 px-3 py-2 text-sm text-amber-950">
+                        <p className="font-semibold">Player cash split (after game)</p>
+                        <p className="mt-1">
+                          ~Rs. {booking.venueCashSplit.sharePerPlayer} each ×{' '}
+                          {booking.venueCashSplit.splittingPlayerCount} players (full court fee still due from
+                          the group).
+                        </p>
+                      </div>
+                    )}
                   </div>
 
                   <div className="mt-4 pt-4 border-t">

@@ -22,58 +22,9 @@ const HealthPage = () => {
   });
   const [isEditing, setIsEditing] = useState(false);
   
-  // Initialize health data
+  // Initialize with no historical fallback data
   useEffect(() => {
-    // Mock historical health data
-    const mockData = [
-      {
-        id: 1,
-        date: '2024-03-17',
-        sleepHours: 7.2,
-        weight: 68.5,
-        height: 175,
-        bmi: 22.4,
-        timestamp: '2024-03-17T08:30:00'
-      },
-      {
-        id: 2,
-        date: '2024-03-16',
-        sleepHours: 6.8,
-        weight: 69.0,
-        height: 175,
-        bmi: 22.6,
-        timestamp: '2024-03-16T09:15:00'
-      },
-      {
-        id: 3,
-        date: '2024-03-15',
-        sleepHours: 8.0,
-        weight: 68.8,
-        height: 175,
-        bmi: 22.5,
-        timestamp: '2024-03-15T08:45:00'
-      },
-      {
-        id: 4,
-        date: '2024-03-14',
-        sleepHours: 7.5,
-        weight: 68.2,
-        height: 175,
-        bmi: 22.3,
-        timestamp: '2024-03-14T09:00:00'
-      },
-      {
-        id: 5,
-        date: '2024-03-13',
-        sleepHours: 7.0,
-        weight: 69.2,
-        height: 175,
-        bmi: 22.7,
-        timestamp: '2024-03-13T08:20:00'
-      }
-    ];
-    
-    setHealthData(mockData);
+    setHealthData([]);
   }, []);
 
   // Calculate BMI

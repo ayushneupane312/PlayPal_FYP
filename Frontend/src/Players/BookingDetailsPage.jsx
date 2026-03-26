@@ -302,6 +302,18 @@ const BookingDetailPage = () => {
                       <span className="text-emerald-600">Rs. {booking.pricing.totalAmount}</span>
                     </div>
                   </div>
+
+                  {booking.venueCashSplit?.enabled && (
+                    <div className="mt-4 rounded-lg bg-amber-50 border border-amber-100 px-3 py-2 text-sm text-amber-950">
+                      <p className="font-semibold">Cash split (after game at venue)</p>
+                      <p className="mt-1">
+                        Group plans ~<strong>Rs. {booking.venueCashSplit.sharePerPlayer}</strong> per player
+                        among <strong>{booking.venueCashSplit.splittingPlayerCount}</strong> people (court fee
+                        Rs. {booking.venueCashSplit.courtFeeTotal}). The venue still collects the full court
+                        fee; players settle shares together.
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 <div className="mt-4 pt-4 border-t">

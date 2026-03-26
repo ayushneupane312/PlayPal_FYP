@@ -27,9 +27,9 @@ const Sidebar = ({ onCollapseChange }) => {
   const getActiveItem = () => {
     const path = location.pathname;
     if (path === "/" || path === "/Playerdashboard") return "Dashboard";
-    if (path.includes("/BookingPage")) return "Bookings";
+    if (path.startsWith("/player/bookings")) return "Bookings";
     if (path.includes("/player/matchmaking")) return "Matchmaking";
-    if (path.includes("/SplitPaymentPage")) return "Payments";
+    if (path.startsWith("/player/mybookings")) return "Payments";
     if (path.includes("/teams")) return "Teams";
     if (path.includes("/PlayersTournaments")) return "Tournaments";
     if (path.includes("/HighlightsPage")) return "Highlights";
@@ -50,13 +50,13 @@ const Sidebar = ({ onCollapseChange }) => {
         navigate("/Playerdashboard");
         break;
       case "Bookings":
-        navigate("/BookingPage");
+        navigate("/player/bookings");
         break;
         case "Matchmaking":
         navigate("/player/matchmaking");
         break;
       case "Payments":
-        navigate("/SplitPaymentPage");
+        navigate("/player/mybookings");
         break;
       case "Teams":
         navigate("/player/teams");

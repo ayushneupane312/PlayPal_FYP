@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Search, Bell, Settings, Shield, Cpu, Users, Key, BellRing, Globe, Save } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Search, Bell, Settings, Shield, BellRing, Globe, Save } from 'lucide-react';
 import AdminSidebar from './AdminSidebar';
 
 const SettingsPage = () => {
@@ -14,11 +14,13 @@ const SettingsPage = () => {
   const settingsTabs = [
     { id: 'general', icon: Settings, label: 'General' },
     { id: 'security', icon: Shield, label: 'Security' },
-    { id: 'ai-algorithms', icon: Cpu, label: 'AI & Algorithms' },
-    { id: 'roles-access', icon: Users, label: 'Roles & Access' },
-    { id: 'api-keys', icon: Key, label: 'API Keys' },
     { id: 'notifications', icon: BellRing, label: 'Notifications' }
   ];
+
+  useEffect(() => {
+    const allowedTabs = settingsTabs.map((t) => t.id);
+    if (!allowedTabs.includes(activeTab)) setActiveTab('general');
+  }, [activeTab]);
 
   return (
     <div className="flex bg-gray-50 min-h-screen">
@@ -64,8 +66,8 @@ const SettingsPage = () => {
                         onClick={() => setActiveTab(tab.id)}
                         className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
                           activeTab === tab.id
-                            ? 'bg-cyan-500 text-white shadow-lg shadow-cyan-500/30'
-                            : 'text-gray-700 hover:bg-gray-50'
+                            ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30'
+                            : 'text-gray-700 hover:bg-emerald-50'
                         }`}
                       >
                         <Icon size={20} />
@@ -157,7 +159,7 @@ const SettingsPage = () => {
                       <button
                         onClick={() => setMaintenanceMode(!maintenanceMode)}
                         className={`relative w-14 h-8 rounded-full transition-colors ${
-                          maintenanceMode ? 'bg-cyan-500' : 'bg-gray-300'
+                          maintenanceMode ? 'bg-emerald-500' : 'bg-gray-300'
                         }`}
                       >
                         <div
@@ -223,113 +225,6 @@ const SettingsPage = () => {
                   <Shield className="mx-auto text-gray-400 mb-4" size={48} />
                   <h3 className="text-xl font-semibold text-gray-900 mb-2">Security Settings</h3>
                   <p className="text-gray-500">Configure security and authentication settings</p>
-                </div>
-              )}
-
-              {activeTab === 'ai-algorithms' && (
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
-                  <Cpu className="mx-auto text-gray-400 mb-4" size={48} />
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">AI & Algorithms</h3>
-                  <p className="text-gray-500">Manage AI models and algorithm configurations</p>
-                </div>
-              )}
-
-              {activeTab === 'roles-access' && (
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                  <div className="flex items-center gap-3 mb-6">
-                    <div className="w-10 h-10 bg-cyan-500/10 rounded-lg flex items-center justify-center">
-                      <Users className="text-cyan-500" size={20} />
-                    </div>
-                    <h2 className="text-xl font-bold text-gray-900">Role Management</h2>
-                  </div>
-
-                  <div className="space-y-4">
-                    {/* Super Admin Role */}
-                    <div className="bg-gray-50 rounded-xl p-6 border border-gray-200 hover:border-gray-300 transition-colors">
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <h3 className="text-lg font-bold text-gray-900 mb-1">Super Admin</h3>
-                          <p className="text-gray-500 text-sm">Full access to all features</p>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <span className="bg-cyan-500 text-white text-sm font-medium px-4 py-2 rounded-lg">
-                            2 users
-                          </span>
-                          <button className="text-gray-700 font-medium px-4 py-2 hover:bg-gray-100 rounded-lg transition-colors">
-                            Edit
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Admin Role */}
-                    <div className="bg-gray-50 rounded-xl p-6 border border-gray-200 hover:border-gray-300 transition-colors">
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <h3 className="text-lg font-bold text-gray-900 mb-1">Admin</h3>
-                          <p className="text-gray-500 text-sm">Manage users, futsals, disputes</p>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <span className="bg-cyan-500 text-white text-sm font-medium px-4 py-2 rounded-lg">
-                            8 users
-                          </span>
-                          <button className="text-gray-700 font-medium px-4 py-2 hover:bg-gray-100 rounded-lg transition-colors">
-                            Edit
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Moderator Role */}
-                    <div className="bg-gray-50 rounded-xl p-6 border border-gray-200 hover:border-gray-300 transition-colors">
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <h3 className="text-lg font-bold text-gray-900 mb-1">Moderator</h3>
-                          <p className="text-gray-500 text-sm">Handle disputes, moderate content</p>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <span className="bg-cyan-500 text-white text-sm font-medium px-4 py-2 rounded-lg">
-                            15 users
-                          </span>
-                          <button className="text-gray-700 font-medium px-4 py-2 hover:bg-gray-100 rounded-lg transition-colors">
-                            Edit
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Support Role */}
-                    <div className="bg-gray-50 rounded-xl p-6 border border-gray-200 hover:border-gray-300 transition-colors">
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <h3 className="text-lg font-bold text-gray-900 mb-1">Support</h3>
-                          <p className="text-gray-500 text-sm">View-only access, handle tickets</p>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <span className="bg-cyan-500 text-white text-sm font-medium px-4 py-2 rounded-lg">
-                            25 users
-                          </span>
-                          <button className="text-gray-700 font-medium px-4 py-2 hover:bg-gray-100 rounded-lg transition-colors">
-                            Edit
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Add New Role Button */}
-                    <button className="w-full bg-cyan-500 text-white py-4 px-6 rounded-xl hover:bg-cyan-600 transition-colors flex items-center justify-center gap-2 font-medium shadow-lg shadow-cyan-500/30 mt-6">
-                      <span className="text-xl">+</span>
-                      Add New Role
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {activeTab === 'api-keys' && (
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
-                  <Key className="mx-auto text-gray-400 mb-4" size={48} />
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">API Keys</h3>
-                  <p className="text-gray-500">Manage API keys and integrations</p>
                 </div>
               )}
 
@@ -403,7 +298,7 @@ const SettingsPage = () => {
 
               {/* Save Button */}
               <div className="flex justify-end mt-6">
-                <button className="bg-cyan-500 text-white px-6 py-3 rounded-lg hover:bg-cyan-600 transition-colors flex items-center gap-2 font-medium shadow-lg shadow-cyan-500/30">
+                <button className="bg-emerald-500 text-white px-6 py-3 rounded-lg hover:bg-emerald-600 transition-colors flex items-center gap-2 font-medium shadow-lg shadow-emerald-500/30">
                   <Save size={20} />
                   Save Changes
                 </button>

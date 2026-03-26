@@ -59,6 +59,7 @@ const initialData = {
     risingPlayer: { enabled: false, amount: 1000, label: "Best emerging talent" },
   },
   customPrizes: [],
+  customPrizeDraft: "",
   shuffleTeams: true,
   matchDuration: 20,
   breakBetween: 5,
@@ -434,16 +435,46 @@ function Step4({ data, setData }) {
         })}
       </div>
 
-      <button onClick={() => {
-        const name = prompt("Custom prize name:");
-        if (name) setData(d => ({ ...d, customPrizes: [...d.customPrizes, { name, amount: 0, label: "" }] }));
-      }} style={{
-        marginTop: 16, padding: "10px 18px", border: "1.5px dashed #d1d5db",
-        borderRadius: 8, background: "transparent", color: "#6b7280",
-        cursor: "pointer", fontSize: 14, display: "flex", alignItems: "center", gap: 6,
-      }}>
-        + Add Custom Prize
-      </button>
+      <div style={{ marginTop: 16, display: "flex", gap: 10, alignItems: "center" }}>
+        <input
+          value={data.customPrizeDraft || ""}
+          onChange={(e) => setData((d) => ({ ...d, customPrizeDraft: e.target.value }))}
+          placeholder="Custom prize name"
+          style={{
+            flex: 1,
+            background: "#ffffff",
+            border: "1px solid #e5e7eb",
+            borderRadius: 8,
+            padding: "10px 12px",
+            fontSize: 14,
+            color: "#111827",
+            outline: "none",
+          }}
+        />
+        <button
+          type="button"
+          onClick={() => {
+            const name = (data.customPrizeDraft || "").trim();
+            if (!name) return;
+            setData((d) => ({
+              ...d,
+              customPrizes: [...d.customPrizes, { name, amount: 0, label: "" }],
+              customPrizeDraft: "",
+            }));
+          }}
+          style={{
+            padding: "10px 18px",
+            border: "1.5px dashed #d1d5db",
+            borderRadius: 8,
+            background: "transparent",
+            color: "#6b7280",
+            cursor: "pointer",
+            fontSize: 14,
+          }}
+        >
+          + Add Custom Prize
+        </button>
+      </div>
     </div>
   );
 }

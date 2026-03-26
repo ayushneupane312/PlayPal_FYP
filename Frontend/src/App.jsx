@@ -15,7 +15,6 @@ import FutsalOwner from "./FutsalOwner/FutsalOwner.jsx";
 
 import PlayerDashboard from "./Players/PlayerDashboard.jsx";
 import BookingPage from "./Players/BookingPage.jsx";
-import PaymentPage from "./Players/SplitPaymentPage.jsx";
 import HighlightsPage from "./Players/HighlightsPage.jsx";
 import HealthPage from "./Players/HealthPage.jsx";
 import VenueDetailsPage from "./Players/VenueDetailsPage.jsx";
@@ -42,6 +41,7 @@ import PlayerTournamentRegisterPage from "./Players/PlayerTournamentRegisterPage
 import VenuesPage from "./Players/VenuesPage.jsx";
 import BookVenuePage from "./Players/BookVenuePage.jsx";
 import PaymentCallbackPage from "./Players/PaymentCallbackPage.jsx";
+import EsewaPaymentCallbackPage from "./Players/EsewaPaymentCallbackPage.jsx";
 import SplitPaymentCallbackPage from "./Players/SplitPaymentCallbackPage.jsx";
 import SplitPaymentPage from "./Players/SplitPaymentPage.jsx";
 import BookingDetailPage from "./Players/BookingDetailsPage.jsx";
@@ -69,8 +69,8 @@ import FutsalCenter from "./SuperAdmin/FutsalCenter.jsx";
 import UserDirectory from "./SuperAdmin/UserDirectory.jsx";
 import Analytics from "./SuperAdmin/Analytics.jsx";
 import SystemSettings from "./SuperAdmin/SystemSettings.jsx"
-import AdminSidebar from "./SuperAdmin/AdminSidebar.jsx";
 import ApplicationStatus from "./FutsalOwner/ApplicationStatus.jsx";
+import HelpPage from "./pages/HelpPage.jsx";
 import VenueDashboard from "./FutsalOwner/VenueDashboard.jsx";
 import BookingManagementPage from "./FutsalOwner/BookingManagementPage.jsx";
 import OwnerBookingDetailPage from "./FutsalOwner/OwnerBookingDetailPage.jsx";
@@ -137,7 +137,6 @@ function App() {
             <Route path="/admin/futsal-centers" element={<FutsalCenter />} />
             <Route path="/admin/user-management" element={<UserDirectory />} />
             <Route path="/admindashboard" element={<AdminDashboard />} />
-            <Route path="/AdminSidebar" element={<AdminSidebar/>} />
             <Route path="/admin/futsalownerapproval" element={<FutsalOwnerApproval/>} />
             <Route path="/admin/analytics" element={<Analytics/>}/>
             <Route path="/admin/settings" element={<SystemSettings/>}/>
@@ -147,11 +146,12 @@ function App() {
             <Route path="/player/venues" element={<VenuesPage/>}/>
             <Route path="/player/venue/:venueId/book" element={<BookVenuePage/>}/>
             <Route path="/booking/payment-callback" element={<PaymentCallbackPage/>}/>
+            <Route path="/player/booking/payment-callback" element={<PaymentCallbackPage/>}/>
+            <Route path="/player/booking/esewa-callback" element={<EsewaPaymentCallbackPage/>}/>
             <Route path="/player/booking/split-payment-callback" element={<SplitPaymentCallbackPage/>}/>
             <Route path="/player/booking/split/:bookingId" element={<SplitPaymentPage/>}/>
             <Route path="/player/bookings" element={<BookingPage/>}/>
-            <Route path="/BookingPage" element={<BookingPage/>}/>
-            <Route path="/SplitPaymentPage" element={<PaymentPage/>}/>
+            <Route path="/help" element={<HelpPage />} />
             <Route path="/HighlightsPage" element={<HighlightsPage/>}/>
             <Route path="/HealthPage" element={<HealthPage/>}/>
             <Route path="/PlayerSettings" element={<PlayerSettings/>} />

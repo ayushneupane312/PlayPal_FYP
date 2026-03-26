@@ -119,7 +119,11 @@ const ConfirmBookingPage = () => {
     if (!createdBooking?._id) return;
     try {
       const res = await initiatePayment(createdBooking._id);
-      if (res?.data?.paymentUrl) window.location.href = res.data.paymentUrl;
+      const payUrl = res?.data?.paymentUrl || res?.data?.payment_url;
+      if (payUrl) {
+        sessionStorage.setItem('playpal_khalti_booking_id', createdBooking._id);
+        window.location.href = payUrl;
+      }
     } catch (e) {
       showToast.error(e.response?.data?.message || 'Payment failed');
     }
@@ -262,7 +266,11 @@ const ConfirmBookingPage = () => {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Payment method</label>
-                <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2">
+                <select
+                  value={paymentMethod}
+                  onChange={(e) => setPaymentMethod(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                >
                   <option value="khalti">Khalti</option>
                   <option value="cash">Cash at venue</option>
                 </select>

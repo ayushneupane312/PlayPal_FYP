@@ -37,7 +37,7 @@ const Sidebar = ({ onCollapseChange }) => {
     if (path.includes("/futsalowner/VenuePage")) return "Venue";
     if (path.includes("/futsalowner/booking-management")) return "Bookings";
     if (path.includes("/futsalowner/my-tournaments") || path.includes("/futsalowner/Tournaments")) return "Tournaments";
-    if (path.includes("/futsalowner/Earnings")) return "Earnings";
+    if (path.includes("/EarningsPage")) return "Earnings";
     if (path.includes("/FutsalOwnerSettings")) return "Settings";
     if (path.includes("/futsalowner/myvenue")) return "My Venue";
  
@@ -64,7 +64,7 @@ const Sidebar = ({ onCollapseChange }) => {
         navigate("/futsalowner/my-tournaments");
         break;
       case "Earnings":
-        navigate("/futsalowner/Earnings");
+        navigate("/EarningsPage");
         break;
       case "Settings":
         navigate("/FutsalOwnerSettings");

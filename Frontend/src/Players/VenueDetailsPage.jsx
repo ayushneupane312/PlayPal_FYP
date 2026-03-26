@@ -549,7 +549,7 @@ const VenueDetailPage = () => {
 
               {/* Book Now Button */}
               <button
-                onClick={() => navigate(`/player/book/${venue._id}`)}
+                onClick={() => navigate(`/player/venue/${venue._id}/book`)}
                 className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg transition flex items-center justify-center gap-2 shadow-lg"
               >
                 <Calendar className="w-6 h-6" />

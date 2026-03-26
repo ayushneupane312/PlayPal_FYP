@@ -10,6 +10,12 @@ const UPLOAD_URL = import.meta.env.MODE === "development"
     ? "http://localhost:5000/upload"
     : "/upload";
 
+/** Image/file uploads (Cloudinary via backend) */
+const UPLOAD_API =
+  import.meta.env.MODE === "development"
+    ? "http://localhost:5000/api/upload"
+    : "/api/upload";
+
 axios.defaults.withCredentials = true;
 
 export const useAuthStore = create((set) => ({
@@ -122,6 +128,76 @@ export const useAuthStore = create((set) => ({
       if (isNetworkError && import.meta.env.MODE === 'development') {
         console.warn('Backend unreachable. Start the server (e.g. npm run server in backend folder) to avoid this.');
       }
+    }
+  },
+
+  updateMe: async (payload) => {
+    set({ isLoading: true, error: null });
+    try {
+      const { data } = await axios.patch(`${API_URL}/me`, payload);
+      set({
+        user: data.user,
+        isAuthenticated: true,
+        isLoading: false,
+        error: null,
+      });
+      return data;
+    } catch (error) {
+      set({
+        error: error.response?.data?.message || "Update failed",
+        isLoading: false,
+      });
+      throw error;
+    }
+  },
+
+  changePassword: async (payload) => {
+    set({ isLoading: true, error: null });
+    try {
+      const { data } = await axios.patch(`${API_URL}/change-password`, payload);
+      set({ isLoading: false, error: null });
+      return data;
+    } catch (error) {
+      set({
+        error:
+          error.response?.data?.message ||
+          error.response?.data?.msg ||
+          "Password change failed",
+        isLoading: false,
+      });
+      throw error;
+    }
+  },
+
+  /** Upload image to Cloudinary, then save URL on the logged-in user */
+  uploadProfileImage: async (file) => {
+    set({ isLoading: true, error: null });
+    const formData = new FormData();
+    formData.append("file", file);
+    try {
+      const uploadRes = await axios.post(`${UPLOAD_API}/file`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      const url = uploadRes.data?.url;
+      if (!url) throw new Error("No image URL returned");
+      const { data } = await axios.patch(`${API_URL}/me`, { profileImage: url });
+      set({
+        user: data.user,
+        isAuthenticated: true,
+        isLoading: false,
+        error: null,
+      });
+      return data;
+    } catch (error) {
+      set({
+        error:
+          error.response?.data?.message ||
+          error.response?.data?.msg ||
+          error.message ||
+          "Upload failed",
+        isLoading: false,
+      });
+      throw error;
     }
   },
 

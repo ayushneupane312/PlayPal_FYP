@@ -4,12 +4,37 @@ import { useParams, useNavigate } from 'react-router-dom';
 import PlayerSidebar from './PlayerSidebar';
 import {
   Calendar, Clock, MapPin, Users, CreditCard, Loader2, AlertCircle,
-  CheckCircle, ArrowLeft, ChevronRight, Info, Banknote, Wallet
+  CheckCircle, ArrowLeft, ChevronRight, Info, Banknote, Wallet, Smartphone
 } from 'lucide-react';
 import { showToast } from '../FutsalOwner/components/Toast';
 import ConfirmationModal from '../components/ConfirmationModel';
 import { getVenueById } from '../store/venueService';
-import { getAvailableSlots, createBooking, initiatePayment } from '../store/bookingStore';
+import { getAvailableSlots, createBooking, initiatePayment, initiateEsewaPayment } from '../store/bookingStore';
+
+function bookingErrorMessage(err) {
+  if (!err) return 'Something went wrong.';
+  if (typeof err === 'string') return err;
+  if (err.response?.data?.message) return err.response.data.message;
+  if (typeof err.message === 'string' && err.message) return err.message;
+  return 'Something went wrong.';
+}
+
+/** eSewa ePay V2 expects a real HTML form POST */
+function submitEsewaForm(gatewayUrl, fields) {
+  const form = document.createElement('form');
+  form.method = 'POST';
+  form.action = gatewayUrl;
+  form.acceptCharset = 'UTF-8';
+  Object.entries(fields).forEach(([name, value]) => {
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = name;
+    input.value = value === undefined || value === null ? '' : String(value);
+    form.appendChild(input);
+  });
+  document.body.appendChild(form);
+  form.submit();
+}
 
 const BookVenuePage = () => {
   const { venueId } = useParams();
@@ -29,10 +54,22 @@ const BookVenuePage = () => {
   const [numberOfPlayers, setNumberOfPlayers] = useState(10);
   const [specialRequests, setSpecialRequests] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('cash');
+  const [cashSplitEnabled, setCashSplitEnabled] = useState(false);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [processing, setProcessing] = useState(false);
   
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+
+  const splittingCount = Math.min(20, Math.max(1, Number(numberOfPlayers) || 1));
+  const courtFeeTotal = Number(selectedSlot?.price);
+  const sharePerPlayerPreview =
+    Number.isFinite(courtFeeTotal) && courtFeeTotal > 0
+      ? Math.round((courtFeeTotal / splittingCount) * 100) / 100
+      : null;
+
+  useEffect(() => {
+    if (paymentMethod !== 'cash') setCashSplitEnabled(false);
+  }, [paymentMethod]);
 
   useEffect(() => {
     if (!venueId) {
@@ -131,52 +168,97 @@ const BookVenuePage = () => {
         startTime: selectedSlot.startTime,
         endTime: selectedSlot.endTime,
         duration: 1,
-        numberOfPlayers,
+        numberOfPlayers: splittingCount,
         specialRequests,
-        paymentMethod
+        paymentMethod,
+        cashSplitAmongPlayers: paymentMethod === 'cash' && cashSplitEnabled
       };
 
-      console.log('📝 Creating booking:', bookingData);
       const bookingResponse = await createBooking(bookingData);
-      console.log('✅ Booking created:', bookingResponse);
-      
-      const bookingId = bookingResponse.data._id;
+      const bookingDoc = bookingResponse?.data;
+      const bookingId = bookingDoc?._id;
+
+      if (!bookingId) {
+        const m = bookingResponse?.message || 'Server did not return a booking. Check pricing and try again.';
+        setError(m);
+        showToast.error(m);
+        setProcessing(false);
+        return;
+      }
 
       if (paymentMethod === 'khalti') {
-        console.log('💳 Initiating Khalti payment for booking:', bookingId);
-        const paymentResponse = await initiatePayment(bookingId);
-        console.log('✅ Payment initiated:', paymentResponse);
-
-        if (paymentResponse.data?.payment_url) {
-          window.location.href = paymentResponse.data.payment_url;
-        } else {
-          throw new Error('Payment URL not received');
+        try {
+          const paymentResponse = await initiatePayment(bookingId);
+          const payUrl =
+            paymentResponse.data?.paymentUrl || paymentResponse.data?.payment_url;
+          if (!payUrl) {
+            const m =
+              'Khalti did not return a payment link. Try eSewa or cash, or set KHALTI_SECRET_KEY on the server.';
+            setError(m);
+            showToast.error(m);
+            setProcessing(false);
+            return;
+          }
+          sessionStorage.setItem('playpal_khalti_booking_id', bookingId);
+          setShowConfirmModal(false);
+          window.location.href = payUrl;
+          return;
+        } catch (khErr) {
+          const km = bookingErrorMessage(khErr);
+          setError(km);
+          showToast.error(
+            `${km} If Khalti is not set up, choose eSewa or cash and try again.`
+          );
+          setProcessing(false);
+          return;
         }
-      } else {
-        showToast.success('Booking created successfully! Waiting for venue approval.');
-        setTimeout(() => {
-          navigate(`/player/bookings/${bookingId}`);
-        }, 1500);
       }
+
+      if (paymentMethod === 'esewa') {
+        try {
+          const esewaRes = await initiateEsewaPayment(bookingId);
+          const d = esewaRes?.data;
+          if (!d?.gatewayUrl || !d?.fields) {
+            const m =
+              esewaRes?.message ||
+              'eSewa is not ready (set ESEWA_SECRET_KEY and ESEWA_PRODUCT_CODE in backend .env).';
+            setError(m);
+            showToast.error(m);
+            setProcessing(false);
+            return;
+          }
+          sessionStorage.setItem('playpal_esewa_booking_id', bookingId);
+          setShowConfirmModal(false);
+          submitEsewaForm(d.gatewayUrl, d.fields);
+          return;
+        } catch (ewErr) {
+          const em = bookingErrorMessage(ewErr);
+          setError(em);
+          showToast.error(em);
+          setProcessing(false);
+          return;
+        }
+      }
+
+      showToast.success('Booking created successfully! Waiting for venue approval.');
+      setShowConfirmModal(false);
+      setTimeout(() => {
+        navigate(`/player/bookings/${bookingId}`);
+      }, 1500);
     } catch (err) {
       console.error('❌ Booking error:', err);
-      
-      if (err.response?.status === 409) {
+
+      if (err.httpStatus === 409 || err.response?.status === 409) {
         setError('This time slot has just been booked by someone else. Please select a different time slot.');
         showToast.error('Slot already booked! Please choose another time.');
-        
-        if (selectedCourt && selectedDate) {
-          fetchAvailableSlots();
-        }
+        if (selectedCourt && selectedDate) fetchAvailableSlots();
         setStep(2);
-      } else if (err.response?.data?.message) {
-        setError(err.response.data.message);
-        showToast.error(err.response.data.message);
       } else {
-        setError(err.message || 'Failed to create booking. Please try again.');
-        showToast.error('Failed to create booking. Please try again.');
+        const msg = bookingErrorMessage(err);
+        setError(msg);
+        showToast.error(msg);
       }
-      
+
       setProcessing(false);
     }
   };
@@ -501,7 +583,7 @@ const BookVenuePage = () => {
             <div className="bg-white rounded-lg shadow-sm p-6">
               <h2 className="text-xl font-bold text-gray-900 mb-6">Select Payment Method</h2>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                 {/* Cash Payment */}
                 <div
                   onClick={() => setPaymentMethod('cash')}
@@ -538,10 +620,74 @@ const BookVenuePage = () => {
                         <span>No online payment required</span>
                       </li>
                     </ul>
+
+                    {paymentMethod === 'cash' && (
+                      <div
+                        className="mt-4 pt-4 border-t border-gray-200 space-y-3"
+                        onClick={(e) => e.stopPropagation()}
+                        role="group"
+                        aria-label="Cash split options"
+                      >
+                        <label className="flex items-start gap-2 cursor-pointer text-gray-800">
+                          <input
+                            type="checkbox"
+                            checked={cashSplitEnabled}
+                            onChange={(e) => setCashSplitEnabled(e.target.checked)}
+                            onClick={(e) => e.stopPropagation()}
+                            className="mt-1 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                          />
+                          <span>
+                            <span className="font-medium">Split the court fee equally</span> — everyone pays
+                            the same share <strong>at the venue after your game</strong> (e.g. 10 or 12
+                            players).
+                          </span>
+                        </label>
+
+                        {cashSplitEnabled && (
+                          <>
+                            <div>
+                              <label
+                                htmlFor="split-player-count"
+                                className="block text-xs font-medium text-gray-600 mb-1"
+                              >
+                                Number of players splitting the fee
+                              </label>
+                              <input
+                                id="split-player-count"
+                                type="number"
+                                min={1}
+                                max={20}
+                                value={numberOfPlayers}
+                                onChange={(e) => {
+                                  const raw = parseInt(e.target.value, 10);
+                                  if (!Number.isFinite(raw)) {
+                                    setNumberOfPlayers(1);
+                                    return;
+                                  }
+                                  setNumberOfPlayers(Math.min(20, Math.max(1, raw)));
+                                }}
+                                onClick={(e) => e.stopPropagation()}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 text-gray-900"
+                              />
+                            </div>
+                            {sharePerPlayerPreview != null && (
+                              <div className="rounded-lg bg-emerald-50 border border-emerald-100 px-3 py-2 text-sm text-emerald-900">
+                                <p className="font-semibold">After the game (at venue)</p>
+                                <p className="mt-1">
+                                  Court fee <strong>Rs. {courtFeeTotal}</strong> ÷{' '}
+                                  <strong>{splittingCount}</strong> players ≈{' '}
+                                  <strong>Rs. {sharePerPlayerPreview}</strong> each
+                                </p>
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
 
-                {/* Online Payment (Khalti) */}
+                {/* Khalti */}
                 <div
                   onClick={() => setPaymentMethod('khalti')}
                   className={`border-2 rounded-lg p-6 cursor-pointer transition-all ${
@@ -554,8 +700,8 @@ const BookVenuePage = () => {
                     <div className="flex items-center">
                       <Wallet className="w-8 h-8 text-purple-600 mr-3" />
                       <div>
-                        <h3 className="font-semibold text-lg">Khalti Payment</h3>
-                        <p className="text-sm text-gray-600">Pay online now</p>
+                        <h3 className="font-semibold text-lg">Khalti</h3>
+                        <p className="text-sm text-gray-600">Wallet / bank via Khalti</p>
                       </div>
                     </div>
                     {paymentMethod === 'khalti' && (
@@ -566,15 +712,46 @@ const BookVenuePage = () => {
                     <ul className="space-y-2">
                       <li className="flex items-start">
                         <CheckCircle className="w-4 h-4 text-emerald-600 mr-2 flex-shrink-0 mt-0.5" />
-                        <span>Instant booking confirmation</span>
+                        <span>Instant confirmation after payment</span>
                       </li>
                       <li className="flex items-start">
                         <CheckCircle className="w-4 h-4 text-emerald-600 mr-2 flex-shrink-0 mt-0.5" />
-                        <span>Secure online payment</span>
+                        <span>Requires server Khalti keys</span>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+
+                {/* eSewa */}
+                <div
+                  onClick={() => setPaymentMethod('esewa')}
+                  className={`border-2 rounded-lg p-6 cursor-pointer transition-all ${
+                    paymentMethod === 'esewa'
+                      ? 'border-emerald-600 bg-emerald-50'
+                      : 'border-gray-200 hover:border-emerald-300'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center">
+                      <Smartphone className="w-8 h-8 text-green-600 mr-3" />
+                      <div>
+                        <h3 className="font-semibold text-lg">eSewa</h3>
+                        <p className="text-sm text-gray-600">Pay with eSewa wallet</p>
+                      </div>
+                    </div>
+                    {paymentMethod === 'esewa' && (
+                      <CheckCircle className="w-6 h-6 text-emerald-600" />
+                    )}
+                  </div>
+                  <div className="bg-white rounded-lg p-4 text-sm text-gray-700">
+                    <ul className="space-y-2">
+                      <li className="flex items-start">
+                        <CheckCircle className="w-4 h-4 text-emerald-600 mr-2 flex-shrink-0 mt-0.5" />
+                        <span>Good alternative if Khalti fails</span>
                       </li>
                       <li className="flex items-start">
                         <CheckCircle className="w-4 h-4 text-emerald-600 mr-2 flex-shrink-0 mt-0.5" />
-                        <span>Guaranteed slot reservation</span>
+                        <span>Requires ESEWA_* keys in backend .env</span>
                       </li>
                     </ul>
                   </div>
@@ -588,12 +765,28 @@ const BookVenuePage = () => {
                     {paymentMethod === 'cash' ? (
                       <>
                         <p className="font-medium mb-1">Cash Payment Notice</p>
-                        <p>Your booking will be pending until the venue owner confirms. Please arrive at the venue on time and make the payment there.</p>
+                        {cashSplitEnabled ? (
+                          <p>
+                            Your group plans to split the court fee equally after the game. The venue still
+                            collects the <strong>full court fee</strong>; your team settles shares among
+                            yourselves. Booking stays pending until the owner approves.
+                          </p>
+                        ) : (
+                          <p>
+                            Your booking will be pending until the venue owner confirms. Please arrive at the
+                            venue on time and make the payment there.
+                          </p>
+                        )}
+                      </>
+                    ) : paymentMethod === 'khalti' ? (
+                      <>
+                        <p className="font-medium mb-1">Khalti</p>
+                        <p>You will be redirected to Khalti. The booking is confirmed after payment succeeds.</p>
                       </>
                     ) : (
                       <>
-                        <p className="font-medium mb-1">Online Payment Notice</p>
-                        <p>You will be redirected to Khalti payment gateway. Your booking will be instantly confirmed once payment is successful.</p>
+                        <p className="font-medium mb-1">eSewa</p>
+                        <p>You will be sent to eSewa to pay. When you return, we confirm the booking using eSewa&apos;s status API.</p>
                       </>
                     )}
                   </div>
@@ -655,12 +848,17 @@ const BookVenuePage = () => {
                       {paymentMethod === 'cash' ? (
                         <>
                           <Banknote className="w-4 h-4 mr-1" />
-                          Cash Payment
+                          Cash{cashSplitEnabled ? ' (split at venue)' : ''}
+                        </>
+                      ) : paymentMethod === 'khalti' ? (
+                        <>
+                          <Wallet className="w-4 h-4 mr-1" />
+                          Khalti
                         </>
                       ) : (
                         <>
-                          <Wallet className="w-4 h-4 mr-1" />
-                          Khalti Payment
+                          <Smartphone className="w-4 h-4 mr-1" />
+                          eSewa
                         </>
                       )}
                     </span>
@@ -670,6 +868,16 @@ const BookVenuePage = () => {
                       <span className="font-semibold text-gray-900">Total Amount:</span>
                       <span className="font-bold text-emerald-600">Rs. {selectedSlot?.price}</span>
                     </div>
+                    {paymentMethod === 'cash' && cashSplitEnabled && sharePerPlayerPreview != null && (
+                      <div className="mt-3 rounded-lg bg-amber-50 border border-amber-100 px-3 py-2 text-sm text-amber-950">
+                        <p className="font-medium">Split after the game (at venue)</p>
+                        <p className="mt-1">
+                          ~<strong>Rs. {sharePerPlayerPreview}</strong> per person if{' '}
+                          <strong>{splittingCount}</strong> players share the{' '}
+                          <strong>Rs. {courtFeeTotal}</strong> court fee equally.
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -680,13 +888,23 @@ const BookVenuePage = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     <Users className="w-4 h-4 inline mr-2" />
                     Number of Players
+                    {paymentMethod === 'cash' && cashSplitEnabled && (
+                      <span className="text-gray-500 font-normal"> (also used for the cash split)</span>
+                    )}
                   </label>
                   <input
                     type="number"
                     min="1"
                     max="20"
                     value={numberOfPlayers}
-                    onChange={(e) => setNumberOfPlayers(parseInt(e.target.value))}
+                    onChange={(e) => {
+                      const raw = parseInt(e.target.value, 10);
+                      if (!Number.isFinite(raw)) {
+                        setNumberOfPlayers(1);
+                        return;
+                      }
+                      setNumberOfPlayers(Math.min(20, Math.max(1, raw)));
+                    }}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                   />
                 </div>
@@ -725,7 +943,7 @@ const BookVenuePage = () => {
                       <Loader2 className="w-5 h-5 mr-2 animate-spin" />
                       Processing...
                     </>
-                  ) : paymentMethod === 'khalti' ? (
+                  ) : paymentMethod === 'khalti' || paymentMethod === 'esewa' ? (
                     <>
                       <CreditCard className="w-5 h-5 mr-2" />
                       Proceed to Payment
@@ -750,7 +968,7 @@ const BookVenuePage = () => {
         onConfirm={confirmAndCreateBooking}
         title="Confirm Booking"
         message={`Confirm booking at ${venue?.venueName} on ${new Date(selectedDate).toLocaleDateString()} from ${selectedSlot?.startTime} to ${selectedSlot?.endTime} for Rs. ${selectedSlot?.price}?`}
-        confirmText={paymentMethod === 'khalti' ? 'Confirm & Pay' : 'Confirm Booking'}
+        confirmText={paymentMethod === 'khalti' || paymentMethod === 'esewa' ? 'Confirm & Pay' : 'Confirm Booking'}
         cancelText="Cancel"
         type="info"
         isLoading={processing}

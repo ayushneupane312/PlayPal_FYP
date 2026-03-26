@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   MapPin, ImageIcon, Phone, Mail, Clock, Upload, X, Settings,
   DollarSign, Video, Wifi, Car, Users, Coffee, Shield,
@@ -15,6 +15,7 @@ export default function VenuePage() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
+  const venueDataLoadedToastShownRef = useRef(false);
 
   // Venue Information
   const [venueInfo, setVenueInfo] = useState({
@@ -101,7 +102,10 @@ export default function VenuePage() {
         if (venueResponse?.success && venueResponse?.data) {
           console.log('✅ Existing venue found! Populating form...');
           populateVenueData(venueResponse.data);
-          showToast.success('Venue data loaded');
+          if (!venueDataLoadedToastShownRef.current) {
+            showToast.success('Venue data loaded');
+            venueDataLoadedToastShownRef.current = true;
+          }
           setInitialLoading(false);
           return;
         }
