@@ -3,9 +3,9 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PlayerSidebar from '../PlayerSidebar';
 import {
-  ArrowLeft, Search, Swords, Shield, Zap, Star,
-  Users, Filter, ChevronDown, Loader2, Trophy,
-  AlertCircle, CheckCircle, Send, X, RefreshCw
+  ArrowLeft, Search, Swords,
+  Users, Filter, Loader2,
+  AlertCircle, CheckCircle, Send, X
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import matchmakingService, {
@@ -19,13 +19,6 @@ import { getAllVenues } from '../../store/venueService';
 import { showToast } from '../../FutsalOwner/components/Toast';
 
 const FORMATS = ['All', '2v2', '5v5', '7v7'];
-const SKILLS  = ['All', 'Beginner', 'Intermediate', 'Advanced'];
-
-const SKILL_CONFIG = {
-  Beginner:     { color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-200', icon: <Shield className="w-3.5 h-3.5" /> },
-  Intermediate: { color: 'text-blue-600',    bg: 'bg-blue-50',    border: 'border-blue-200',    icon: <Zap    className="w-3.5 h-3.5" /> },
-  Advanced:     { color: 'text-purple-600',  bg: 'bg-purple-50',  border: 'border-purple-200',  icon: <Star   className="w-3.5 h-3.5" /> },
-};
 
 const FORMAT_COLORS = {
   '2v2': 'bg-amber-50 text-amber-700 border-amber-200',
@@ -47,7 +40,6 @@ export default function BrowseOpponentsPage() {
 
   // Filters
   const [formatFilter, setFormatFilter] = useState('All');
-  const [skillFilter,  setSkillFilter]  = useState('All');
   const [search,       setSearch]       = useState('');
 
   // Challenge modal
@@ -76,7 +68,6 @@ export default function BrowseOpponentsPage() {
     try {
       const params = {};
       if (formatFilter !== 'All') params.matchFormat = formatFilter;
-      if (skillFilter  !== 'All') params.skillLevel  = skillFilter;
       const [oppRes, myTeamsRes] = await Promise.all([
         browseOpponentTeams(params),
         matchmakingService.getMyTeams()
@@ -99,7 +90,7 @@ export default function BrowseOpponentsPage() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [formatFilter, skillFilter, userId, autoTeamId]);
+  }, [formatFilter, userId, autoTeamId]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -219,16 +210,9 @@ export default function BrowseOpponentsPage() {
               <div className="flex items-center gap-3">
                 <button
                   onClick={() => navigate('/player/matches/challenges')}
-                  className="px-4 py-2 border border-gray-200 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 flex items-center gap-2 transition"
+                  className="px-4 py-2 border border-emerald-200 bg-emerald-50 rounded-xl text-sm font-semibold text-emerald-700 hover:bg-emerald-100 transition"
                 >
-                  <Trophy className="w-4 h-4" /> My Challenges
-                </button>
-                <button
-                  onClick={() => fetchData(true)}
-                  disabled={refreshing}
-                  className="p-2 border border-gray-200 rounded-xl text-gray-500 hover:bg-gray-50 transition disabled:opacity-50"
-                >
-                  <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+                  My Challenges
                 </button>
               </div>
             </div>
@@ -435,27 +419,20 @@ export default function BrowseOpponentsPage() {
             </div>
 
             {/* Format filter */}
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-2">
               <Filter className="w-4 h-4 text-gray-400" />
-              <span className="text-xs text-gray-500 font-medium">Format:</span>
-              {FORMATS.map(f => (
-                <button key={f} onClick={() => setFormatFilter(f)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
-                    formatFilter === f ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}>{f}</button>
-              ))}
+              <label className="text-xs text-gray-500 font-medium">Format</label>
+              <select
+                value={formatFilter}
+                onChange={(e) => setFormatFilter(e.target.value)}
+                className="min-w-[110px] px-3 py-2 rounded-lg border border-gray-200 bg-white text-xs font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+              >
+                {FORMATS.map((f) => (
+                  <option key={f} value={f}>{f}</option>
+                ))}
+              </select>
             </div>
 
-            {/* Skill filter */}
-            <div className="flex items-center gap-1.5">
-              <span className="text-xs text-gray-500 font-medium">Skill:</span>
-              {SKILLS.map(s => (
-                <button key={s} onClick={() => setSkillFilter(s)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
-                    skillFilter === s ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}>{s}</button>
-              ))}
-            </div>
           </div>
 
           {/* Results */}
@@ -474,7 +451,6 @@ export default function BrowseOpponentsPage() {
               <p className="text-xs text-gray-400 mb-3">{filtered.length} team{filtered.length !== 1 ? 's' : ''} available</p>
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                 {filtered.map(team => {
-                  const skill = SKILL_CONFIG[team.skillLevel] || SKILL_CONFIG.Intermediate;
                   const filled = team.players?.length || 0;
                   const isFull = filled >= team.maxPlayers;
                   return (
@@ -493,10 +469,6 @@ export default function BrowseOpponentsPage() {
                           </span>
                         </div>
 
-                        {/* Skill badge */}
-                        <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${skill.bg} ${skill.color} ${skill.border} border`}>
-                          {skill.icon} {team.skillLevel}
-                        </div>
                       </div>
 
                       {/* Players */}
@@ -570,7 +542,7 @@ export default function BrowseOpponentsPage() {
                 <div>
                   <p className="font-semibold text-gray-900">{selectedOpponent.name}</p>
                   <p className="text-xs text-gray-500">
-                    {selectedOpponent.matchFormat} · {selectedOpponent.skillLevel} · Led by {selectedOpponent.leader?.name}
+                    {selectedOpponent.matchFormat} · Led by {selectedOpponent.leader?.name}
                   </p>
                 </div>
               </div>

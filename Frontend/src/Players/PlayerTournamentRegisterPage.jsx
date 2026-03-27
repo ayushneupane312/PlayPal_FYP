@@ -33,6 +33,31 @@ function formatDate(d) {
   return new Date(d).toLocaleDateString('en-NP', { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
+function isDeadlinePassed(deadline) {
+  if (!deadline) return false;
+  const raw = String(deadline);
+  let parsed;
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+    const [year, month, day] = raw.split('-').map(Number);
+    parsed = new Date(year, month - 1, day, 12, 0, 0, 0);
+  } else {
+    parsed = new Date(deadline);
+    if (Number.isNaN(parsed.getTime())) return false;
+  }
+
+  return Date.now() > parsed.getTime();
+}
+
+function getEffectiveTournamentStatus(tournament) {
+  const originalStatus = (tournament?.status || '').toLowerCase();
+  const passed = isDeadlinePassed(tournament?.registrationDeadline);
+  if (passed && (originalStatus === 'registration_open' || originalStatus === 'upcoming')) {
+    return 'registration_closed';
+  }
+  return originalStatus;
+}
+
 function SectionCard({ step, title, children }) {
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-5 mb-4">
@@ -115,8 +140,8 @@ export default function PlayerTournamentRegisterPage() {
       const first = (leaderOnly.length > 0 ? leaderOnly : allTeams)[0];
       if (first && !selectedTeamId) setSelectedTeamId(first._id);
       const pm = tourData?.paymentMethods || [];
-      if (pm.includes('online') && !pm.includes('cash')) setPaymentMethod('esewa');
-      else if (pm.includes('cash') && !pm.includes('online')) setPaymentMethod('cash');
+      if (pm.includes('cash') && !pm.includes('online')) setPaymentMethod('cash');
+      else if (pm.includes('online') && !pm.includes('cash')) setPaymentMethod('khalti');
     } catch (err) {
       console.error('Fetch error:', err);
       showToast.error(err.response?.data?.message || 'Failed to load data');
@@ -175,10 +200,10 @@ export default function PlayerTournamentRegisterPage() {
   const rules = tournament?.policies?.rulesAndRegulations
     ? [tournament.policies.rulesAndRegulations]
     : DEFAULT_RULES;
+  const effectiveStatus = getEffectiveTournamentStatus(tournament);
 
   const payOptions = [
     ...(paymentMethods.includes('online') ? [
-      { id: 'esewa', label: 'eSewa', Icon: Smartphone, api: 'online' },
       { id: 'khalti', label: 'Khalti', Icon: Smartphone, api: 'online' },
     ] : []),
     ...(paymentMethods.includes('cash') ? [{ id: 'cash', label: 'Cash on arrival', Icon: Banknote, api: 'cash' }] : []),
@@ -218,13 +243,13 @@ export default function PlayerTournamentRegisterPage() {
     );
   }
 
-  if (tournament.status !== 'registration_open') {
+  if (effectiveStatus !== 'registration_open') {
     return (
       <div className="flex min-h-screen bg-gray-50">
         <PlayerSidebar onCollapseChange={setIsSidebarCollapsed} />
         <div className={`flex-1 p-6 transition-all duration-300 ${isSidebarCollapsed ? 'ml-20' : 'ml-64'}`}>
           <div className="bg-white rounded-xl shadow-md p-8 text-center">
-            <AlertCircle className="w-12 h-12 text-amber-500 mx-auto mb-3" />
+            <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-3" />
             <h2 className="text-lg font-semibold text-gray-900 mb-2">Registration closed</h2>
             <p className="text-sm text-gray-600 mb-4">This tournament is not open for registration.</p>
             <button

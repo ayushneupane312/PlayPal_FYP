@@ -2,8 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Calendar, Clock, MapPin, Filter, Search, ChevronRight,
-  Loader2, AlertCircle
+  Calendar, Clock, MapPin, Search, ChevronRight, Loader2
 } from 'lucide-react';
 import PlayerSidebar from './PlayerSidebar';
 import { showToast } from '../FutsalOwner/components/Toast';
@@ -12,21 +11,20 @@ import { getMyBookings, getStatusColor } from '../store/bookingStore';
 const MyBookingsPage = () => {
   const navigate = useNavigate();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  const [bookings, setBookings] = useState([]);
+  const [allBookings, setAllBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     fetchBookings();
-  }, [statusFilter]);
+  }, []);
 
   const fetchBookings = async () => {
     try {
       setLoading(true);
-      const params = statusFilter !== 'all' ? { status: statusFilter } : {};
-      const response = await getMyBookings(params);
-      setBookings(response.data);
+      const response = await getMyBookings();
+      setAllBookings(response?.data || []);
     } catch (error) {
       showToast.error('Failed to load bookings');
     } finally {
@@ -34,30 +32,38 @@ const MyBookingsPage = () => {
     }
   };
 
-  const filteredBookings = bookings.filter(booking =>
-    booking.venue?.venueName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    booking.court?.name?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredBookings = allBookings.filter((booking) => {
+    const matchesStatus = statusFilter === 'all' || booking.bookingStatus === statusFilter;
+    const q = searchQuery.toLowerCase();
+    const matchesSearch =
+      booking.venue?.venueName?.toLowerCase().includes(q) ||
+      booking.court?.name?.toLowerCase().includes(q);
+    return matchesStatus && matchesSearch;
+  });
 
   const getStatusCounts = () => {
     return {
-      all: bookings.length,
-      pending: bookings.filter(b => b.bookingStatus === 'pending').length,
-      confirmed: bookings.filter(b => b.bookingStatus === 'confirmed').length,
-      completed: bookings.filter(b => b.bookingStatus === 'completed').length,
-      cancelled: bookings.filter(b => b.bookingStatus === 'cancelled').length
+      all: allBookings.length,
+      pending: allBookings.filter((b) => b.bookingStatus === 'pending').length,
+      confirmed: allBookings.filter((b) => b.bookingStatus === 'confirmed').length,
+      completed: allBookings.filter((b) => b.bookingStatus === 'completed').length,
+      cancelled: allBookings.filter((b) => b.bookingStatus === 'cancelled').length
     };
   };
 
   const counts = getStatusCounts();
 
   return (
-    <div className="flex h-screen bg-gray-50">
-     
-    <PlayerSidebar onCollapseChange={setIsSidebarCollapsed} />
-      
-      <div className="flex-1 overflow-auto">
-        <div className="p-6">
+    <div className="flex min-h-screen bg-gray-50">
+      <PlayerSidebar onCollapseChange={setIsSidebarCollapsed} />
+
+      <div
+        className={`flex-1 p-6 transition-all duration-300 ease-in-out ${
+          isSidebarCollapsed ? 'ml-20' : 'ml-64'
+        }`}
+        style={{ width: `calc(100% - ${isSidebarCollapsed ? '5rem' : '16rem'})` }}
+      >
+        <div className="max-w-7xl mx-auto">
           {/* Header */}
           <div className="mb-6">
             <h1 className="text-2xl font-bold text-gray-900">My Bookings</h1>
@@ -152,51 +158,55 @@ const MyBookingsPage = () => {
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="space-y-4">
               {filteredBookings.map((booking) => (
                 <div
                   key={booking._id}
                   onClick={() => navigate(`/player/bookings/${booking._id}`)}
-                  className="bg-white rounded-lg shadow hover:shadow-lg transition-shadow cursor-pointer"
+                  className="bg-white rounded-lg p-4 shadow-sm border border-gray-100 hover:shadow-md transition-all cursor-pointer"
                 >
-                  <div className="p-6">
-                    {/* Venue Image */}
-                    {booking.venue?.media?.images?.[0]?.url && (
-                      <img
-                        src={booking.venue.media.images[0].url}
-                        alt={booking.venue.venueName}
-                        className="w-full h-32 object-cover rounded-lg mb-4"
-                      />
-                    )}
+                  <div className="flex items-start gap-4">
+                    <div className="w-10 h-10 bg-emerald-50 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <Calendar className="w-5 h-5 text-emerald-600" />
+                    </div>
 
-                    {/* Venue Name */}
-                    <h3 className="font-semibold text-gray-900 mb-2">{booking.venue?.venueName}</h3>
-                    
-                    {/* Status Badge */}
-                    <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium mb-3 ${getStatusColor(booking.bookingStatus)}`}>
-                      {booking.bookingStatus.charAt(0).toUpperCase() + booking.bookingStatus.slice(1)}
-                    </span>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-3">
+                          <h3 className="text-base font-semibold text-gray-900">
+                            {booking.venue?.venueName || 'Unknown Venue'}
+                          </h3>
+                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(booking.bookingStatus)}`}>
+                            {booking.bookingStatus?.charAt(0).toUpperCase() + booking.bookingStatus?.slice(1)}
+                          </span>
+                        </div>
+                      </div>
 
-                    {/* Details */}
-                    <div className="space-y-2 text-sm">
-                      <div className="flex items-center gap-2 text-gray-600">
-                        <Calendar className="w-4 h-4" />
-                        <span>{new Date(booking.bookingDate).toLocaleDateString()}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-gray-600">
-                        <Clock className="w-4 h-4" />
-                        <span>{booking.timeSlot.startTime} - {booking.timeSlot.endTime}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-gray-600">
-                        <MapPin className="w-4 h-4" />
-                        <span className="line-clamp-1">{booking.court.name}</span>
+                      <div className="space-y-1 text-sm text-gray-600">
+                        <div className="flex items-center gap-2">
+                          <MapPin className="w-4 h-4" />
+                          <span className="line-clamp-1">
+                            {booking.venue?.fullAddress || booking.venue?.venueName || 'Location'}
+                          </span>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-x-5 gap-y-1">
+                          <div className="flex items-center gap-2">
+                            <Calendar className="w-4 h-4" />
+                            <span>{new Date(booking.bookingDate).toLocaleDateString()}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Clock className="w-4 h-4" />
+                            <span>{booking.timeSlot?.startTime} - {booking.timeSlot?.endTime}</span>
+                          </div>
+                        </div>
                       </div>
                     </div>
 
-                    {/* Price and View Details */}
-                    <div className="flex items-center justify-between mt-4 pt-4 border-t">
-                      <span className="font-bold text-emerald-600">Rs. {booking.pricing.totalAmount}</span>
-                      <button className="flex items-center gap-1 text-emerald-600 hover:text-emerald-700 font-medium">
+                    <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
+                      <span className="text-lg font-bold text-emerald-600">
+                        Rs. {booking.pricing?.totalAmount || 0}
+                      </span>
+                      <button className="flex items-center gap-1 text-emerald-600 hover:text-emerald-700 font-medium text-sm">
                         View Details
                         <ChevronRight className="w-4 h-4" />
                       </button>

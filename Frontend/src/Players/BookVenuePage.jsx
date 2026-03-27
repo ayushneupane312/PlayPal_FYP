@@ -4,12 +4,12 @@ import { useParams, useNavigate } from 'react-router-dom';
 import PlayerSidebar from './PlayerSidebar';
 import {
   Calendar, Clock, MapPin, Users, CreditCard, Loader2, AlertCircle,
-  CheckCircle, ArrowLeft, ChevronRight, Info, Banknote, Wallet, Smartphone
+  CheckCircle, ArrowLeft, ChevronRight, Info, Banknote, Wallet
 } from 'lucide-react';
 import { showToast } from '../FutsalOwner/components/Toast';
 import ConfirmationModal from '../components/ConfirmationModel';
 import { getVenueById } from '../store/venueService';
-import { getAvailableSlots, createBooking, initiatePayment, initiateEsewaPayment } from '../store/bookingStore';
+import { getAvailableSlots, createBooking, initiatePayment } from '../store/bookingStore';
 
 function bookingErrorMessage(err) {
   if (!err) return 'Something went wrong.';
@@ -17,23 +17,6 @@ function bookingErrorMessage(err) {
   if (err.response?.data?.message) return err.response.data.message;
   if (typeof err.message === 'string' && err.message) return err.message;
   return 'Something went wrong.';
-}
-
-/** eSewa ePay V2 expects a real HTML form POST */
-function submitEsewaForm(gatewayUrl, fields) {
-  const form = document.createElement('form');
-  form.method = 'POST';
-  form.action = gatewayUrl;
-  form.acceptCharset = 'UTF-8';
-  Object.entries(fields).forEach(([name, value]) => {
-    const input = document.createElement('input');
-    input.type = 'hidden';
-    input.name = name;
-    input.value = value === undefined || value === null ? '' : String(value);
-    form.appendChild(input);
-  });
-  document.body.appendChild(form);
-  form.submit();
 }
 
 const BookVenuePage = () => {
@@ -193,7 +176,7 @@ const BookVenuePage = () => {
             paymentResponse.data?.paymentUrl || paymentResponse.data?.payment_url;
           if (!payUrl) {
             const m =
-              'Khalti did not return a payment link. Try eSewa or cash, or set KHALTI_SECRET_KEY on the server.';
+              'Khalti did not return a payment link. Try cash, or set KHALTI_SECRET_KEY on the server.';
             setError(m);
             showToast.error(m);
             setProcessing(false);
@@ -207,34 +190,8 @@ const BookVenuePage = () => {
           const km = bookingErrorMessage(khErr);
           setError(km);
           showToast.error(
-            `${km} If Khalti is not set up, choose eSewa or cash and try again.`
+            `${km} If Khalti is not set up, choose cash and try again.`
           );
-          setProcessing(false);
-          return;
-        }
-      }
-
-      if (paymentMethod === 'esewa') {
-        try {
-          const esewaRes = await initiateEsewaPayment(bookingId);
-          const d = esewaRes?.data;
-          if (!d?.gatewayUrl || !d?.fields) {
-            const m =
-              esewaRes?.message ||
-              'eSewa is not ready (set ESEWA_SECRET_KEY and ESEWA_PRODUCT_CODE in backend .env).';
-            setError(m);
-            showToast.error(m);
-            setProcessing(false);
-            return;
-          }
-          sessionStorage.setItem('playpal_esewa_booking_id', bookingId);
-          setShowConfirmModal(false);
-          submitEsewaForm(d.gatewayUrl, d.fields);
-          return;
-        } catch (ewErr) {
-          const em = bookingErrorMessage(ewErr);
-          setError(em);
-          showToast.error(em);
           setProcessing(false);
           return;
         }
@@ -722,40 +679,6 @@ const BookVenuePage = () => {
                   </div>
                 </div>
 
-                {/* eSewa */}
-                <div
-                  onClick={() => setPaymentMethod('esewa')}
-                  className={`border-2 rounded-lg p-6 cursor-pointer transition-all ${
-                    paymentMethod === 'esewa'
-                      ? 'border-emerald-600 bg-emerald-50'
-                      : 'border-gray-200 hover:border-emerald-300'
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center">
-                      <Smartphone className="w-8 h-8 text-green-600 mr-3" />
-                      <div>
-                        <h3 className="font-semibold text-lg">eSewa</h3>
-                        <p className="text-sm text-gray-600">Pay with eSewa wallet</p>
-                      </div>
-                    </div>
-                    {paymentMethod === 'esewa' && (
-                      <CheckCircle className="w-6 h-6 text-emerald-600" />
-                    )}
-                  </div>
-                  <div className="bg-white rounded-lg p-4 text-sm text-gray-700">
-                    <ul className="space-y-2">
-                      <li className="flex items-start">
-                        <CheckCircle className="w-4 h-4 text-emerald-600 mr-2 flex-shrink-0 mt-0.5" />
-                        <span>Good alternative if Khalti fails</span>
-                      </li>
-                      <li className="flex items-start">
-                        <CheckCircle className="w-4 h-4 text-emerald-600 mr-2 flex-shrink-0 mt-0.5" />
-                        <span>Requires ESEWA_* keys in backend .env</span>
-                      </li>
-                    </ul>
-                  </div>
-                </div>
               </div>
 
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
@@ -783,12 +706,7 @@ const BookVenuePage = () => {
                         <p className="font-medium mb-1">Khalti</p>
                         <p>You will be redirected to Khalti. The booking is confirmed after payment succeeds.</p>
                       </>
-                    ) : (
-                      <>
-                        <p className="font-medium mb-1">eSewa</p>
-                        <p>You will be sent to eSewa to pay. When you return, we confirm the booking using eSewa&apos;s status API.</p>
-                      </>
-                    )}
+                    ) : null}
                   </div>
                 </div>
               </div>
@@ -855,12 +773,7 @@ const BookVenuePage = () => {
                           <Wallet className="w-4 h-4 mr-1" />
                           Khalti
                         </>
-                      ) : (
-                        <>
-                          <Smartphone className="w-4 h-4 mr-1" />
-                          eSewa
-                        </>
-                      )}
+                      ) : null}
                     </span>
                   </div>
                   <div className="border-t pt-3 mt-3">
@@ -943,7 +856,7 @@ const BookVenuePage = () => {
                       <Loader2 className="w-5 h-5 mr-2 animate-spin" />
                       Processing...
                     </>
-                  ) : paymentMethod === 'khalti' || paymentMethod === 'esewa' ? (
+                  ) : paymentMethod === 'khalti' ? (
                     <>
                       <CreditCard className="w-5 h-5 mr-2" />
                       Proceed to Payment
@@ -968,7 +881,7 @@ const BookVenuePage = () => {
         onConfirm={confirmAndCreateBooking}
         title="Confirm Booking"
         message={`Confirm booking at ${venue?.venueName} on ${new Date(selectedDate).toLocaleDateString()} from ${selectedSlot?.startTime} to ${selectedSlot?.endTime} for Rs. ${selectedSlot?.price}?`}
-        confirmText={paymentMethod === 'khalti' || paymentMethod === 'esewa' ? 'Confirm & Pay' : 'Confirm Booking'}
+        confirmText={paymentMethod === 'khalti' ? 'Confirm & Pay' : 'Confirm Booking'}
         cancelText="Cancel"
         type="info"
         isLoading={processing}

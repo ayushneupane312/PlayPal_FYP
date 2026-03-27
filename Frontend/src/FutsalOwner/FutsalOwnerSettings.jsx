@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Lock, FileText, Bell, CreditCard, Calendar, Shield, Eye, EyeOff, MapPin, Phone, Mail, Building, Database, AlertTriangle, Trash2, Check, X } from 'lucide-react';
+import { User, Lock, FileText, Bell, CreditCard, Calendar, Shield, Eye, EyeOff, MapPin, Phone, Mail, Building, Database, AlertTriangle, Trash2, Check, X, ArrowLeft } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import { useFutsalOwnerStore } from '../store/futsalOwnerFormStore';
 import { showToast } from './components/Toast';
+import { getFutsalOwnerData, getVenueInfo, updateVenueInfo } from '../store/venueService';
 
 const Settings = () => {
   const [activeTab, setActiveTab] = useState('profile');
@@ -123,12 +124,16 @@ const Settings = () => {
   }, [passwordData.newPassword, passwordChecks]);
   
   const [futsalData, setFutsalData] = useState({
-    defaultVenue: 'Champion Futsal Arena - Thamel',
-    businessName: 'Champion Futsal Arena',
-    contactNumber: '+977 9851234567',
-    supportEmail: 'support@championfutsal.com',
-    businessAddress: 'Thamel, Kathmandu'
+    defaultVenue: '',
+    businessName: '',
+    contactNumber: '',
+    supportEmail: '',
+    businessAddress: ''
   });
+
+  const [ownerVenue, setOwnerVenue] = useState(null);
+  const [venues, setVenues] = useState([]);
+  const [futsalBusy, setFutsalBusy] = useState(false);
   
   const [privacySettings, setPrivacySettings] = useState({
     venueVisibility: true,
@@ -143,12 +148,64 @@ const Settings = () => {
     { action: 'New venue added', date: 'Jan 10, 2026 at 11:00 AM' }
   ];
   
-  // Mock venues list - in real app, this would come from API
-  const venues = [
-    'Champion Futsal Arena - Thamel',
-    'Champion Futsal Arena - Baneshwor',
-    'Champion Futsal Arena - Lalitpur'
-  ];
+  useEffect(() => {
+    const loadFutsalInfo = async () => {
+      if (!isAuthenticated) return;
+      if (user?.role !== 'futsalowner') return;
+      if (activeTab !== 'futsal') return;
+
+      setFutsalBusy(true);
+      try {
+        const [venueRes, ownerRes] = await Promise.allSettled([
+          getVenueInfo(),
+          getFutsalOwnerData(),
+        ]);
+
+        const venue = venueRes.status === 'fulfilled' ? venueRes.value?.data : null;
+        const ownerReg = ownerRes.status === 'fulfilled' ? ownerRes.value?.data : null;
+
+        setOwnerVenue(venue || null);
+
+        const venueName =
+          venue?.venueName ||
+          ownerReg?.futsalName ||
+          '';
+
+        const fullAddress =
+          venue?.fullAddress ||
+          ownerReg?.futsalLocation ||
+          '';
+
+        const phone =
+          venue?.contactInfo?.phone ||
+          ownerReg?.businessContact ||
+          ownerReg?.phone ||
+          '';
+
+        const email =
+          venue?.contactInfo?.email ||
+          ownerReg?.email ||
+          user?.email ||
+          '';
+
+        setVenues(venueName ? [venueName] : []);
+        setFutsalData({
+          defaultVenue: venueName,
+          businessName: venueName,
+          contactNumber: phone,
+          supportEmail: email,
+          businessAddress: fullAddress,
+        });
+      } catch (e) {
+        console.error(e);
+        showToast.error('Failed to load futsal information');
+      } finally {
+        setFutsalBusy(false);
+      }
+    };
+
+    loadFutsalInfo();
+  }, [activeTab, isAuthenticated, user?._id, user?.role]);
 
   const menuItems = [
     { id: 'profile', label: 'Profile Settings', icon: User },
@@ -224,9 +281,49 @@ const Settings = () => {
     }
   };
   
-  const handleFutsalSave = () => {
-    console.log('Saving futsal information:', futsalData);
-    // Add your futsal data save logic here
+  const handleFutsalSave = async () => {
+    if (!ownerVenue?._id) {
+      showToast.error('No venue found for this owner. Create your venue first.');
+      return;
+    }
+
+    try {
+      setFutsalBusy(true);
+
+      const payload = {
+        ...ownerVenue,
+        venueName: futsalData.businessName?.trim?.() || ownerVenue.venueName,
+        fullAddress: futsalData.businessAddress?.trim?.() || ownerVenue.fullAddress,
+        contactInfo: {
+          ...(ownerVenue.contactInfo || {}),
+          phone: futsalData.contactNumber?.trim?.() || ownerVenue.contactInfo?.phone,
+          email: futsalData.supportEmail?.trim?.() || ownerVenue.contactInfo?.email,
+        },
+      };
+
+      const res = await updateVenueInfo(payload);
+      const updated = res?.data || null;
+      if (updated) {
+        setOwnerVenue(updated);
+        const name = updated?.venueName || futsalData.businessName || '';
+        setVenues(name ? [name] : []);
+        setFutsalData((p) => ({
+          ...p,
+          defaultVenue: name,
+          businessName: name,
+          businessAddress: updated?.fullAddress || p.businessAddress,
+          contactNumber: updated?.contactInfo?.phone || p.contactNumber,
+          supportEmail: updated?.contactInfo?.email || p.supportEmail,
+        }));
+      }
+
+      showToast.success('Futsal information updated');
+    } catch (e) {
+      console.error(e);
+      showToast.error(e?.response?.data?.message || e?.message || 'Failed to update futsal information');
+    } finally {
+      setFutsalBusy(false);
+    }
   };
   
   const togglePrivacySetting = (setting) => {
@@ -283,6 +380,14 @@ const Settings = () => {
             <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
           </div>
           <p className="text-gray-600">Manage your account settings and preferences</p>
+          <button
+            type="button"
+            onClick={() => navigate('/futsalownerdashboard')}
+            className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 transition font-medium"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to Dashboard
+          </button>
         </div>
 
         {/* Settings Layout */}
@@ -614,13 +719,16 @@ const Settings = () => {
                         name="defaultVenue"
                         value={futsalData.defaultVenue}
                         onChange={handleFutsalDataChange}
-                        className="w-full px-4 py-2.5 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all appearance-none bg-white"
+                        className="w-full px-4 py-2.5 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all appearance-none bg-white disabled:bg-gray-50 disabled:text-gray-500"
+                        disabled={futsalBusy}
                       >
-                        {venues.map((venue) => (
+                        {venues.length ? venues.map((venue) => (
                           <option key={venue} value={venue}>
                             {venue}
                           </option>
-                        ))}
+                        )) : (
+                          <option value="">No venue found</option>
+                        )}
                       </select>
                       <svg
                         className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none"
@@ -649,7 +757,8 @@ const Settings = () => {
                         name="businessName"
                         value={futsalData.businessName}
                         onChange={handleFutsalDataChange}
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all"
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all disabled:bg-gray-50 disabled:text-gray-500"
+                        disabled={futsalBusy}
                       />
                     </div>
 
@@ -664,7 +773,8 @@ const Settings = () => {
                         name="contactNumber"
                         value={futsalData.contactNumber}
                         onChange={handleFutsalDataChange}
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all"
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all disabled:bg-gray-50 disabled:text-gray-500"
+                        disabled={futsalBusy}
                       />
                     </div>
                   </div>
@@ -682,7 +792,8 @@ const Settings = () => {
                         name="supportEmail"
                         value={futsalData.supportEmail}
                         onChange={handleFutsalDataChange}
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all"
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all disabled:bg-gray-50 disabled:text-gray-500"
+                        disabled={futsalBusy}
                       />
                     </div>
 
@@ -697,7 +808,8 @@ const Settings = () => {
                         name="businessAddress"
                         value={futsalData.businessAddress}
                         onChange={handleFutsalDataChange}
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all"
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all disabled:bg-gray-50 disabled:text-gray-500"
+                        disabled={futsalBusy}
                       />
                     </div>
                   </div>
@@ -707,9 +819,10 @@ const Settings = () => {
                 <div className="flex justify-end mt-8">
                   <button
                     onClick={handleFutsalSave}
-                    className="px-6 py-2.5 bg-emerald-500 text-white font-medium rounded-lg hover:bg-emerald-600 transition-colors"
+                    disabled={futsalBusy}
+                    className="px-6 py-2.5 bg-emerald-500 text-white font-medium rounded-lg hover:bg-emerald-600 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                   >
-                    Save Changes
+                    {futsalBusy ? 'Saving…' : 'Save Changes'}
                   </button>
                 </div>
               </div>

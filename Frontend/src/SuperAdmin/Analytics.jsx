@@ -132,7 +132,7 @@ const Analytics = () => {
                     </span>
                   </div>
                   <p className="text-gray-500 text-sm mb-1">{stat.title}</p>
-                  <h3 className="text-3xl font-bold text-gray-900">{stat.value}</h3>
+                  <h3 className="text-2xl font-bold text-gray-900">{stat.value}</h3>
                 </div>
               );
             })}

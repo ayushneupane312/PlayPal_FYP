@@ -58,7 +58,6 @@ const VenueDetailPage = () => {
 
   const paymentMethodIcons = {
     cash: Banknote,
-    esewa: Smartphone,
     khalti: Smartphone,
     bankTransfer: Building2,
     card: CreditCard
@@ -528,7 +527,6 @@ const VenueDetailPage = () => {
                       const Icon = paymentMethodIcons[method] || CreditCard;
                       const methodNames = {
                         cash: 'Cash Payment',
-                        esewa: 'eSewa',
                         khalti: 'Khalti',
                         bankTransfer: 'Bank Transfer',
                         card: 'Credit/Debit Card'

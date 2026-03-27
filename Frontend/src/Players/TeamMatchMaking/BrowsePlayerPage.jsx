@@ -131,7 +131,7 @@ const BrowsePlayersPage = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filters, setFilters] = useState({ skillLevel: 'all', position: 'all', location: 'all' });
+  const [filters, setFilters] = useState({ position: 'all', location: 'all' });
   const [players, setPlayers] = useState([]);
 
   const [myTeams, setMyTeams] = useState([]);
@@ -195,15 +195,13 @@ const BrowsePlayersPage = () => {
     }
   };
 
-  const getSkillColor = (level) => ({ Beginner: 'bg-green-100 text-green-700 border-green-200', Intermediate: 'bg-blue-100 text-blue-700 border-blue-200', Advanced: 'bg-purple-100 text-purple-700 border-purple-200' }[level] || 'bg-gray-100 text-gray-700 border-gray-200');
   const getPositionColor = (pos) => ({ Goalkeeper: 'bg-yellow-100 text-yellow-700', Defender: 'bg-blue-100 text-blue-700', Midfielder: 'bg-green-100 text-green-700', Forward: 'bg-red-100 text-red-700' }[pos] || 'bg-gray-100 text-gray-700');
 
   const filteredPlayers = players.filter(p => {
     const matchSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) || (p.bio || '').toLowerCase().includes(searchQuery.toLowerCase());
-    const matchSkill = filters.skillLevel === 'all' || p.skillLevel === filters.skillLevel;
     const matchPos = filters.position === 'all' || p.position === filters.position;
     const matchLoc = filters.location === 'all' || p.location === filters.location;
-    return matchSearch && matchSkill && matchPos && matchLoc;
+    return matchSearch && matchPos && matchLoc;
   });
 
   return (
@@ -225,7 +223,7 @@ const BrowsePlayersPage = () => {
                 <p className="text-gray-500 text-sm">Find players and invite them to your team</p>
               </div>
               <div className="text-right">
-                <p className="text-3xl font-bold text-emerald-600">{filteredPlayers.length}</p>
+                <p className="text-2xl font-bold text-emerald-600">{filteredPlayers.length}</p>
                 <p className="text-sm text-gray-500">Available</p>
               </div>
             </div>
@@ -258,7 +256,6 @@ const BrowsePlayersPage = () => {
             </div>
             <div className="flex flex-wrap gap-3">
               {[
-                { key: 'skillLevel', label: 'Skill', options: ['Beginner', 'Intermediate', 'Advanced'] },
                 { key: 'position', label: 'Position', options: ['Goalkeeper', 'Defender', 'Midfielder', 'Forward'] },
                 { key: 'location', label: 'Location', options: ['Kathmandu', 'Lalitpur', 'Bhaktapur'] }
               ].map(({ key, label, options }) => (
@@ -269,7 +266,7 @@ const BrowsePlayersPage = () => {
                 </select>
               ))}
               {Object.values(filters).some(v => v !== 'all') && (
-                <button onClick={() => setFilters({ skillLevel: 'all', position: 'all', location: 'all' })}
+                <button onClick={() => setFilters({ position: 'all', location: 'all' })}
                   className="px-4 py-2 text-gray-500 hover:text-gray-800 text-sm font-medium">
                   Clear Filters
                 </button>
@@ -312,7 +309,6 @@ const BrowsePlayersPage = () => {
 
                     <div className="p-5 space-y-3">
                       <div className="flex flex-wrap gap-2">
-                        <span className={`px-2.5 py-1 rounded-lg text-xs font-medium border ${getSkillColor(player.skillLevel)}`}>{player.skillLevel}</span>
                         <span className={`px-2.5 py-1 rounded-lg text-xs font-medium ${getPositionColor(player.position)}`}>{player.position}</span>
                       </div>
 

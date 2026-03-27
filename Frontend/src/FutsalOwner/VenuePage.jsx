@@ -60,7 +60,6 @@ export default function VenuePage() {
   // Payment Methods
   const [paymentMethods, setPaymentMethods] = useState({
     cash: true,
-    esewa: false,
     khalti: false,
     bankTransfer: false,
     card: false
@@ -294,7 +293,6 @@ export default function VenuePage() {
     if (venue.paymentMethods) {
       setPaymentMethods({
         cash: venue.paymentMethods.cash || false,
-        esewa: venue.paymentMethods.esewa || false,
         khalti: venue.paymentMethods.khalti || false,
         bankTransfer: venue.paymentMethods.bankTransfer || false,
         card: venue.paymentMethods.card || false
@@ -606,7 +604,6 @@ export default function VenuePage() {
 
         paymentMethods: {
           cash: paymentMethods.cash,
-          esewa: paymentMethods.esewa,
           khalti: paymentMethods.khalti,
           bankTransfer: paymentMethods.bankTransfer,
           card: paymentMethods.card
@@ -1108,7 +1105,6 @@ export default function VenuePage() {
                 <div className="space-y-3">
                   {[
                     { key: 'cash', label: 'Cash' },
-                    { key: 'esewa', label: 'eSewa' },
                     { key: 'khalti', label: 'Khalti' },
                     { key: 'bankTransfer', label: 'Bank Transfer' },
                     { key: 'card', label: 'Credit/Debit Card' }

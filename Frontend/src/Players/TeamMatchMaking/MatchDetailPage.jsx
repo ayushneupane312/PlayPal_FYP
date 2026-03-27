@@ -5,17 +5,10 @@ import PlayerSidebar from '../PlayerSidebar';
 import {
   ArrowLeft, Swords, CheckCircle, Users, Crown,
   Loader2, Calendar, MapPin, ChevronRight, Trophy,
-  Shield, Zap, Star
 } from 'lucide-react';
 import { getMatchById } from '../../store/matchmakingService';
 import { useAuthStore } from '../../store/authStore';
 import { showToast } from '../../FutsalOwner/components/Toast';
-
-const SKILL_CONFIG = {
-  Beginner:     { color: 'text-emerald-600', bg: 'bg-emerald-50', icon: <Shield className="w-3.5 h-3.5" /> },
-  Intermediate: { color: 'text-blue-600',    bg: 'bg-blue-50',    icon: <Zap    className="w-3.5 h-3.5" /> },
-  Advanced:     { color: 'text-purple-600',  bg: 'bg-purple-50',  icon: <Star   className="w-3.5 h-3.5" /> },
-};
 
 function PlayerList({ players, leader }) {
   return (
@@ -86,9 +79,6 @@ export default function MatchDetailPage() {
 
   const teamA = match.teamA;
   const teamB = match.teamB;
-  const skillA = SKILL_CONFIG[teamA?.skillLevel] || SKILL_CONFIG.Intermediate;
-  const skillB = SKILL_CONFIG[teamB?.skillLevel] || SKILL_CONFIG.Intermediate;
-
   // Is current user the "assigned leader" (challenger who booked)?
   const isAssignedLeader = match.assignedLeader?._id?.toString() === userId ||
     match.assignedLeader?.toString() === userId;
@@ -155,13 +145,10 @@ export default function MatchDetailPage() {
 
             {/* Team details side-by-side */}
             <div className="grid grid-cols-2 divide-x divide-gray-100">
-              {[{ team: teamA, skill: skillA, label: 'Challenger' }, { team: teamB, skill: skillB, label: 'Opponent' }].map(({ team, skill, label }, idx) => (
+              {[{ team: teamA, label: 'Challenger' }, { team: teamB, label: 'Opponent' }].map(({ team, label }, idx) => (
                 <div key={idx} className="p-5">
                   <div className="flex items-center justify-between mb-3">
                     <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">{label}</span>
-                    <span className={`text-xs flex items-center gap-1 px-2 py-0.5 rounded-full ${skill.bg} ${skill.color}`}>
-                      {skill.icon} {team?.skillLevel}
-                    </span>
                   </div>
                   <h3 className="font-bold text-gray-900 mb-1">{team?.name}</h3>
                   <p className="text-xs text-gray-400 flex items-center gap-1 mb-3">

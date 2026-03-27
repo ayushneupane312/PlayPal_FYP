@@ -17,11 +17,17 @@ import {
   ChevronRight,
   LampFloor
 } from 'lucide-react';
+import ConfirmationModal from '../components/ConfirmationModel';
+import { useConfirmation } from '../hooks/useConfirmation';
+import { useAuthStore } from '../store/authStore';
+import { showToast } from '../FutsalOwner/components/Toast';
 
 const Sidebar = ({ onCollapseChange }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const { logout } = useAuthStore();
+  const { isOpen, isLoading, config, showConfirmation, hideConfirmation, handleConfirm } = useConfirmation();
 
   // Determine active item based on current route
   const getActiveItem = () => {
@@ -85,7 +91,23 @@ const Sidebar = ({ onCollapseChange }) => {
   };
 
   const handleLogout = () => {
-    navigate('/login');
+    showConfirmation({
+      title: 'Logout Confirmation',
+      message: 'Are you sure you want to logout? You will need to login again to access your account.',
+      confirmText: 'Yes, Logout',
+      cancelText: 'Stay Logged In',
+      type: 'warning',
+      onConfirm: async () => {
+        try {
+          await logout();
+          showToast.success('Logged out successfully!');
+          navigate('/login');
+        } catch (error) {
+          showToast.error('Failed to logout');
+          console.error('Logout error:', error);
+        }
+      }
+    });
   };
 
   const toggleCollapse = () => {
@@ -119,12 +141,13 @@ const Sidebar = ({ onCollapseChange }) => {
   ];
 
   return (
-    <div 
-      className={`bg-white shadow-lg fixed h-full z-10 transition-all duration-300 ease-in-out ${
-        isCollapsed ? 'w-20' : 'w-64'
-      }`}
-    >
-      <div className="flex flex-col h-full relative">
+    <>
+      <div 
+        className={`bg-white shadow-lg fixed h-full z-10 transition-all duration-300 ease-in-out ${
+          isCollapsed ? 'w-20' : 'w-64'
+        }`}
+      >
+        <div className="flex flex-col h-full relative">
         {/* Collapse Button */}
         <button
           onClick={toggleCollapse}
@@ -267,7 +290,20 @@ const Sidebar = ({ onCollapseChange }) => {
           </ul>
         </div>
       </div>
-    </div>
+      </div>
+
+      <ConfirmationModal
+        isOpen={isOpen}
+        onClose={hideConfirmation}
+        onConfirm={handleConfirm}
+        title={config.title}
+        message={config.message}
+        confirmText={config.confirmText}
+        cancelText={config.cancelText}
+        type={config.type}
+        isLoading={isLoading}
+      />
+    </>
   );
 };
 

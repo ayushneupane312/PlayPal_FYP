@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PlayerSidebar from '../PlayerSidebar';
-import { Users, ArrowLeft, Trophy, Loader2, Crown, Plus, RefreshCw } from 'lucide-react';
+import { Users, ArrowLeft, Trophy, Loader2, Crown, Plus } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import matchmakingService from '../../store/matchmakingService';
 import { showToast } from '../../FutsalOwner/components/Toast';
@@ -12,12 +12,6 @@ const STATUS_CONFIG = {
   ready:   { label: 'Ready!',   bg: 'bg-emerald-100', text: 'text-emerald-700', dot: 'bg-emerald-500' },
   booked:  { label: 'Booked',   bg: 'bg-blue-100',   text: 'text-blue-700',   dot: 'bg-blue-500'   },
   cancelled:{ label: 'Cancelled', bg: 'bg-gray-100', text: 'text-gray-500',   dot: 'bg-gray-400'   },
-};
-
-const SKILL_CONFIG = {
-  Beginner:     { bg: 'bg-green-100',  text: 'text-green-700'  },
-  Intermediate: { bg: 'bg-blue-100',   text: 'text-blue-700'   },
-  Advanced:     { bg: 'bg-purple-100', text: 'text-purple-700' },
 };
 
 const MyTeamsPage = () => {
@@ -53,7 +47,6 @@ const MyTeamsPage = () => {
   };
 
   const statusCfg   = (s) => STATUS_CONFIG[s]   || STATUS_CONFIG.forming;
-  const skillCfg    = (s) => SKILL_CONFIG[s]     || { bg: 'bg-gray-100', text: 'text-gray-600' };
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -80,15 +73,8 @@ const MyTeamsPage = () => {
             </div>
             <div className="flex gap-2">
               <button
-                onClick={load}
-                className="p-2.5 border border-gray-200 rounded-xl hover:bg-gray-50 transition text-gray-500"
-                title="Refresh"
-              >
-                <RefreshCw className="w-4 h-4" />
-              </button>
-              <button
                 onClick={() => navigate('/player/matchmaking/create-team')}
-                className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 text-white rounded-xl text-sm font-semibold hover:bg-emerald-700 transition shadow-sm"
+                className="flex items-center gap-2 px-4 py-2.5 bg-green-600 text-white rounded-xl text-sm font-semibold hover:bg-green-700 transition shadow-sm"
               >
                 <Plus className="w-4 h-4" /> New Team
               </button>
@@ -113,7 +99,7 @@ const MyTeamsPage = () => {
               <div className="flex gap-3 justify-center">
                 <button
                   onClick={() => navigate('/player/matchmaking/create-team')}
-                  className="px-5 py-2.5 bg-emerald-600 text-white rounded-xl text-sm font-semibold hover:bg-emerald-700 transition"
+                  className="px-5 py-2.5 bg-green-600 text-white rounded-xl text-sm font-semibold hover:bg-green-700 transition"
                 >
                   Create Team
                 </button>
@@ -133,7 +119,6 @@ const MyTeamsPage = () => {
                 const isFull      = playerCount >= team.maxPlayers;
                 const fillPct     = Math.min((playerCount / team.maxPlayers) * 100, 100);
                 const sc          = statusCfg(team.status);
-                const skc         = skillCfg(team.skillLevel);
                 const isLeader    = amILeader(team);
 
                 return (
@@ -160,16 +145,11 @@ const MyTeamsPage = () => {
                             )}
                           </div>
 
-                          <div className="flex items-center gap-2 mt-1 flex-wrap">
+                          <div className="flex items-center gap-2 mt-2 flex-wrap">
                             {/* Status */}
                             <span className={`flex items-center gap-1.5 text-xs font-medium px-2 py-0.5 rounded-full ${sc.bg} ${sc.text}`}>
                               <span className={`w-1.5 h-1.5 rounded-full ${sc.dot}`} />
                               {sc.label}
-                            </span>
-
-                            {/* Skill */}
-                            <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${skc.bg} ${skc.text}`}>
-                              {team.skillLevel}
                             </span>
 
                             {/* Format */}
@@ -189,8 +169,19 @@ const MyTeamsPage = () => {
 
                       {/* Right: player count + arrow */}
                       <div className="flex flex-col items-end gap-2 flex-shrink-0">
-                        <span className="text-sm font-semibold text-gray-700">
-                          {playerCount}<span className="text-gray-400 font-normal">/{team.maxPlayers}</span>
+                        <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-emerald-700">
+                          <svg
+                            viewBox="0 0 24 24"
+                            className="w-4 h-4 fill-current"
+                            aria-hidden="true"
+                          >
+                            <circle cx="8.25" cy="8" r="2.5" />
+                            <circle cx="15.75" cy="8.75" r="2.25" opacity="0.9" />
+                            <path d="M3.5 16.2c0-2.3 2.1-4.2 4.7-4.2s4.7 1.9 4.7 4.2v1.3H3.5v-1.3z" />
+                            <path d="M12.3 16.8c0-1.9 1.8-3.4 3.9-3.4 2.2 0 3.9 1.5 3.9 3.4v.7h-7.8v-.7z" opacity="0.9" />
+                          </svg>
+                          {playerCount}
+                          <span className="text-emerald-500/80 font-medium">/{team.maxPlayers}</span>
                         </span>
                         <span className="text-emerald-600 text-sm font-medium group-hover:translate-x-0.5 transition-transform">
                           →
@@ -199,7 +190,7 @@ const MyTeamsPage = () => {
                     </div>
 
                     {/* Fill progress bar */}
-                    <div className="mt-4">
+                    <div className="mt-5">
                       <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
                         <div
                           className={`h-1.5 rounded-full transition-all duration-500 ${isFull ? 'bg-emerald-500' : 'bg-emerald-400'}`}

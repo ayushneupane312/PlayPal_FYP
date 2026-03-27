@@ -6,12 +6,6 @@ import { ArrowLeft, Users, Loader2, Search, Filter, Crown, RefreshCw, SlidersHor
 import matchmakingService from '../../store/matchmakingService';
 import { showToast } from '../../FutsalOwner/components/Toast';
 
-const SKILL_COLORS = {
-  Beginner:     'bg-green-100 text-green-700',
-  Intermediate: 'bg-blue-100 text-blue-700',
-  Advanced:     'bg-purple-100 text-purple-700',
-};
-
 const FORMAT_COLORS = {
   '5v5': 'bg-orange-100 text-orange-700',
   '7v7': 'bg-teal-100 text-teal-700',
@@ -32,7 +26,6 @@ const BrowseTeamsPage = () => {
 
   // Filters
   const [search, setSearch]           = useState('');
-  const [skillFilter, setSkillFilter] = useState('all');
   const [fmtFilter, setFmtFilter]     = useState('all');
   const [showFilters, setShowFilters] = useState(false);
 
@@ -72,13 +65,12 @@ const BrowseTeamsPage = () => {
     const matchSearch = !search ||
       team.name.toLowerCase().includes(search.toLowerCase()) ||
       (team.leader?.name || '').toLowerCase().includes(search.toLowerCase());
-    const matchSkill  = skillFilter === 'all' || team.skillLevel === skillFilter;
     const matchFmt    = fmtFilter === 'all'   || team.matchFormat === fmtFilter;
-    return matchSearch && matchSkill && matchFmt;
+    return matchSearch && matchFmt;
   });
 
-  const hasActiveFilters = skillFilter !== 'all' || fmtFilter !== 'all' || search;
-  const clearFilters = () => { setSearch(''); setSkillFilter('all'); setFmtFilter('all'); };
+  const hasActiveFilters = fmtFilter !== 'all' || search;
+  const clearFilters = () => { setSearch(''); setFmtFilter('all'); };
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -125,7 +117,7 @@ const BrowseTeamsPage = () => {
                 Filters
                 {hasActiveFilters && (
                   <span className="bg-emerald-500 text-white text-xs w-4 h-4 rounded-full flex items-center justify-center">
-                    {[skillFilter !== 'all', fmtFilter !== 'all', !!search].filter(Boolean).length}
+                    {[fmtFilter !== 'all', !!search].filter(Boolean).length}
                   </span>
                 )}
               </button>
@@ -151,25 +143,6 @@ const BrowseTeamsPage = () => {
             {/* Expandable filter row */}
             {showFilters && (
               <div className="px-4 pb-4 pt-0 border-t border-gray-100 flex flex-wrap gap-3 items-center">
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1.5">Skill Level</label>
-                  <div className="flex gap-2">
-                    {['all', 'Beginner', 'Intermediate', 'Advanced'].map(v => (
-                      <button
-                        key={v}
-                        onClick={() => setSkillFilter(v)}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition ${
-                          skillFilter === v
-                            ? 'bg-emerald-600 text-white border-emerald-600'
-                            : 'border-gray-200 text-gray-600 hover:border-emerald-300'
-                        }`}
-                      >
-                        {v === 'all' ? 'Any Skill' : v}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
                 <div>
                   <label className="block text-xs font-medium text-gray-500 mb-1.5">Format</label>
                   <div className="flex gap-2">
@@ -243,7 +216,6 @@ const BrowseTeamsPage = () => {
                 const fillPct     = (playerCount / team.maxPlayers) * 100;
                 const isRequested = requested.has(team._id);
                 const isRequesting = requesting === team._id;
-                const skc = SKILL_COLORS[team.skillLevel] || 'bg-gray-100 text-gray-600';
                 const fmc = FORMAT_COLORS[team.matchFormat] || 'bg-gray-100 text-gray-600';
 
                 return (
@@ -269,9 +241,6 @@ const BrowseTeamsPage = () => {
 
                           {/* Badges */}
                           <div className="flex flex-wrap gap-1.5 mt-2">
-                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${skc}`}>
-                              {team.skillLevel}
-                            </span>
                             <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${fmc}`}>
                               {team.matchFormat}
                             </span>

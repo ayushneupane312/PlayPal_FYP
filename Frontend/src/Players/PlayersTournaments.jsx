@@ -38,6 +38,35 @@ function formatDate(d) {
   return new Date(d).toLocaleDateString('en-NP', { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
+function isDeadlinePassed(deadline) {
+  if (!deadline) return false;
+
+  const raw = String(deadline);
+  let parsed;
+
+  // If API sends date-only (YYYY-MM-DD), parse as LOCAL date (not UTC),
+  // and keep registration open until 12:00 PM local time.
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+    const [year, month, day] = raw.split('-').map(Number);
+    parsed = new Date(year, month - 1, day, 12, 0, 0, 0);
+  } else {
+    parsed = new Date(deadline);
+    if (Number.isNaN(parsed.getTime())) return false;
+  }
+
+  return Date.now() > parsed.getTime();
+}
+
+function getEffectiveTournamentStatus(tournament) {
+  const originalStatus = (tournament?.status || '').toLowerCase();
+  const passed = isDeadlinePassed(tournament?.registrationDeadline);
+
+  if (passed && (originalStatus === 'registration_open' || originalStatus === 'upcoming')) {
+    return 'registration_closed';
+  }
+  return originalStatus;
+}
+
 const TournamentsPage = () => {
   const navigate = useNavigate();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -53,10 +82,20 @@ const TournamentsPage = () => {
   const fetchTournaments = async () => {
     try {
       setLoading(true);
-      const status = statusToFilter[filterStatus] || undefined;
-      const res = await listTournaments(status ? { status } : {});
+      const requestedStatus = statusToFilter[filterStatus] || undefined;
+      const res = await listTournaments(requestedStatus ? { status: requestedStatus } : {});
       const list = res?.data ?? res ?? [];
-      setTournaments(Array.isArray(list) ? list : []);
+      const normalized = (Array.isArray(list) ? list : []).map((t) => ({
+        ...t,
+        status: getEffectiveTournamentStatus(t)
+      }));
+
+      // Keep UI filter accurate even if backend returns stale status near deadline.
+      const finalList = requestedStatus
+        ? normalized.filter((t) => t.status === requestedStatus)
+        : normalized;
+
+      setTournaments(finalList);
     } catch (err) {
       console.error('Fetch tournaments error:', err);
       setTournaments([]);
@@ -78,14 +117,14 @@ const TournamentsPage = () => {
     if (s === 'in_progress') return 'bg-red-100 text-red-700';
     if (s === 'completed') return 'bg-gray-100 text-gray-700';
     if (s === 'cancelled') return 'bg-red-100 text-red-600';
-    if (s === 'registration_closed') return 'bg-blue-100 text-blue-700';
+    if (s === 'registration_closed') return 'bg-red-100 text-red-700';
     return 'bg-gray-100 text-gray-700';
   };
 
   const getDisplayStatus = (status) => statusLabels[status] || (status || '').replace(/_/g, ' ');
 
   const getActionButton = (t) => {
-    const status = (t.status || '').toLowerCase();
+    const status = getEffectiveTournamentStatus(t);
     if (status === 'registration_open' || status === 'upcoming') {
       if (t.userRegistered) {
         return (
@@ -253,7 +292,7 @@ const TournamentsPage = () => {
                           </span>
                         </div>
                         {/* Location, registration deadline, teams registered — prominent row */}
-                        <div className="flex flex-wrap items-center gap-4 text-xs text-gray-600 mb-2">
+                        <div className="flex flex-wrap items-center gap-5 text-xs text-gray-600 mb-3">
                           <div className="flex items-center gap-1.5">
                             <MapPin className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
                             <span>{t.venue?.venueName && t.venue?.fullAddress && t.venue.venueName !== t.venue.fullAddress ? `${t.venue.venueName}, ${t.venue.fullAddress}` : (t.venue?.venueName || t.venue?.fullAddress || t.location || '—')}</span>
@@ -268,7 +307,7 @@ const TournamentsPage = () => {
                           </div>
                         </div>
                         {/* Dates and prize pool — secondary row */}
-                        <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500">
+                        <div className="flex flex-wrap items-center gap-5 text-xs text-gray-500 mt-1">
                           <div className="flex items-center gap-1.5">
                             <Calendar className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
                             <span>{formatDate(t.startDate)} – {formatDate(t.endDate)}</span>

@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import PlayerSidebar from '../PlayerSidebar';
 import {
-  Users, ArrowLeft, Crown, Loader2, UserPlus, Globe, Lock,
+  Users, ArrowLeft, Crown, Loader2, UserPlus, Globe,
   Calendar, Clock, CheckCircle, XCircle, Send, AlertCircle, Trash2
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
@@ -122,16 +122,6 @@ const TeamDetailPage = () => {
     }
   };
 
-  const handleTogglePublic = async () => {
-    try {
-      await matchmakingService.setTeamPublic(id, !team.isPublic);
-      showToast.success(team.isPublic ? 'Team is now private' : 'Team is now public');
-      load();
-    } catch (e) {
-      showToast.error(e.response?.data?.message || 'Failed');
-    }
-  };
-
   const handleLeave = async () => {
     if (!window.confirm('Are you sure you want to leave this team?')) return;
     try {
@@ -221,17 +211,22 @@ const TeamDetailPage = () => {
             <div className="flex items-start justify-between">
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">{team.name}</h1>
-                <p className="text-gray-500 text-sm mt-1">
-                  {allMembers.length}/{team.maxPlayers} players · {team.matchFormat} · {team.skillLevel}
-                </p>
+                <div className="flex items-center gap-2 mt-2 flex-wrap">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    <Users className="w-3.5 h-3.5" />
+                    {allMembers.length}/{team.maxPlayers} players
+                  </span>
+                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
+                    {team.matchFormat}
+                  </span>
+                </div>
                 {team.description && <p className="text-gray-400 text-sm mt-2">{team.description}</p>}
               </div>
               <div className="flex flex-col items-end gap-2">
                 <div className="flex items-center gap-2">
-                  {team.isPublic
-                    ? <span className="flex items-center gap-1 text-xs text-gray-400"><Globe className="w-3.5 h-3.5" /> Public</span>
-                    : <span className="flex items-center gap-1 text-xs text-gray-400"><Lock className="w-3.5 h-3.5" /> Private</span>
-                  }
+                  <span className="flex items-center gap-1 text-xs text-gray-400">
+                    <Globe className="w-3.5 h-3.5" /> Public
+                  </span>
                   <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${STATUS_STYLE[team.status] || 'bg-gray-100 text-gray-500'}`}>
                     {team.status}
                   </span>
@@ -267,11 +262,6 @@ const TeamDetailPage = () => {
                     <UserPlus className="w-4 h-4" /> Invite Players
                   </button>
                 )}
-                <button onClick={handleTogglePublic}
-                  className="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 flex items-center gap-2">
-                  {team.isPublic ? <Lock className="w-4 h-4" /> : <Globe className="w-4 h-4" />}
-                  {team.isPublic ? 'Make Private' : 'Make Public'}
-                </button>
                 {team.status !== 'booked' && isFull && (
                   <button onClick={() => navigate(`/player/teams/${id}/confirm-booking`)}
                     className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 flex items-center gap-2">

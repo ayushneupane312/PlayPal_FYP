@@ -10,12 +10,6 @@ import { useAuthStore } from '../../store/authStore';
 import matchmakingService from '../../store/matchmakingService';
 import { showToast } from '../../FutsalOwner/components/Toast';
 
-const SKILL_COLORS = {
-  Beginner: 'bg-green-100 text-green-700 border border-green-200',
-  Intermediate: 'bg-blue-100 text-blue-700 border border-blue-200',
-  Advanced: 'bg-purple-100 text-purple-700 border border-purple-200'
-};
-
 const FORMAT_INFO = {
   '5v5': { label: '5 vs 5', desc: 'Standard futsal — 5 players per side', icon: '⚽' },
   '7v7': { label: '7 vs 7', desc: 'Large field format — 7 players per side', icon: '🏟️' },
@@ -272,13 +266,6 @@ const TeamInvitePage = () => {
                     <p className="text-gray-500 text-sm mt-1">{team.description}</p>
                   )}
                 </div>
-                <span
-                  className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                    SKILL_COLORS[team?.skillLevel] || 'bg-gray-100 text-gray-700'
-                  }`}
-                >
-                  {team?.skillLevel}
-                </span>
               </div>
             </div>
 

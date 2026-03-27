@@ -6,7 +6,6 @@ import matchmakingService from '../../store/matchmakingService';
 import { showToast } from '../../FutsalOwner/components/Toast';
 import { useAuthStore } from '../../store/authStore';
 
-const SKILL_LEVELS = ['Beginner', 'Intermediate', 'Advanced'];
 const POSITIONS = ['Goalkeeper', 'Defender', 'Midfielder', 'Forward'];
 
 const SoloQueuePage = () => {
@@ -17,7 +16,6 @@ const SoloQueuePage = () => {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({
-    skillLevel: 'Intermediate',
     position: 'Midfielder',
     location: '',
     availableDate: '',
@@ -50,7 +48,7 @@ const SoloQueuePage = () => {
     try {
       setSubmitting(true);
       const res = await matchmakingService.joinQueue({
-        skillLevel: form.skillLevel,
+        skillLevel: 'Intermediate',
         position: form.position,
         location: form.location,
         availableDate: form.availableDate,
@@ -146,7 +144,7 @@ const SoloQueuePage = () => {
             <ArrowLeft className="w-5 h-5 mr-2" /> Back
           </button>
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Find Match (Solo)</h1>
-          <p className="text-gray-600 mb-6">Join the queue and get matched with players of similar skill</p>
+          <p className="text-gray-600 mb-6">Join the queue and get matched with other available players</p>
 
           {status?.inQueue ? (
             <div className="bg-white rounded-xl border border-gray-200 p-6">
@@ -160,18 +158,6 @@ const SoloQueuePage = () => {
             </div>
           ) : (
             <form onSubmit={handleJoin} className="bg-white rounded-xl border border-gray-200 p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Skill level</label>
-                <select
-                  value={form.skillLevel}
-                  onChange={(e) => setForm({ ...form, skillLevel: e.target.value })}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                >
-                  {SKILL_LEVELS.map((s) => (
-                    <option key={s} value={s}>{s}</option>
-                  ))}
-                </select>
-              </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Position</label>
                 <select

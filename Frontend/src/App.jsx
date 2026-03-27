@@ -41,7 +41,6 @@ import PlayerTournamentRegisterPage from "./Players/PlayerTournamentRegisterPage
 import VenuesPage from "./Players/VenuesPage.jsx";
 import BookVenuePage from "./Players/BookVenuePage.jsx";
 import PaymentCallbackPage from "./Players/PaymentCallbackPage.jsx";
-import EsewaPaymentCallbackPage from "./Players/EsewaPaymentCallbackPage.jsx";
 import SplitPaymentCallbackPage from "./Players/SplitPaymentCallbackPage.jsx";
 import SplitPaymentPage from "./Players/SplitPaymentPage.jsx";
 import BookingDetailPage from "./Players/BookingDetailsPage.jsx";
@@ -74,6 +73,9 @@ import HelpPage from "./pages/HelpPage.jsx";
 import VenueDashboard from "./FutsalOwner/VenueDashboard.jsx";
 import BookingManagementPage from "./FutsalOwner/BookingManagementPage.jsx";
 import OwnerBookingDetailPage from "./FutsalOwner/OwnerBookingDetailPage.jsx";
+
+import CheckoutPage from "./Khalti/CheckoutPage.jsx";
+import PaymentCallback from "./Khalti/PaymentCallback.jsx";
 
 
 function App() {
@@ -147,7 +149,6 @@ function App() {
             <Route path="/player/venue/:venueId/book" element={<BookVenuePage/>}/>
             <Route path="/booking/payment-callback" element={<PaymentCallbackPage/>}/>
             <Route path="/player/booking/payment-callback" element={<PaymentCallbackPage/>}/>
-            <Route path="/player/booking/esewa-callback" element={<EsewaPaymentCallbackPage/>}/>
             <Route path="/player/booking/split-payment-callback" element={<SplitPaymentCallbackPage/>}/>
             <Route path="/player/booking/split/:bookingId" element={<SplitPaymentPage/>}/>
             <Route path="/player/bookings" element={<BookingPage/>}/>
@@ -181,6 +182,10 @@ function App() {
             <Route path="/player/matchmaking/browse-opponents" element={<BrowseOpponentPage />} />
             <Route path="/player/matches/challenges"           element={<MyChallengesPage />} />
             <Route path="/player/matches/:matchId"             element={<MatchDetailPage />} />
+
+
+            <Route path="/checkout" element={<CheckoutPage />} />
+            <Route path="/payment/callback" element={<PaymentCallback />} />
 
             {/* Catch-all route - MUST BE LAST */}
             <Route path="*" element={<Navigate to="/" replace />} />

@@ -461,7 +461,7 @@ export default function FutsalApp() {
                 <stat.icon className="w-5 h-5 text-white" />
               </div>
             </div>
-            <div className="text-3xl font-bold text-gray-900 mb-2">{stat.value}</div>
+            <div className="text-2xl font-bold text-gray-900 mb-2">{stat.value}</div>
             <div className="text-green-600 text-sm">{stat.change}</div>
           </div>
         ))}

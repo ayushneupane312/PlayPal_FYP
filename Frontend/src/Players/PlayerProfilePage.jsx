@@ -277,6 +277,8 @@ function baseProfile(playerId, user) {
     username,
     role: user?.role === "captain" ? "Captain" : "Player",
     preferredPosition: user?.preferredPosition || "Forward",
+    injuryImage: user?.injuryImage || "",
+    isInjured: Boolean(user?.isInjured),
   };
 }
 
@@ -542,6 +544,11 @@ const PlayerProfilePage = () => {
                       >
                         {profile.role}
                       </span>
+                      {profile.isInjured && (
+                        <span className="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold border border-red-200 bg-red-50 text-red-700">
+                          Injured
+                        </span>
+                      )}
                       <span className="hidden sm:inline-flex items-center rounded-full border border-gray-200 bg-gray-100 text-xs text-gray-600 px-3 py-1">
                         Future: Top skills highlight
                       </span>
@@ -559,6 +566,25 @@ const PlayerProfilePage = () => {
                       <div className="text-emerald-700 font-bold">{profile.preferredPosition}</div>
                     </div>
                   </div>
+
+                  {(profile.injuryImage || profile.isInjured) && (
+                    <div className="rounded-xl border border-red-100 bg-red-50/40 p-4">
+                      <div className="text-sm font-semibold text-gray-800">Injury update</div>
+                      <div className="text-xs text-gray-600 mt-1">
+                        {profile.isInjured ? "Player marked as injured (won’t play)." : "Injury image shared."}
+                      </div>
+                      {profile.injuryImage && (
+                        <img
+                          src={profile.injuryImage}
+                          alt="Injury"
+                          className="mt-3 w-full max-h-48 object-contain rounded-lg border border-red-100 bg-white"
+                          onError={(e) => {
+                            e.currentTarget.style.display = "none";
+                          }}
+                        />
+                      )}
+                    </div>
+                  )}
 
                   {/* Future-ready placeholders */}
                   <div className="rounded-xl border border-gray-100 bg-gray-50 p-4">

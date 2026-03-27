@@ -471,11 +471,10 @@ export default function VenueDashboard() {
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">Payment Methods</h3>
                   <div className="space-y-2">
                     {venue.paymentMethods.cash && <p className="text-sm text-gray-700">💵 Cash</p>}
-                    {venue.paymentMethods.esewa && <p className="text-sm text-gray-700">📱 eSewa</p>}
                     {venue.paymentMethods.khalti && <p className="text-sm text-gray-700">📱 Khalti</p>}
                     {venue.paymentMethods.bankTransfer && <p className="text-sm text-gray-700">🏦 Bank Transfer</p>}
                     {venue.paymentMethods.card && <p className="text-sm text-gray-700">💳 Credit/Debit Card</p>}
-                    {!venue.paymentMethods.cash && !venue.paymentMethods.esewa &&
+                    {!venue.paymentMethods.cash &&
                       !venue.paymentMethods.khalti && !venue.paymentMethods.bankTransfer &&
                       !venue.paymentMethods.card && (
                         <p className="text-gray-500 text-sm">No payment methods set</p>

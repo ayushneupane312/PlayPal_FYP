@@ -24,7 +24,7 @@ const statusColors = {
   draft: 'bg-gray-100 text-gray-700',
   upcoming: 'bg-blue-100 text-blue-700',
   registration_open: 'bg-green-100 text-green-700',
-  registration_closed: 'bg-amber-100 text-amber-700',
+  registration_closed: 'bg-red-100 text-red-700',
   in_progress: 'bg-indigo-100 text-indigo-700',
   completed: 'bg-slate-100 text-slate-700',
   cancelled: 'bg-red-100 text-red-700',
@@ -43,6 +43,31 @@ const statusLabels = {
 function formatDate(d) {
   if (!d) return '—';
   return new Date(d).toLocaleDateString('en-NP', { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
+function isDeadlinePassed(deadline) {
+  if (!deadline) return false;
+  const raw = String(deadline);
+  let parsed;
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+    const [year, month, day] = raw.split('-').map(Number);
+    parsed = new Date(year, month - 1, day, 12, 0, 0, 0);
+  } else {
+    parsed = new Date(deadline);
+    if (Number.isNaN(parsed.getTime())) return false;
+  }
+
+  return Date.now() > parsed.getTime();
+}
+
+function getEffectiveTournamentStatus(tournament) {
+  const originalStatus = (tournament?.status || '').toLowerCase();
+  const passed = isDeadlinePassed(tournament?.registrationDeadline);
+  if (passed && (originalStatus === 'registration_open' || originalStatus === 'upcoming')) {
+    return 'registration_closed';
+  }
+  return originalStatus;
 }
 
 function formatStatus(s) {
@@ -75,10 +100,11 @@ export default function PlayerTournamentDetailPage() {
     }
   };
 
+  const effectiveStatus = getEffectiveTournamentStatus(tournament);
+
   const canRegister =
     !tournament?.userRegistered &&
-    tournament?.status === 'registration_open' &&
-    new Date() <= new Date(tournament.registrationDeadline) &&
+    effectiveStatus === 'registration_open' &&
     (tournament.stats?.registeredTeams ?? 0) < tournament.maxTeams;
 
   if (loading) {
@@ -158,10 +184,10 @@ export default function PlayerTournamentDetailPage() {
               className={`absolute top-4 right-4 px-3 py-1.5 rounded-full text-sm font-medium ${
                 tournament.userRegistered
                   ? 'bg-emerald-100 text-emerald-700 border border-emerald-200'
-                  : statusColors[tournament.status] || 'bg-gray-100 text-gray-700'
+                  : statusColors[effectiveStatus] || 'bg-gray-100 text-gray-700'
               }`}
             >
-              {tournament.userRegistered ? 'Registered' : formatStatus(tournament.status)}
+              {tournament.userRegistered ? 'Registered' : formatStatus(effectiveStatus)}
             </span>
           </div>
 

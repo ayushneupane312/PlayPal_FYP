@@ -68,7 +68,7 @@ const MatchmakingDashboard = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
             {/* Create Team */}
             <div
-              className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all cursor-pointer"
+              className="bg-gradient-to-br from-green-600 to-green-700 rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all cursor-pointer"
               onClick={() => navigate('/player/matchmaking/create-team')}
             >
               <div className="p-8 text-white">
@@ -76,10 +76,10 @@ const MatchmakingDashboard = () => {
                   <Users className="w-8 h-8" />
                 </div>
                 <h2 className="text-2xl font-bold mb-2">Create Team</h2>
-                <p className="text-emerald-100 mb-6">Build your own squad, invite players, and manage your team</p>
+                <p className="text-green-100 mb-6">Build your own squad, invite players, and manage your team</p>
                 <div className="space-y-2 mb-6">
                   {['You become team leader', 'Invite specific players', 'Control booking & payment'].map(t => (
-                    <div key={t} className="flex items-center gap-2 text-emerald-100">
+                    <div key={t} className="flex items-center gap-2 text-green-100">
                       <div className="w-5 h-5 bg-white/30 rounded-full flex items-center justify-center text-white text-xs">✓</div>
                       <span className="text-sm">{t}</span>
                     </div>
@@ -87,7 +87,7 @@ const MatchmakingDashboard = () => {
                 </div>
                 <button
                   onClick={e => { e.stopPropagation(); navigate('/player/matchmaking/create-team'); }}
-                  className="w-full px-6 py-3 bg-white text-emerald-600 rounded-lg font-semibold hover:bg-emerald-50 transition flex items-center justify-center gap-2"
+                  className="w-full px-6 py-3 bg-white text-green-700 rounded-lg font-semibold hover:bg-green-50 transition flex items-center justify-center gap-2"
                 >
                   <Plus className="w-5 h-5" /> Create Your Team
                 </button>
@@ -121,7 +121,7 @@ const MatchmakingDashboard = () => {
           </div>
 
           {/* Browse Options — now 4 cards including My Invitations */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
             {[
               {
                 icon: <Search className="w-6 h-6 text-blue-600" />,
@@ -140,15 +140,6 @@ const MatchmakingDashboard = () => {
                 cta: 'View Players',
                 color: 'text-emerald-600',
                 path: '/player/matchmaking/browse-players'
-              },
-              {
-                icon: <Trophy className="w-6 h-6 text-amber-600" />,
-                bg: 'bg-amber-50',
-                title: 'My Teams',
-                desc: 'View and manage your existing teams',
-                cta: 'View Teams',
-                color: 'text-amber-600',
-                path: '/player/teams'
               },
               {
                 icon: <Bell className="w-6 h-6 text-rose-500" />,

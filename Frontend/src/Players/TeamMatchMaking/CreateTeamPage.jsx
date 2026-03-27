@@ -2,41 +2,14 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PlayerSidebar from '../PlayerSidebar';
-import { Users, ArrowLeft, Info, CheckCircle, Shield, Zap, Star } from 'lucide-react';
+import { Users, ArrowLeft, Info, CheckCircle } from 'lucide-react';
 import { showToast } from '../../FutsalOwner/components/Toast';
 import matchmakingService from '../../store/matchmakingService';
 
 const MATCH_FORMATS = [
-  { value: '5v5', label: '5 vs 5', players: 5, description: 'Standard futsal format', icon: '⚽' },
-  { value: '7v7', label: '7 vs 7', players: 7, description: 'Large field format', icon: '🏟️' },
-  { value: '2v2', label: '2 vs 2', players: 2,  description: 'Small-sided format', icon: '🎯' },
-];
-
-const SKILL_LEVELS = [
-  {
-    value: 'Beginner',
-    label: 'Beginner',
-    desc: 'New to the game, learning the basics',
-    icon: <Shield className="w-5 h-5" />,
-    color: 'border-green-300 bg-green-50 text-green-700',
-    active: 'border-green-500 bg-green-100 ring-2 ring-green-400'
-  },
-  {
-    value: 'Intermediate',
-    label: 'Intermediate',
-    desc: 'Comfortable with core skills',
-    icon: <Zap className="w-5 h-5" />,
-    color: 'border-blue-300 bg-blue-50 text-blue-700',
-    active: 'border-blue-500 bg-blue-100 ring-2 ring-blue-400'
-  },
-  {
-    value: 'Advanced',
-    label: 'Advanced',
-    desc: 'Competitive, high-level play',
-    icon: <Star className="w-5 h-5" />,
-    color: 'border-purple-300 bg-purple-50 text-purple-700',
-    active: 'border-purple-500 bg-purple-100 ring-2 ring-purple-400'
-  },
+  { value: '5v5', label: '5 vs 5', players: 5, description: 'Standard futsal format' },
+  { value: '7v7', label: '7 vs 7', players: 7, description: 'Large field format' },
+  { value: '2v2', label: '2 vs 2', players: 2,  description: 'Small-sided format' },
 ];
 
 const CreateTeamPage = () => {
@@ -48,7 +21,6 @@ const CreateTeamPage = () => {
     name: '',
     description: '',
     matchFormat: '5v5',
-    skillLevel: 'Intermediate',
     allowAutoFill: false,
   });
 
@@ -66,7 +38,7 @@ const CreateTeamPage = () => {
         description: formData.description?.trim() || '',
         matchFormat: formData.matchFormat,
         maxPlayers: fmt.players,
-        skillLevel: formData.skillLevel,
+        skillLevel: 'Intermediate',
         isPublic: true,
         allowAutoFill: formData.allowAutoFill,
       });
@@ -162,40 +134,12 @@ const CreateTeamPage = () => {
                     {formData.matchFormat === fmt.value && (
                       <CheckCircle className="absolute top-3 right-3 w-4 h-4 text-emerald-600" />
                     )}
-                    <span className="text-2xl mb-2 block">{fmt.icon}</span>
                     <p className="font-bold text-gray-900 text-sm">{fmt.label}</p>
                     <p className="text-xs text-gray-500 mt-0.5">{fmt.description}</p>
                     <div className="flex items-center gap-1 mt-2 text-xs text-gray-600">
                       <Users className="w-3.5 h-3.5" />
                       <span>{fmt.players} total players</span>
                     </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* ── Skill Level ───────────────────────────────── */}
-            <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
-              <h2 className="text-base font-semibold text-gray-800 mb-1">Skill Level</h2>
-              <p className="text-xs text-gray-400 mb-4">Helps match you with suitable opponents</p>
-              <div className="grid grid-cols-3 gap-3">
-                {SKILL_LEVELS.map(skill => (
-                  <button
-                    key={skill.value}
-                    type="button"
-                    onClick={() => set('skillLevel', skill.value)}
-                    className={`relative border-2 rounded-xl p-4 text-left transition-all ${
-                      formData.skillLevel === skill.value
-                        ? skill.active
-                        : `${skill.color} hover:opacity-80`
-                    }`}
-                  >
-                    {formData.skillLevel === skill.value && (
-                      <CheckCircle className="absolute top-3 right-3 w-4 h-4" />
-                    )}
-                    <span className="mb-2 block">{skill.icon}</span>
-                    <p className="font-bold text-sm">{skill.label}</p>
-                    <p className="text-xs mt-0.5 opacity-75">{skill.desc}</p>
                   </button>
                 ))}
               </div>
@@ -272,7 +216,7 @@ const CreateTeamPage = () => {
               <button
                 type="submit"
                 disabled={creating || !formData.name.trim()}
-                className="flex-1 px-6 py-3 bg-emerald-600 text-white rounded-xl font-semibold hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition text-sm flex items-center justify-center gap-2 shadow-sm"
+                className="flex-1 px-6 py-3 bg-green-600 text-white rounded-xl font-semibold hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition text-sm flex items-center justify-center gap-2 shadow-sm"
               >
                 {creating ? (
                   <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Creating…</>

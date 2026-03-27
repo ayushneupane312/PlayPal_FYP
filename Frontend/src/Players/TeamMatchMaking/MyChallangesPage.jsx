@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import PlayerSidebar from '../PlayerSidebar';
 import {
   ArrowLeft, Swords, Trophy, Clock, CheckCircle, XCircle,
-  Loader2, Shield, Zap, Star, Users, MessageSquare,
+  Loader2, Users, MessageSquare,
   Send, Inbox, Check, X, AlertCircle, ChevronRight
 } from 'lucide-react';
 import {
@@ -15,14 +15,7 @@ import {
 import { showToast } from '../../FutsalOwner/components/Toast';
 import { useAuthStore } from '../../store/authStore';
 
-const SKILL_CONFIG = {
-  Beginner:     { color: 'text-emerald-600', bg: 'bg-emerald-50', icon: <Shield className="w-3 h-3" /> },
-  Intermediate: { color: 'text-blue-600',    bg: 'bg-blue-50',    icon: <Zap    className="w-3 h-3" /> },
-  Advanced:     { color: 'text-purple-600',  bg: 'bg-purple-50',  icon: <Star   className="w-3 h-3" /> },
-};
-
 function TeamCard({ team, label, side }) {
-  const skill = SKILL_CONFIG[team?.skillLevel] || SKILL_CONFIG.Intermediate;
   const sideColors = {
     A: 'bg-blue-50 border-blue-200 text-blue-700',
     B: 'bg-red-50 border-red-200 text-red-700'
@@ -31,9 +24,6 @@ function TeamCard({ team, label, side }) {
     <div className="bg-white rounded-xl border border-gray-200 p-4 flex-1">
       <div className="flex items-center justify-between mb-2">
         <span className={`text-xs font-bold px-2 py-0.5 rounded-full border ${sideColors[side]}`}>{label}</span>
-        <span className={`text-xs font-medium flex items-center gap-1 px-2 py-0.5 rounded-full ${skill.bg} ${skill.color}`}>
-          {skill.icon} {team?.skillLevel}
-        </span>
       </div>
       <h4 className="font-bold text-gray-900">{team?.name || '—'}</h4>
       <p className="text-xs text-gray-400 mt-0.5">

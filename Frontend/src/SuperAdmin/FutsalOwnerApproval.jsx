@@ -183,7 +183,7 @@ const FutsalOwnerApprovals = () => {
                 >
                  
                   <p className="text-gray-600 text-sm mb-2 font-medium">{stat.title}</p>
-                  <h3 className="text-4xl font-bold text-gray-900">{stat.value}</h3>
+                  <h3 className="text-3xl font-bold text-gray-900">{stat.value}</h3>
                 </div>
               );
             })}

@@ -35,12 +35,6 @@ function TimeRemaining({ expiresAt }) {
   );
 }
 
-const SKILL_COLORS = {
-  Beginner: 'bg-green-100 text-green-700',
-  Intermediate: 'bg-blue-100 text-blue-700',
-  Advanced: 'bg-purple-100 text-purple-700'
-};
-
 const MyInvitationsPage = () => {
   const navigate = useNavigate();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -153,9 +147,6 @@ const MyInvitationsPage = () => {
                           <div>
                             <div className="flex items-center gap-2 flex-wrap">
                               <h3 className="font-bold text-gray-900 text-lg">{inv.team.name}</h3>
-                              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${SKILL_COLORS[inv.team.skillLevel] || 'bg-gray-100 text-gray-600'}`}>
-                                {inv.team.skillLevel}
-                              </span>
                             </div>
                             <div className="flex items-center gap-2 mt-1 text-sm text-gray-500">
                               <Crown className="w-3.5 h-3.5 text-amber-500" />

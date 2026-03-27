@@ -201,6 +201,38 @@ export const useAuthStore = create((set) => ({
     }
   },
 
+  /** Upload injury image to Cloudinary, then save URL on the logged-in user */
+  uploadInjuryImage: async (file) => {
+    set({ isLoading: true, error: null });
+    const formData = new FormData();
+    formData.append("file", file);
+    try {
+      const uploadRes = await axios.post(`${UPLOAD_API}/file`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      const url = uploadRes.data?.url;
+      if (!url) throw new Error("No image URL returned");
+      const { data } = await axios.patch(`${API_URL}/me`, { injuryImage: url });
+      set({
+        user: data.user,
+        isAuthenticated: true,
+        isLoading: false,
+        error: null,
+      });
+      return data;
+    } catch (error) {
+      set({
+        error:
+          error.response?.data?.message ||
+          error.response?.data?.msg ||
+          error.message ||
+          "Upload failed",
+        isLoading: false,
+      });
+      throw error;
+    }
+  },
+
   forgotPassword: async (email) => {
         set({ isLoading: true, error: null });
         try {

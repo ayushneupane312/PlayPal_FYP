@@ -87,17 +87,6 @@ export const verifyPayment = async (pidx, bookingId) => {
   }
 };
 
-/** eSewa ePay V2 — returns { gatewayUrl, fields } for a browser form POST */
-export const initiateEsewaPayment = async (bookingId) => {
-  const { data } = await axios.post(`${API_URL}/payment/initiate-esewa`, { bookingId });
-  return data;
-};
-
-export const verifyEsewaPayment = async (bookingId) => {
-  const { data } = await axios.post(`${API_URL}/payment/verify-esewa`, { bookingId });
-  return data;
-};
-
 /**
  * Get user's bookings
  */
@@ -305,7 +294,6 @@ export const getPaymentMethodDisplay = (method) => {
   const methods = {
     khalti: 'Khalti (Online)',
     cash: 'Cash Payment',
-    esewa: 'eSewa',
     card: 'Card Payment',
     bank_transfer: 'Bank Transfer'
   };
@@ -350,8 +338,6 @@ const bookingStore = {
   createBooking,
   initiatePayment,
   verifyPayment,
-  initiateEsewaPayment,
-  verifyEsewaPayment,
   getMyBookings,
   getBookingById,
   cancelBooking,

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import PlayerSidebar from './PlayerSidebar';
 import {
   Heart,
@@ -9,10 +9,15 @@ import {
   ArrowUp,
   ArrowDown,
   Minus,
-  Calendar
+  Calendar,
+  Upload,
+  ShieldAlert
 } from 'lucide-react';
+import { useAuthStore } from '../store/authStore';
+import { showToast } from '../FutsalOwner/components/Toast';
 
 const HealthPage = () => {
+  const { user, uploadInjuryImage, updateMe, isLoading } = useAuthStore();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [healthData, setHealthData] = useState([]);
   const [todayData, setTodayData] = useState({
@@ -21,6 +26,10 @@ const HealthPage = () => {
     height: 175
   });
   const [isEditing, setIsEditing] = useState(false);
+  const injuryFileRef = useRef(null);
+  const [injuryPreview, setInjuryPreview] = useState('');
+  const [injuryUploading, setInjuryUploading] = useState(false);
+  const [injuryToggling, setInjuryToggling] = useState(false);
   
   // Initialize with no historical fallback data
   useEffect(() => {
@@ -101,7 +110,7 @@ const HealthPage = () => {
     if (!validateInput('sleepHours', todayData.sleepHours) ||
         !validateInput('weight', todayData.weight) ||
         !validateInput('height', todayData.height)) {
-      alert('Please enter valid health data');
+      showToast.error('Please enter valid health data');
       return;
     }
 
@@ -119,7 +128,7 @@ const HealthPage = () => {
     setHealthData(prev => [newEntry, ...prev]);
     setIsEditing(false);
     
-    alert('Health data saved successfully!');
+    showToast.success('Health data saved successfully!');
   };
 
   // Get BMI category
@@ -140,6 +149,57 @@ const HealthPage = () => {
       month: 'short', 
       day: 'numeric' 
     });
+  };
+
+  const getInitials = (name) => {
+    if (!name) return 'U';
+    return name
+      .split(' ')
+      .filter(Boolean)
+      .map(word => word[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
+  const healthProfileId = user?._id
+    ? `HP-${String(user._id).slice(-4).toUpperCase()}`
+    : 'HP-—';
+
+  const handlePickInjuryImage = () => {
+    injuryFileRef.current?.click();
+  };
+
+  const handleInjuryFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      setInjuryUploading(true);
+      const previewUrl = URL.createObjectURL(file);
+      setInjuryPreview(previewUrl);
+      await uploadInjuryImage(file);
+      showToast.success('Injury image updated successfully!');
+    } catch (err) {
+      console.error(err);
+      showToast.error('Failed to upload injury image');
+    } finally {
+      setInjuryUploading(false);
+      // allow selecting the same file again
+      if (injuryFileRef.current) injuryFileRef.current.value = '';
+    }
+  };
+
+  const handleToggleInjured = async () => {
+    try {
+      setInjuryToggling(true);
+      await updateMe({ isInjured: !Boolean(user?.isInjured) });
+      showToast.success(!Boolean(user?.isInjured) ? "Marked as injured" : "Marked as fit to play");
+    } catch (err) {
+      console.error(err);
+      showToast.error("Failed to update injured status");
+    } finally {
+      setInjuryToggling(false);
+    }
   };
 
   return (
@@ -164,17 +224,27 @@ const HealthPage = () => {
           {/* User Profile */}
           <div className="flex items-center bg-white p-3 rounded-xl shadow-sm border border-gray-100">
             <div className="relative">
-              <div className="w-12 h-12 rounded-full border-2 border-emerald-100 bg-gradient-to-r from-emerald-400 to-emerald-600 flex items-center justify-center text-white font-bold">
-                RK
-              </div>
+              {user?.profileImage ? (
+                <img
+                  src={user.profileImage}
+                  alt=""
+                  className="w-12 h-12 rounded-full object-cover border-2 border-emerald-100"
+                />
+              ) : (
+                <div className="w-12 h-12 rounded-full border-2 border-emerald-100 bg-gradient-to-r from-emerald-400 to-emerald-600 flex items-center justify-center text-white font-bold">
+                  {getInitials(user?.name)}
+                </div>
+              )}
               <div className="absolute bottom-0 right-0 w-4 h-4 bg-emerald-500 rounded-full border-2 border-white"></div>
             </div>
             <div className="ml-3">
               <div className="flex items-center">
-                <h3 className="font-bold text-gray-800">Rajan Karki</h3>
-                <span className="ml-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs font-bold px-2 py-1 rounded-full">Pro Player</span>
+                <h3 className="font-bold text-gray-800">{user?.name || 'Player'}</h3>
+                <span className="ml-2 bg-emerald-50 text-emerald-700 text-xs font-bold px-2 py-1 rounded-full border border-emerald-200">
+                  {(user?.role || 'player').toString().replace('_', ' ')}
+                </span>
               </div>
-              <p className="text-sm text-gray-600">Health Profile ID: HP-001</p>
+              <p className="text-sm text-gray-600">Health Profile ID: {healthProfileId}</p>
             </div>
           </div>
         </div>
@@ -441,6 +511,91 @@ const HealthPage = () => {
               </button>
             </div>
           )}
+        </div>
+
+        {/* Injury Section */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+            <div>
+              <h2 className="text-xl font-bold text-gray-800">Injury Image</h2>
+              <p className="text-sm text-gray-600 mt-1">
+                Upload an injury photo to inform other players, and update your availability.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={handleToggleInjured}
+                disabled={injuryToggling || isLoading}
+                className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold border transition ${
+                  user?.isInjured
+                    ? "border-red-200 bg-red-50 text-red-700 hover:bg-red-100"
+                    : "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                } disabled:opacity-60 disabled:cursor-not-allowed`}
+              >
+                <ShieldAlert className="w-4 h-4" />
+                {user?.isInjured ? "Injured (won’t play)" : "Fit to play"}
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+            <div className="lg:col-span-2">
+              <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
+                {(injuryPreview || user?.injuryImage) ? (
+                  <img
+                    src={injuryPreview || user?.injuryImage}
+                    alt="Injury"
+                    className="w-full max-h-72 object-contain rounded-xl bg-white border border-gray-200"
+                    onError={(e) => {
+                      e.currentTarget.style.display = "none";
+                    }}
+                  />
+                ) : (
+                  <div className="h-48 flex items-center justify-center rounded-xl border border-dashed border-gray-300 bg-white text-gray-500 text-sm">
+                    No injury image uploaded yet
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-gray-100 bg-white p-4">
+              <input
+                ref={injuryFileRef}
+                type="file"
+                accept="image/*"
+                onChange={handleInjuryFileChange}
+                className="hidden"
+              />
+
+              <button
+                type="button"
+                onClick={handlePickInjuryImage}
+                disabled={injuryUploading || isLoading}
+                className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-3 transition disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                <Upload className="w-4 h-4" />
+                {injuryUploading ? "Uploading..." : "Upload Injury Image"}
+              </button>
+
+              <div className="mt-4 text-sm text-gray-600 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-medium text-gray-800">Status</span>
+                  <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${
+                    user?.isInjured
+                      ? "border-red-200 bg-red-50 text-red-700"
+                      : "border-emerald-200 bg-emerald-50 text-emerald-700"
+                  }`}>
+                    {user?.isInjured ? "Injured" : "Available"}
+                  </span>
+                </div>
+                <p className="text-xs text-gray-500">
+                  Tip: Keep the injury photo clear. This can help teammates/opponents understand your condition.
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Health History */}
