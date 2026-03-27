@@ -5,7 +5,6 @@ const User = require('../models/UserModel');
 const Team = require('../models/TeamModel');
 const Match = require('../models/MatchModel');
 const khaltiService = require('../services/khaltiService');
-const esewaService = require('../services/esewaService');
 const { notifyUser } = require('../services/notificationService');
 
 // ═══════════════════════════════════════════════════════════
@@ -199,6 +198,13 @@ exports.createBooking = async (req, res) => {
       paymentMethod = 'cash', // 'khalti' | 'esewa' | 'cash'
       cashSplitAmongPlayers // boolean: split court fee equally at venue after game (cash only)
     } = req.body;
+
+    if (paymentMethod === 'esewa') {
+      return res.status(400).json({
+        success: false,
+        message: 'eSewa is disabled in this project. Use Khalti or Cash.'
+      });
+    }
 
     // Validate required fields
     if (!venueId || !courtId || !bookingDate || !startTime || !endTime) {
@@ -588,170 +594,6 @@ exports.verifyPayment = async (req, res) => {
       success: false,
       message: error.message || 'Payment verification failed',
       error: error.error
-    });
-  }
-};
-
-/**
- * Initiate eSewa ePay V2 — returns form POST target + fields for browser submit
- */
-exports.initiateEsewaPayment = async (req, res) => {
-  try {
-    const { bookingId } = req.body;
-    const userId = req.userId;
-
-    if (!bookingId) {
-      return res.status(400).json({ success: false, message: 'Booking ID is required' });
-    }
-
-    const booking = await Booking.findOne({
-      _id: bookingId,
-      user: userId
-    }).populate('venue', 'venueName');
-
-    if (!booking) {
-      return res.status(404).json({
-        success: false,
-        message: 'Booking not found or does not belong to you'
-      });
-    }
-
-    if (booking.payment.status === 'paid') {
-      return res.status(400).json({
-        success: false,
-        message: 'Payment already completed for this booking'
-      });
-    }
-
-    if (booking.payment.method !== 'esewa') {
-      return res.status(400).json({
-        success: false,
-        message: 'This booking is not set for eSewa. Create the booking with eSewa as payment method.'
-      });
-    }
-
-    const frontendBase = (process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/$/, '');
-    const transactionUuid = `${booking._id}-${Date.now()}`;
-
-    const successUrl = `${frontendBase}/player/booking/esewa-callback?bookingId=${booking._id}`;
-    const failureUrl = `${frontendBase}/player/booking/esewa-callback?bookingId=${booking._id}&esewa_failed=1`;
-
-    const { fields, totalAmountStr } = esewaService.buildInitiateFields({
-      subtotal: booking.pricing.totalAmount,
-      transactionUuid,
-      successUrl,
-      failureUrl
-    });
-
-    booking.payment.esewaTransactionUuid = transactionUuid;
-    booking.payment.esewaTotalAmountStr = totalAmountStr;
-    await booking.save();
-
-    res.status(200).json({
-      success: true,
-      message: 'eSewa payment ready',
-      data: {
-        gatewayUrl: esewaService.gatewayUrl,
-        fields,
-        bookingId: booking._id
-      }
-    });
-  } catch (error) {
-    console.error('❌ Initiate eSewa error:', error);
-    const status = error.code === 'ESEWA_CONFIG' ? 503 : 500;
-    res.status(status).json({
-      success: false,
-      message: error.message || 'Failed to initiate eSewa payment'
-    });
-  }
-};
-
-/**
- * Confirm eSewa payment via eSewa status API (call after user returns from eSewa)
- */
-exports.verifyEsewaPayment = async (req, res) => {
-  try {
-    const { bookingId } = req.body;
-    const userId = req.userId;
-
-    if (!bookingId) {
-      return res.status(400).json({ success: false, message: 'Booking ID is required' });
-    }
-
-    const booking = await Booking.findOne({
-      _id: bookingId,
-      user: userId
-    }).populate('venue', 'venueName fullAddress contactInfo');
-
-    if (!booking) {
-      return res.status(404).json({
-        success: false,
-        message: 'Booking not found or does not belong to you'
-      });
-    }
-
-    if (booking.payment.method !== 'esewa') {
-      return res.status(400).json({
-        success: false,
-        message: 'Not an eSewa booking'
-      });
-    }
-
-    if (booking.payment.status === 'paid') {
-      return res.status(200).json({
-        success: true,
-        message: 'Payment already verified',
-        data: { booking }
-      });
-    }
-
-    const uuid = booking.payment.esewaTransactionUuid;
-    if (!uuid) {
-      return res.status(400).json({
-        success: false,
-        message: 'No eSewa session found for this booking. Start payment again from your booking page.'
-      });
-    }
-
-    const totalStr =
-      booking.payment.esewaTotalAmountStr ||
-      esewaService.formatTotalAmount(booking.pricing.totalAmount);
-
-    const statusData = await esewaService.checkStatus(uuid, totalStr);
-    const st = (statusData && statusData.status) || '';
-
-    if (st !== 'COMPLETE') {
-      return res.status(200).json({
-        success: false,
-        message: st ? `eSewa status: ${st}` : 'Could not verify payment with eSewa yet.',
-        data: statusData
-      });
-    }
-
-    booking.payment.status = 'paid';
-    booking.payment.transactionId =
-      statusData.refId || statusData.transaction_code || statusData.pid || uuid;
-    booking.payment.paidAt = new Date();
-    booking.bookingStatus = 'confirmed';
-    booking.notifications.userNotified = false;
-    booking.notifications.ownerNotified = false;
-
-    await booking.save();
-
-    await Venue.findByIdAndUpdate(booking.venue, {
-      $inc: { 'stats.totalBookings': 1 }
-    });
-
-    res.status(200).json({
-      success: true,
-      message: 'Payment verified. Your booking is confirmed!',
-      data: { booking, esewa: statusData }
-    });
-  } catch (error) {
-    console.error('❌ Verify eSewa error:', error);
-    res.status(500).json({
-      success: false,
-      message: error.message || 'eSewa verification failed'
     });
   }
 };

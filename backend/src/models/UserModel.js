@@ -73,6 +73,33 @@ const userSchema = new mongoose.Schema({
     playerId: String,
     ownerId: String,
 
+    // Player profile fields (optional)
+    phone: {
+        type: String,
+        default: ""
+    },
+    location: {
+        type: String,
+        default: ""
+    },
+    preferredPosition: {
+        type: String,
+        default: ""
+    },
+
+    // Injury status (optional, shown to other players)
+    injuryImage: {
+        type: String,
+        default: ""
+    },
+    isInjured: {
+        type: Boolean,
+        default: false
+    },
+    injuryUpdatedAt: {
+        type: Date
+    },
+
 }, {
     timestamps: true,
 });

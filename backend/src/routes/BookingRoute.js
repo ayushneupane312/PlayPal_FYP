@@ -17,9 +17,7 @@ const {
   getOwnerEarnings,
   initiateSplitPayment,
   verifySplitPayment,
-  payShare,
-  initiateEsewaPayment,
-  verifyEsewaPayment
+  payShare
 } = require('../controllers/BookingController');
 
 // ═══════════════════════════════════════════════════════════
@@ -41,10 +39,6 @@ router.post('/payment/initiate', verifyToken, initiatePayment);
 
 // Verify Khalti payment
 router.post('/payment/verify', verifyToken, verifyPayment);
-
-// eSewa ePay V2
-router.post('/payment/initiate-esewa', verifyToken, initiateEsewaPayment);
-router.post('/payment/verify-esewa', verifyToken, verifyEsewaPayment);
 
 // Get user's bookings
 router.get('/my-bookings', verifyToken, getMyBookings);

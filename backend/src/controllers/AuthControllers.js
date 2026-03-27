@@ -261,7 +261,7 @@ const login = async (req, res) => {
 // ------------------- UPDATE CURRENT USER (profile) -------------------
 const updateMe = async (req, res) => {
     try {
-        const { name, profileImage } = req.body;
+        const { name, profileImage, phone, location, preferredPosition, injuryImage, isInjured } = req.body;
         const user = await User.findById(req.userId);
 
         if (!user) {
@@ -273,6 +273,23 @@ const updateMe = async (req, res) => {
         }
         if (typeof profileImage === "string") {
             user.profileImage = profileImage.trim();
+        }
+        if (typeof phone === "string") {
+            user.phone = phone.trim();
+        }
+        if (typeof location === "string") {
+            user.location = location.trim();
+        }
+        if (typeof preferredPosition === "string") {
+            user.preferredPosition = preferredPosition.trim();
+        }
+        if (typeof injuryImage === "string") {
+            user.injuryImage = injuryImage.trim();
+            user.injuryUpdatedAt = injuryImage.trim() ? new Date() : user.injuryUpdatedAt;
+        }
+        if (typeof isInjured === "boolean") {
+            user.isInjured = isInjured;
+            user.injuryUpdatedAt = new Date();
         }
 
         await user.save();
