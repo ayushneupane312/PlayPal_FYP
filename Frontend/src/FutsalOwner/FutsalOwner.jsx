@@ -1,8 +1,12 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Calendar, DollarSign, Users, TrendingUp, Clock, Trophy, Bell, Search, Settings, LayoutDashboard, MapPin, CreditCard, BarChart3, Menu, X } from 'lucide-react';
 import FutsalOwnerSidebar from './FutsalOwnerSidebar';
 import Header from '../FutsalOwner/components/Header';
 import { useAuthStore } from '../store/authStore'; // ✅ ADD THIS IMPORT
+import { getVenueInfo } from '../store/venueService';
+import { getOwnerEarnings, getVenueBookings } from '../store/bookingStore';
+import { listMyTournaments } from '../store/tournamentService';
+import { showToast } from './components/Toast';
 
 export default function FutsalDashboard() {
   // ✅ ADD THIS LINE - Get user from auth store
@@ -18,38 +22,164 @@ export default function FutsalDashboard() {
   ]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [dashboardStats, setDashboardStats] = useState({
+    todaysBookings: 0,
+    monthlyRevenue: 0,
+    activeCourts: 0,
+    courtsInMaintenance: 0,
+    weeklyRevenue: [0, 0, 0, 0, 0, 0, 0],
+    peakHours: [
+      { time: '6 AM', bookings: 0 },
+      { time: '8 AM', bookings: 0 },
+      { time: '10 AM', bookings: 0 },
+      { time: '12 PM', bookings: 0 },
+      { time: '2 PM', bookings: 0 },
+      { time: '4 PM', bookings: 0 },
+      { time: '6 PM', bookings: 0 },
+      { time: '8 PM', bookings: 0 },
+      { time: '10 PM', bookings: 0 }
+    ]
+  });
+  const [recentBookings, setRecentBookings] = useState([]);
+  const [tournaments, setTournaments] = useState([]);
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        setLoading(true);
+
+        const now = new Date();
+        const today = now.toISOString().split('T')[0];
+        const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+        const weekDayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        const weekDays = [];
+        for (let i = 6; i >= 0; i -= 1) {
+          const d = new Date(now);
+          d.setDate(now.getDate() - i);
+          weekDays.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`);
+        }
+        const weekRevenueMap = Object.fromEntries(weekDays.map((d) => [d, 0]));
+
+        const [venueRes, todayBookingsRes, allBookingsRes, earningsRes, tournamentsRes] = await Promise.all([
+          getVenueInfo().catch(() => null),
+          getVenueBookings({ date: today, limit: 50 }).catch(() => null),
+          getVenueBookings({ limit: 200 }).catch(() => null),
+          getOwnerEarnings().catch(() => null),
+          listMyTournaments().catch(() => null)
+        ]);
+
+        const venue = venueRes?.data || venueRes || null;
+        const activeCourts = (venue?.courts || []).filter((c) => c?.isActive !== false).length;
+        const courtsInMaintenance = Math.max((venue?.courts || []).length - activeCourts, 0);
+
+        const todaysBookings = Array.isArray(todayBookingsRes?.data) ? todayBookingsRes.data.length : 0;
+
+        const paidBookings = earningsRes?.data?.bookings || [];
+        paidBookings.forEach((b) => {
+          const d = new Date(b.bookingDate);
+          const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+          if (weekRevenueMap[key] != null) {
+            weekRevenueMap[key] += Number(b?.pricing?.totalAmount || 0);
+          }
+        });
+        const weeklyRevenue = weekDays.map((d) => weekRevenueMap[d]);
+        const monthlyRevenue = Number(earningsRes?.data?.monthlyEarnings?.[monthKey] || 0);
+
+        const allBookings = allBookingsRes?.data || [];
+        const hourBuckets = { 6: 0, 8: 0, 10: 0, 12: 0, 14: 0, 16: 0, 18: 0, 20: 0, 22: 0 };
+        allBookings.forEach((b) => {
+          const startTime = b?.timeSlot?.startTime;
+          const hour = Number((startTime || '0:00').split(':')[0]);
+          if (Number.isFinite(hour)) {
+            const nearest = [6, 8, 10, 12, 14, 16, 18, 20, 22].reduce((prev, curr) =>
+              Math.abs(curr - hour) < Math.abs(prev - hour) ? curr : prev
+            );
+            hourBuckets[nearest] += 1;
+          }
+        });
+        const peakHours = [
+          { time: '6 AM', bookings: hourBuckets[6] },
+          { time: '8 AM', bookings: hourBuckets[8] },
+          { time: '10 AM', bookings: hourBuckets[10] },
+          { time: '12 PM', bookings: hourBuckets[12] },
+          { time: '2 PM', bookings: hourBuckets[14] },
+          { time: '4 PM', bookings: hourBuckets[16] },
+          { time: '6 PM', bookings: hourBuckets[18] },
+          { time: '8 PM', bookings: hourBuckets[20] },
+          { time: '10 PM', bookings: hourBuckets[22] }
+        ];
+
+        const mappedRecent = allBookings.slice(0, 5).map((b) => {
+          const userName = b?.user?.name || b?.playerInfo?.name || 'Booking';
+          const status = b?.bookingStatus || 'pending';
+          return {
+            team: userName,
+            court: b?.court?.name || 'Court',
+            time: `${b?.timeSlot?.startTime || '--'} - ${b?.timeSlot?.endTime || '--'}`,
+            price: `Rs. ${Number(b?.pricing?.totalAmount || 0).toLocaleString()}`,
+            status: status.charAt(0).toUpperCase() + status.slice(1),
+            initial: userName.charAt(0).toUpperCase() || 'B'
+          };
+        });
+
+        const mappedTournaments = (tournamentsRes?.data || []).slice(0, 4).map((t) => ({
+          name: t?.name || 'Tournament',
+          date: `${new Date(t?.startDate).toLocaleDateString()} - ${new Date(t?.endDate).toLocaleDateString()}`,
+          prize: `Rs. ${Number(t?.totalPrizePool || 0).toLocaleString()}`,
+          entry: `Rs. ${Number(t?.entryFeePerTeam || 0).toLocaleString()}`,
+          teams: Number(t?.stats?.registeredTeams || 0),
+          maxTeams: Number(t?.maxTeams || 0)
+        }));
+
+        setDashboardStats({
+          todaysBookings,
+          monthlyRevenue,
+          activeCourts,
+          courtsInMaintenance,
+          weeklyRevenue,
+          peakHours
+        });
+        setRecentBookings(mappedRecent);
+        setTournaments(mappedTournaments);
+      } catch (err) {
+        showToast.error('Failed to load dashboard data');
+        console.error('Dashboard load error:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, []);
 
   const stats = [
-    { label: "Today's Bookings", value: '12', change: '+3 from yesterday', icon: Calendar, color: 'bg-blue-500' },
-    { label: 'Monthly Revenue', value: 'Rs. 2.4L', change: '+12% from last month', icon: DollarSign, color: 'bg-green-500' },
-    { label: 'Active Courts', value: '4', change: '2 in maintenance', icon: MapPin, color: 'bg-purple-500' }
+    {
+      label: "Today's Bookings",
+      value: String(dashboardStats.todaysBookings),
+      change: `${dashboardStats.todaysBookings} for today`,
+      icon: Calendar,
+      color: 'bg-blue-500'
+    },
+    {
+      label: 'Monthly Revenue',
+      value: `Rs. ${(dashboardStats.monthlyRevenue / 100000).toFixed(2)}L`,
+      change: `Rs. ${dashboardStats.monthlyRevenue.toLocaleString()} this month`,
+      icon: DollarSign,
+      color: 'bg-green-500'
+    },
+    {
+      label: 'Active Courts',
+      value: String(dashboardStats.activeCourts),
+      change: `${dashboardStats.courtsInMaintenance} in maintenance`,
+      icon: MapPin,
+      color: 'bg-purple-500'
+    }
   ];
 
-  const recentBookings = [
-    { team: 'Team Alpha', court: 'Court 1', time: '6:00 PM - 7:00 PM', price: 'Rs. 2,500', status: 'Confirmed', initial: 'T' },
-    { team: 'Striker FC', court: 'Court 2', time: '7:00 PM - 8:00 PM', price: 'Rs. 2,500', status: 'Pending', initial: 'S' },
-    { team: 'Goal Getters', court: 'Court 3', time: '5:00 PM - 6:00 PM', price: 'Rs. 2,500', status: 'Confirmed', initial: 'G' },
-    { team: 'FC Warriors', court: 'Court 1', time: '8:00 PM - 9:00 PM', price: 'Rs. 2,500', status: 'Confirmed', initial: 'F' }
-  ];
+  const peakHours = dashboardStats.peakHours;
 
-  const tournaments = [
-    { name: 'Weekend Cup 2024', date: 'Dec 28-29', prize: 'Rs. 50,000', entry: 'Rs. 5,000', teams: 12, maxTeams: 16 },
-    { name: 'New Year Championship', date: 'Jan 1-2', prize: 'Rs. 100,000', entry: 'Rs. 8,000', teams: 8, maxTeams: 16 }
-  ];
-
-  const peakHours = [
-    { time: '6 AM', bookings: 2 },
-    { time: '8 AM', bookings: 5 },
-    { time: '10 AM', bookings: 4 },
-    { time: '12 PM', bookings: 3 },
-    { time: '2 PM', bookings: 6 },
-    { time: '4 PM', bookings: 8 },
-    { time: '6 PM', bookings: 12 },
-    { time: '8 PM', bookings: 11 },
-    { time: '10 PM', bookings: 7 }
-  ];
-
-  const maxBookings = Math.max(...peakHours.map(h => h.bookings));
+  const maxBookings = Math.max(...peakHours.map(h => h.bookings), 1);
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -81,6 +211,10 @@ export default function FutsalDashboard() {
           </div>
         </div>
       
+        {loading && (
+          <div className="mb-4 text-sm text-gray-500">Loading live dashboard data...</div>
+        )}
+
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
           {stats.map((stat, idx) => (
@@ -123,11 +257,24 @@ export default function FutsalDashboard() {
 
                 {/* Area chart */}
                 <path
-                  d="M 80,120 L 150,100 L 220,110 L 290,80 L 360,95 L 430,85 L 500,60 L 570,50 L 640,70 L 640,180 L 80,180 Z"
+                  d={`M 80,${180 - (dashboardStats.weeklyRevenue[0] / (Math.max(...dashboardStats.weeklyRevenue, 1)) * 120)}
+                      L 150,${180 - (dashboardStats.weeklyRevenue[1] / (Math.max(...dashboardStats.weeklyRevenue, 1)) * 120)}
+                      L 220,${180 - (dashboardStats.weeklyRevenue[2] / (Math.max(...dashboardStats.weeklyRevenue, 1)) * 120)}
+                      L 290,${180 - (dashboardStats.weeklyRevenue[3] / (Math.max(...dashboardStats.weeklyRevenue, 1)) * 120)}
+                      L 360,${180 - (dashboardStats.weeklyRevenue[4] / (Math.max(...dashboardStats.weeklyRevenue, 1)) * 120)}
+                      L 430,${180 - (dashboardStats.weeklyRevenue[5] / (Math.max(...dashboardStats.weeklyRevenue, 1)) * 120)}
+                      L 500,${180 - (dashboardStats.weeklyRevenue[6] / (Math.max(...dashboardStats.weeklyRevenue, 1)) * 120)}
+                      L 500,180 L 80,180 Z`}
                   fill="url(#revenueGradient)"
                 />
                 <path
-                  d="M 80,120 L 150,100 L 220,110 L 290,80 L 360,95 L 430,85 L 500,60 L 570,50 L 640,70"
+                  d={`M 80,${180 - (dashboardStats.weeklyRevenue[0] / (Math.max(...dashboardStats.weeklyRevenue, 1)) * 120)}
+                      L 150,${180 - (dashboardStats.weeklyRevenue[1] / (Math.max(...dashboardStats.weeklyRevenue, 1)) * 120)}
+                      L 220,${180 - (dashboardStats.weeklyRevenue[2] / (Math.max(...dashboardStats.weeklyRevenue, 1)) * 120)}
+                      L 290,${180 - (dashboardStats.weeklyRevenue[3] / (Math.max(...dashboardStats.weeklyRevenue, 1)) * 120)}
+                      L 360,${180 - (dashboardStats.weeklyRevenue[4] / (Math.max(...dashboardStats.weeklyRevenue, 1)) * 120)}
+                      L 430,${180 - (dashboardStats.weeklyRevenue[5] / (Math.max(...dashboardStats.weeklyRevenue, 1)) * 120)}
+                      L 500,${180 - (dashboardStats.weeklyRevenue[6] / (Math.max(...dashboardStats.weeklyRevenue, 1)) * 120)}`}
                   fill="none"
                   stroke="#10b981"
                   strokeWidth="2"
@@ -185,7 +332,7 @@ export default function FutsalDashboard() {
                     </div>
                     <div>
                       <div className="font-medium text-gray-900">{booking.team}</div>
-                      <div className="text-sm text-gray-600">{booking.court} • Today</div>
+                      <div className="text-sm text-gray-600">{booking.court}</div>
                     </div>
                   </div>
                   <div className="text-right">
@@ -216,6 +363,9 @@ export default function FutsalDashboard() {
               </button>
             </div>
             <div className="p-6 space-y-4">
+              {tournaments.length === 0 && (
+                <div className="text-sm text-gray-500">No tournaments found.</div>
+              )}
               {tournaments.map((tournament, idx) => (
                 <div key={idx} className="border border-gray-200 rounded-lg p-4">
                   <div className="flex items-start justify-between mb-3">

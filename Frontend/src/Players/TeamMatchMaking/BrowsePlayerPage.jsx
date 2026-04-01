@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import PlayerSidebar from '../PlayerSidebar';
 import {
   Users, ArrowLeft, Search, Star, MapPin,
-  Loader2, UserPlus, CheckCircle, Send, X
+  Loader2, UserPlus, CheckCircle, Send, X, Phone
 } from 'lucide-react';
 import { showToast } from '../../FutsalOwner/components/Toast';
 import matchmakingService from '../../store/matchmakingService';
@@ -149,7 +149,18 @@ const BrowsePlayersPage = () => {
     try {
       setLoading(true);
       const res = await matchmakingService.getBrowsePlayersForInvite();
-      setPlayers(res.data || []);
+      const raw = res.data || [];
+      const normalized = raw.map((p) => ({
+        ...p,
+        avatar: p.profileImage || '',
+        position: p.preferredPosition || 'Any',
+        location: p.location || 'Not specified',
+        phone: p.phone || '',
+        bio: p.isInjured ? 'Currently marked as injured' : '',
+        preferredTimes: p.preferredTimes || [],
+        matchesPlayed: p.matchesPlayed || 0
+      }));
+      setPlayers(normalized);
     } catch (e) {
       setPlayers([]);
       showToast.error(e?.response?.data?.message || 'Failed to load players');
@@ -294,7 +305,11 @@ const BrowsePlayersPage = () => {
                   <div key={player._id} className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow border border-gray-100 overflow-hidden">
                     <div className="p-5 border-b border-gray-50">
                       <div className="flex items-start gap-3 mb-3">
-                        <img src={player.avatar} alt={player.name} className="w-14 h-14 rounded-full border-2 border-emerald-100" />
+                        <img
+                          src={player.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(player.name)}&background=ECFDF5&color=059669`}
+                          alt={player.name}
+                          className="w-14 h-14 rounded-full border-2 border-emerald-100 object-cover"
+                        />
                         <div className="flex-1 min-w-0">
                           <h3 className="font-semibold text-gray-900 truncate">{player.name}</h3>
                           <div className="flex items-center gap-2 mt-1">
@@ -314,6 +329,10 @@ const BrowsePlayersPage = () => {
 
                       <div className="flex items-center gap-1.5 text-xs text-gray-500">
                         <MapPin className="w-3.5 h-3.5" /> {player.location}
+                      </div>
+
+                      <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                        <Phone className="w-3.5 h-3.5" /> {player.phone || 'Not available'}
                       </div>
 
                       <div className="flex flex-wrap gap-1">

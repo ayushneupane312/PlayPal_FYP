@@ -49,7 +49,7 @@ const UserManagement = () => {
     { value: 'all', label: 'All Roles' },
     { value: 'player', label: 'Player' },
     { value: 'admin', label: 'Admin' },
-    { value: 'owner', label: 'Owner' }
+    { value: 'futsalowner', label: 'Futsal Owner' }
   ];
 
   const handleEdit = (user) => {
@@ -105,6 +105,17 @@ const UserManagement = () => {
       default:
         return 'bg-gray-100 text-gray-700 border-gray-200';
     }
+  };
+
+  const getAvatarUrl = (user = {}) => {
+    const candidate = user.profileImage || user.avatar || user.imageUrl || '';
+    if (!candidate) return '';
+    if (candidate.startsWith('http://') || candidate.startsWith('https://')) return candidate;
+    if (candidate.startsWith('/')) {
+      const base = import.meta.env.MODE === "development" ? "http://localhost:5000" : "";
+      return `${base}${candidate}`;
+    }
+    return candidate;
   };
 
   return (
@@ -193,7 +204,22 @@ const UserManagement = () => {
                       <tr key={user._id} className="hover:bg-gray-50 transition-colors">
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-gradient-to-r from-emerald-400 to-emerald-600 rounded-full flex items-center justify-center text-white font-semibold">
+                            {getAvatarUrl(user) ? (
+                              <img
+                                src={getAvatarUrl(user)}
+                                alt={user.name || 'User'}
+                                className="w-10 h-10 rounded-full object-cover border border-emerald-100"
+                                onError={(e) => {
+                                  e.currentTarget.style.display = 'none';
+                                  const fallback = e.currentTarget.nextElementSibling;
+                                  if (fallback) fallback.style.display = 'flex';
+                                }}
+                              />
+                            ) : null}
+                            <div
+                              className="w-10 h-10 bg-gradient-to-r from-emerald-400 to-emerald-600 rounded-full items-center justify-center text-white font-semibold"
+                              style={{ display: getAvatarUrl(user) ? 'none' : 'flex' }}
+                            >
                               {user.name?.charAt(0).toUpperCase()}
                             </div>
                             <div>
@@ -347,7 +373,7 @@ const UserManagement = () => {
                   required
                 >
                   <option value="player">Player</option>
-                  <option value="owner">Owner</option>
+                  <option value="futsalowner">Futsal Owner</option>
             
                 </select>
               </div>

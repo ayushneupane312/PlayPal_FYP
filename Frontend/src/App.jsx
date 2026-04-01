@@ -1,6 +1,6 @@
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { useEffect } from "react";
-import { useAuthStore } from "./store/authStore"; // ✅ Import authStore
+import { useAuthStore } from "./store/authStore"; 
 
 import LoginPage from "./pages/LoginPage"
 import LandingPage from "./pages/LandingPage";
@@ -74,6 +74,8 @@ import VenueDashboard from "./FutsalOwner/VenueDashboard.jsx";
 import BookingManagementPage from "./FutsalOwner/BookingManagementPage.jsx";
 import OwnerBookingDetailPage from "./FutsalOwner/OwnerBookingDetailPage.jsx";
 
+import TournamentBracket from "./FutsalOwner/TournamentSchedule/TournamentBracket.jsx";
+
 import CheckoutPage from "./Khalti/CheckoutPage.jsx";
 import PaymentCallback from "./Khalti/PaymentCallback.jsx";
 
@@ -89,7 +91,7 @@ function App() {
     checkAuth();
   }, [checkAuth]);
 
-  const showNavbar = ["/", "/login", "/signup"].includes(location.pathname);
+  const showNavbar = ["/login", "/signup"].includes(location.pathname);
 
   // ✅ Show loading spinner while checking auth
   if (isCheckingAuth) {
@@ -186,6 +188,9 @@ function App() {
 
             <Route path="/checkout" element={<CheckoutPage />} />
             <Route path="/payment/callback" element={<PaymentCallback />} />
+
+            <Route path="/tournament/tournament-bracket" element={<TournamentBracket />} />
+            <Route path="/futsalowner/my-tournaments/:id/schedule" element={<TournamentBracket />} />
 
             {/* Catch-all route - MUST BE LAST */}
             <Route path="*" element={<Navigate to="/" replace />} />

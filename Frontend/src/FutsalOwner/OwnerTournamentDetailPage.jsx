@@ -16,6 +16,7 @@ import {
   UserCircle,
   Mail,
   Phone,
+  GitBranch,
 } from 'lucide-react';
 import FutsalOwnerSidebar from './FutsalOwnerSidebar';
 import Header from './components/Header';
@@ -69,6 +70,7 @@ export default function OwnerTournamentDetailPage() {
     if (id && tournament) fetchRegisteredTeams();
   }, [id, tournament?._id]);
 
+
   const fetchRegisteredTeams = async () => {
     if (!id) return;
     try {
@@ -98,6 +100,7 @@ export default function OwnerTournamentDetailPage() {
       setLoading(false);
     }
   };
+
 
   if (loading) {
     return (
@@ -188,6 +191,24 @@ export default function OwnerTournamentDetailPage() {
               {tournament.description && (
                 <p className="text-gray-600 mb-6">{tournament.description}</p>
               )}
+              <div className="mb-6">
+                <button
+                  onClick={() => {
+                    const isClosed =
+                      tournament.status === 'registration_closed' ||
+                      new Date(tournament.registrationDeadline) < new Date();
+                    if (!isClosed) {
+                      showToast.error('Tournament schedule is available only after registration closes.');
+                      return;
+                    }
+                    navigate(`/futsalowner/my-tournaments/${id}/schedule`);
+                  }}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition"
+                >
+                  <GitBranch className="w-4 h-4" />
+                  Open Tournament Schedule
+                </button>
+              </div>
 
               {/* Key info grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -381,6 +402,7 @@ export default function OwnerTournamentDetailPage() {
                   </div>
                 )}
               </div>
+
             </div>
           </div>
         </div>
