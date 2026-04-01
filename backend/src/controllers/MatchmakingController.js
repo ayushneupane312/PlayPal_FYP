@@ -266,7 +266,7 @@ exports.getBrowsePlayers = async (req, res) => {
     }
 
     const users = await User.find(filter)
-      .select('name email profileImage')
+      .select('name email profileImage phone location preferredPosition isInjured')
       .limit(100)
       .sort({ name: 1 });
 

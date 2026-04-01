@@ -6,6 +6,18 @@ const Venue = require('../models/VenueModel');
 const Team = require('../models/TeamModel');
 const { notifyUser, notifyRole } = require('../services/notificationService');
 
+async function closeExpiredRegistrationWindows(extraFilter = {}) {
+  const now = new Date();
+  await Tournament.updateMany(
+    {
+      ...extraFilter,
+      status: 'registration_open',
+      registrationDeadline: { $lt: now }
+    },
+    { $set: { status: 'registration_closed' } }
+  );
+}
+
 async function assertOwner(req, venueId) {
   const userId = req.userId;
   const venue = await Venue.findById(venueId).select('owner venueName fullAddress');
@@ -21,6 +33,7 @@ async function assertOwner(req, venueId) {
   }
   return venue;
 }
+
 
 exports.createTournament = async (req, res) => {
   try {
@@ -100,6 +113,8 @@ exports.createTournament = async (req, res) => {
 
 exports.listTournaments = async (req, res) => {
   try {
+    await closeExpiredRegistrationWindows();
+
     const { status } = req.query;
     const query = {};
     if (status) query.status = status;
@@ -135,6 +150,8 @@ exports.listTournaments = async (req, res) => {
 exports.listMyTournaments = async (req, res) => {
   try {
     const userId = req.userId;
+    await closeExpiredRegistrationWindows({ owner: userId });
+
     const { status } = req.query;
     const query = { owner: userId };
     if (status) query.status = status;
@@ -151,6 +168,8 @@ exports.listMyTournaments = async (req, res) => {
 exports.getTournamentById = async (req, res) => {
   try {
     const { id } = req.params;
+    await closeExpiredRegistrationWindows({ _id: id });
+
     const tournament = await Tournament.findById(id).populate(
       'venue',
       'venueName fullAddress contactInfo'
@@ -205,6 +224,7 @@ exports.registerTeam = async (req, res) => {
       return res.status(400).json({ success: false, message: 'teamId is required' });
     }
 
+    await closeExpiredRegistrationWindows({ _id: tournamentId });
     const tournament = await Tournament.findById(tournamentId);
     if (!tournament) {
       return res.status(404).json({ success: false, message: 'Tournament not found' });
@@ -298,7 +318,6 @@ exports.registerTeam = async (req, res) => {
 exports.generateFixtures = async (req, res) => {
   try {
     const { id: tournamentId } = req.params;
-
     const tournament = await Tournament.findById(tournamentId);
     if (!tournament) {
       return res.status(404).json({ success: false, message: 'Tournament not found' });
@@ -319,13 +338,13 @@ exports.generateFixtures = async (req, res) => {
         .json({ success: false, message: 'At least 2 teams required to generate fixtures' });
     }
 
+    await TournamentMatch.deleteMany({ tournament: tournamentId });
+
     const shuffled = [...teams];
     for (let i = shuffled.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
     }
-
-    await TournamentMatch.deleteMany({ tournament: tournamentId });
 
     const matches = [];
     for (let i = 0; i < shuffled.length; i += 2) {
