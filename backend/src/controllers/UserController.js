@@ -10,11 +10,12 @@ exports.getUsers = async (req, res) => {
     // Build query
     let query = {};
     
-    // Search filter
+    // Search filter (name, email, phone)
     if (search) {
       query.$or = [
         { name: { $regex: search, $options: 'i' } },
-        { email: { $regex: search, $options: 'i' } }
+        { email: { $regex: search, $options: 'i' } },
+        { phone: { $regex: search, $options: 'i' } },
       ];
     }
     
@@ -24,23 +25,27 @@ exports.getUsers = async (req, res) => {
     }
     
     // Execute query with pagination
+    const limitNum = Math.max(1, parseInt(limit, 10) || 10);
+    const pageNum = Math.max(1, parseInt(page, 10) || 1);
+
     const users = await User.find(query)
       .select('-password') // Don't send passwords
       .sort({ createdAt: -1 })
-      .limit(limit * 1)
-      .skip((page - 1) * limit);
+      .limit(limitNum)
+      .skip((pageNum - 1) * limitNum);
 
     // Get total count
     const total = await User.countDocuments(query);
+    const pages = total === 0 ? 1 : Math.ceil(total / limitNum);
 
     res.status(200).json({
       success: true,
       data: users,
       pagination: {
         total,
-        page: parseInt(page),
-        pages: Math.ceil(total / limit),
-        limit: parseInt(limit)
+        page: pageNum,
+        pages,
+        limit: limitNum
       }
     });
 

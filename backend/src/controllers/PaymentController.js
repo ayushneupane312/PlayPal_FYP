@@ -30,7 +30,7 @@ const initiatePayment = async (req, res) => {
     if (amount < 1000) {
       return res.status(400).json({
         success: false,
-        message: "Minimum amount is Rs. 10 (1000 paisa)",
+        message: "Minimum amount is NPR 10 (1000 paisa)",
       });
     }
 

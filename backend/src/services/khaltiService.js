@@ -58,7 +58,7 @@ async function initiatePayment({
 
   const amt = Number(amount);
   if (!Number.isFinite(amt) || amt < 1000) {
-    const err = new Error('Minimum amount is Rs. 10 (1000 paisa)');
+    const err = new Error('Minimum amount is NPR 10 (1000 paisa)');
     err.code = 'KHALTI_MIN_AMOUNT';
     throw err;
   }

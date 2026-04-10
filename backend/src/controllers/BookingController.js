@@ -6,6 +6,10 @@ const Team = require('../models/TeamModel');
 const Match = require('../models/MatchModel');
 const khaltiService = require('../services/khaltiService');
 const { notifyUser } = require('../services/notificationService');
+const {
+  recordBookingFinancialTransaction,
+  getOwnerEarningsSummary,
+} = require('../services/earningsSplitService');
 
 // ═══════════════════════════════════════════════════════════
 // HELPER FUNCTIONS
@@ -567,6 +571,12 @@ exports.verifyPayment = async (req, res) => {
 
     await booking.save();
 
+    try {
+      await recordBookingFinancialTransaction(booking);
+    } catch (ledgerErr) {
+      console.error('Financial ledger error (booking still confirmed):', ledgerErr);
+    }
+
     // Update venue stats
     await Venue.findByIdAndUpdate(booking.venue, {
       $inc: { 'stats.totalBookings': 1 }
@@ -646,7 +656,7 @@ exports.initiateSplitPayment = async (req, res) => {
     if (amountInPaisa < 1000) {
       return res.status(400).json({
         success: false,
-        message: 'Amount too small for Khalti (min Rs 10). Pay at venue or contact leader.'
+        message: 'Amount too small for Khalti (min NPR 10). Pay at venue or contact leader.'
       });
     }
 
@@ -655,7 +665,7 @@ exports.initiateSplitPayment = async (req, res) => {
     const paymentData = {
       amount: amountInPaisa,
       purchaseOrderId,
-      purchaseOrderName: `Split: ${booking.venue.venueName} - Your share Rs ${playerEntry.amountAssigned}`,
+      purchaseOrderName: `Split: ${booking.venue.venueName} - Your share NPR ${playerEntry.amountAssigned}`,
       customerInfo: {
         name: user.name,
         email: user.email,
@@ -757,6 +767,15 @@ exports.verifySplitPayment = async (req, res) => {
     }
     await booking.save();
 
+    if (allPaid) {
+      try {
+        const fresh = await Booking.findById(booking._id);
+        if (fresh) await recordBookingFinancialTransaction(fresh);
+      } catch (ledgerErr) {
+        console.error('Financial ledger error (split booking):', ledgerErr);
+      }
+    }
+
     const populated = await Booking.findById(booking._id)
       .populate('venue', 'venueName fullAddress contactInfo')
       .populate('splitPlayers.userId', 'name email');
@@ -818,6 +837,15 @@ exports.payShare = async (req, res) => {
       booking.payment.paidAt = new Date();
     }
     await booking.save();
+
+    if (allPaid) {
+      try {
+        const fresh = await Booking.findById(booking._id);
+        if (fresh) await recordBookingFinancialTransaction(fresh);
+      } catch (ledgerErr) {
+        console.error('Financial ledger error (pay share):', ledgerErr);
+      }
+    }
 
     const populated = await Booking.findById(booking._id)
       .populate('venue', 'venueName fullAddress contactInfo')
@@ -923,6 +951,12 @@ exports.confirmCashPayment = async (req, res) => {
     booking.bookingStatus = 'confirmed';
 
     await booking.save();
+
+    try {
+      await recordBookingFinancialTransaction(booking);
+    } catch (ledgerErr) {
+      console.error('Financial ledger error (cash confirm):', ledgerErr);
+    }
 
     res.status(200).json({
       success: true,
@@ -1351,46 +1385,50 @@ exports.getOwnerEarnings = async (req, res) => {
     const userId = req.userId;
     const { startDate, endDate } = req.query;
 
-    const venue = await Venue.findOne({ owner: userId });
-    if (!venue) {
+    const summary = await getOwnerEarningsSummary(userId, { startDate, endDate });
+
+    if (!summary.venue) {
       return res.status(404).json({
         success: false,
-        message: 'Venue not found'
+        message: 'Venue not found',
       });
     }
 
-    const query = {
-      venue: venue._id,
-      'payment.status': 'paid'
-    };
-
-    if (startDate && endDate) {
-      query.bookingDate = {
-        $gte: new Date(startDate),
-        $lte: new Date(endDate)
-      };
-    }
-
-    const bookings = await Booking.find(query);
-
-    const totalEarnings = bookings.reduce((sum, booking) => {
-      return sum + booking.pricing.totalAmount;
-    }, 0);
-
-    const monthlyEarnings = {};
-    bookings.forEach(booking => {
-      const month = booking.bookingDate.toISOString().slice(0, 7);
-      monthlyEarnings[month] = (monthlyEarnings[month] || 0) + booking.pricing.totalAmount;
-    });
+    const {
+      grossTotal,
+      commissionTotal,
+      ownerNetTotal,
+      totalBookings,
+      todaysPaidBookingsCount,
+      todayOwnerNet,
+      monthOwnerNet,
+      monthlyOwnerNet,
+      monthlyEarnings,
+      commissionRateApplied,
+      source,
+      recentTransactions,
+      bookings,
+    } = summary;
 
     res.status(200).json({
       success: true,
       data: {
-        totalEarnings,
-        totalBookings: bookings.length,
-        monthlyEarnings,
-        bookings
-      }
+        // Net after platform commission (primary figure for owner)
+        totalEarnings: ownerNetTotal,
+        ownerNetTotal,
+        grossTotal,
+        commissionTotal,
+        commissionRateApplied,
+        source,
+        totalBookings,
+        todaysPaidBookingsCount,
+        todayOwnerNet,
+        monthOwnerNet,
+        monthlyEarnings: monthlyEarnings || monthlyOwnerNet,
+        monthlyOwnerNet,
+        recentTransactions,
+        bookings,
+      },
     });
   } catch (error) {
     console.error('❌ Get earnings error:', error);
