@@ -682,7 +682,11 @@ export default function VenuePage() {
                 <div>
                   <h3 className="font-medium text-blue-900">Required Fields</h3>
                   <p className="text-sm text-blue-700 mt-1">
-                    Please fill in all fields marked with * except: Social Media links, Google Maps link, Advance Booking Days, and Videos (optional)
+                    Please fill in all fields marked with{' '}
+                    <span className="text-red-500 font-semibold" aria-hidden="true">
+                      *
+                    </span>{' '}
+                    except: Social Media links, Google Maps link, Advance Booking Days, and Videos (optional)
                   </p>
                 </div>
               </div>
@@ -701,7 +705,9 @@ export default function VenuePage() {
                 <div className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Venue Name *</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Venue Name <span className="text-red-500">*</span>
+                      </label>
                       <input
                         type="text"
                         value={venueInfo.name}
@@ -710,7 +716,9 @@ export default function VenuePage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Address *</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Address <span className="text-red-500">*</span>
+                      </label>
                       <input
                         type="text"
                         value={venueInfo.address}
@@ -721,7 +729,9 @@ export default function VenuePage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Description *</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Description <span className="text-red-500">*</span>
+                    </label>
                     <textarea
                       value={venueInfo.description}
                       onChange={(e) => handleInputChange('description', e.target.value)}
@@ -992,7 +1002,9 @@ export default function VenuePage() {
 
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Phone *</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Phone <span className="text-red-500">*</span>
+                    </label>
                     <input
                       type="text"
                       value={venueInfo.phoneNumber}
@@ -1002,7 +1014,9 @@ export default function VenuePage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Email *</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Email <span className="text-red-500">*</span>
+                    </label>
                     <input
                       type="email"
                       value={venueInfo.email}

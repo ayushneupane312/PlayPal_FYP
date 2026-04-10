@@ -204,7 +204,7 @@ const MyBookingsPage = () => {
 
                     <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
                       <span className="text-lg font-bold text-emerald-600">
-                        Rs. {booking.pricing?.totalAmount || 0}
+                        NPR {booking.pricing?.totalAmount || 0}
                       </span>
                       <button className="flex items-center gap-1 text-emerald-600 hover:text-emerald-700 font-medium text-sm">
                         View Details

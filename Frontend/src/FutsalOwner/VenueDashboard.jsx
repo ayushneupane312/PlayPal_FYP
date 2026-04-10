@@ -46,7 +46,7 @@ export default function VenueDashboard() {
   };
 
   const formatCurrency = (amount) => {
-    return `Rs ${Math.round(amount).toLocaleString('en-NP')}`;
+    return `NPR ${Math.round(amount).toLocaleString('en-NP')}`;
   };
 
   const getDayShortName = (dayName) => {

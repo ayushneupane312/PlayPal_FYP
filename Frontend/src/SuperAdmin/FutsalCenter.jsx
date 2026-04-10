@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Bell, MapPin, Calendar, Star, Clock, Eye, Flag, X } from 'lucide-react';
+import { Search, MapPin, Calendar, Star, Clock, Eye, Flag, X } from 'lucide-react';
 import AdminSidebar from './AdminSidebar';
+import SearchAndNotificationBar from '../components/SearchAndNotificationBar';
 import { getAllVenues } from '../store/venueService';
 
 const FutsalCenters = () => {
@@ -35,7 +36,7 @@ const FutsalCenters = () => {
       }
     } catch (err) {
       console.error('Error fetching venues:', err);
-      setError('Failed to load futsal centers. Please try again.');
+      setError('Failed to load futsal centeNPR Please try again.');
     } finally {
       setLoading(false);
     }
@@ -141,15 +142,6 @@ const FutsalCenters = () => {
     }
   };
 
-  // Get current time
-  const getCurrentTime = () => {
-    return new Date().toLocaleTimeString('en-US', { 
-      hour: '2-digit', 
-      minute: '2-digit',
-      hour12: true 
-    });
-  };
-
   return (
     <div className="flex bg-gray-50 min-h-screen">
       <AdminSidebar onCollapseChange={setIsSidebarCollapsed} />
@@ -160,25 +152,14 @@ const FutsalCenters = () => {
         }`}
         style={{ width: `calc(100% - ${isSidebarCollapsed ? '5rem' : '16rem'})` }}
       >
-        {/* Header */}
-        <div className="bg-white border-b border-gray-200 px-8 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4 flex-1 max-w-xl">
-            <Search className="text-gray-400" size={20} />
-            <input
-              type="text"
-              placeholder="Search anything..."
-              className="flex-1 outline-none text-gray-700"
-            />
-          </div>
-          <div className="flex items-center gap-4">
-            <button className="relative">
-              <Bell className="text-gray-600" size={20} />
-              <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-white text-xs flex items-center justify-center">
-                3
-              </span>
-            </button>
-            <span className="text-gray-600 text-sm">{getCurrentTime()}</span>
-          </div>
+        {/* Search, live notifications & time (same as dashboard) */}
+        <div className="bg-white border-b border-gray-200 px-8 py-4">
+          <SearchAndNotificationBar
+            searchPlaceholder="Search anything..."
+            showSearch
+            showTime
+            onSearch={(value) => setSearchQuery(value.trim())}
+          />
         </div>
 
         {/* Main Content */}

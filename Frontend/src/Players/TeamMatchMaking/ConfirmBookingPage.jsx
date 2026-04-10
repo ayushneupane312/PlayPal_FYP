@@ -215,7 +215,7 @@ const ConfirmBookingPage = () => {
                               {slot.startTime} - {slot.endTime}
                             </div>
                             {slot.price && (
-                              <div className="text-xs text-gray-500">Rs. {slot.price}</div>
+                              <div className="text-xs text-gray-500">NPR {slot.price}</div>
                             )}
                           </button>
                         ))}

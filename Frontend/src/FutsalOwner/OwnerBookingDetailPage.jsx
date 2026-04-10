@@ -340,18 +340,18 @@ const OwnerBookingDetailPage = () => {
                   <div className="space-y-3">
                     <div className="flex justify-between">
                       <span className="text-gray-600">Court Booking</span>
-                      <span className="font-medium">Rs. {booking.pricing.basePrice}</span>
+                      <span className="font-medium">NPR {booking.pricing.basePrice}</span>
                     </div>
                     {booking.pricing.discount > 0 && (
                       <div className="flex justify-between text-green-600">
                         <span>Discount</span>
-                        <span>- Rs. {booking.pricing.discount}</span>
+                        <span>- NPR {booking.pricing.discount}</span>
                       </div>
                     )}
                     <div className="border-t pt-3">
                       <div className="flex justify-between text-lg font-bold">
                         <span>Total Amount</span>
-                        <span className="text-green-600">Rs. {booking.pricing.totalAmount}</span>
+                        <span className="text-green-600">NPR {booking.pricing.totalAmount}</span>
                       </div>
                     </div>
 
@@ -359,7 +359,7 @@ const OwnerBookingDetailPage = () => {
                       <div className="rounded-lg bg-amber-50 border border-amber-100 px-3 py-2 text-sm text-amber-950">
                         <p className="font-semibold">Player cash split (after game)</p>
                         <p className="mt-1">
-                          ~Rs. {booking.venueCashSplit.sharePerPlayer} each ×{' '}
+                          ~NPR {booking.venueCashSplit.sharePerPlayer} each ×{' '}
                           {booking.venueCashSplit.splittingPlayerCount} players (full court fee still due from
                           the group).
                         </p>
@@ -395,7 +395,7 @@ const OwnerBookingDetailPage = () => {
                     
                     {booking.payment.status === 'refunded' && booking.payment.refundAmount && (
                       <p className="text-sm text-gray-600 mt-2">
-                        <span className="font-medium">Refund Amount:</span> Rs. {booking.payment.refundAmount}
+                        <span className="font-medium">Refund Amount:</span> NPR {booking.payment.refundAmount}
                       </p>
                     )}
                   </div>
@@ -522,7 +522,7 @@ const OwnerBookingDetailPage = () => {
         onClose={() => setShowConfirmCashDialog(false)}
         onConfirm={handleConfirmCash}
         title="Confirm Cash Payment"
-        message={`Confirm that ${booking?.playerInfo?.name} has paid Rs. ${booking?.pricing?.totalAmount} in cash?`}
+        message={`Confirm that ${booking?.playerInfo?.name} has paid NPR ${booking?.pricing?.totalAmount} in cash?`}
         confirmText={processing ? 'Confirming...' : 'Yes, Confirm'}
         cancelText="Cancel"
         type="info"

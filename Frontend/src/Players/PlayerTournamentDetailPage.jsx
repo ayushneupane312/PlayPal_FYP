@@ -249,7 +249,7 @@ export default function PlayerTournamentDetailPage() {
                 <div>
                   <p className="text-xs text-gray-500 uppercase tracking-wide">Entry fee</p>
                   <p className="text-sm font-medium text-gray-900">
-                    Rs. {Number(tournament.entryFeePerTeam || 0).toLocaleString()} per team
+                    NPR {Number(tournament.entryFeePerTeam || 0).toLocaleString()} per team
                   </p>
                 </div>
               </div>
@@ -298,7 +298,7 @@ export default function PlayerTournamentDetailPage() {
                 </h3>
                 {tournament.totalPrizePool > 0 && (
                   <p className="text-base font-semibold text-gray-900 mb-3">
-                    Total prize pool: Rs. {Number(tournament.totalPrizePool).toLocaleString()}
+                    Total prize pool: NPR {Number(tournament.totalPrizePool).toLocaleString()}
                   </p>
                 )}
                 {prizes.length > 0 ? (
@@ -308,7 +308,7 @@ export default function PlayerTournamentDetailPage() {
                         <span className="text-gray-700">{p.title || p.reward || 'Prize'}</span>
                         {p.amount != null && (
                           <span className="font-medium text-gray-900">
-                            Rs. {Number(p.amount).toLocaleString()}
+                            NPR {Number(p.amount).toLocaleString()}
                           </span>
                         )}
                       </li>

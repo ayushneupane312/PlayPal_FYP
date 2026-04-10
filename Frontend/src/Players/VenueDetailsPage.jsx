@@ -264,19 +264,19 @@ const VenueDetailPage = () => {
 
                       <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 space-y-1 text-sm">
                         <p className="text-gray-700">
-                          <span className="font-medium">Weekday:</span> Rs. {court.pricing.weekdayRate}/hr
+                          <span className="font-medium">Weekday:</span> NPR {court.pricing.weekdayRate}/hr
                         </p>
                         <p className="text-gray-700">
-                          <span className="font-medium">Weekend:</span> Rs. {court.pricing.weekendRate}/hr
+                          <span className="font-medium">Weekend:</span> NPR {court.pricing.weekendRate}/hr
                         </p>
                         {court.pricing.peakHourRate && (
                           <p className="text-gray-700">
-                            <span className="font-medium">Peak Hour:</span> Rs. {court.pricing.peakHourRate}/hr
+                            <span className="font-medium">Peak Hour:</span> NPR {court.pricing.peakHourRate}/hr
                           </p>
                         )}
                         {court.pricing.offPeakRate && (
                           <p className="text-gray-700">
-                            <span className="font-medium">Off-Peak:</span> Rs. {court.pricing.offPeakRate}/hr
+                            <span className="font-medium">Off-Peak:</span> NPR {court.pricing.offPeakRate}/hr
                           </p>
                         )}
                       </div>

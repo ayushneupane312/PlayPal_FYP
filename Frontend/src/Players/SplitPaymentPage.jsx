@@ -230,7 +230,7 @@ export default function SplitPaymentPage() {
               </div>
             </div>
             <span className="text-xl font-bold text-gray-900">
-              Total Rs. {booking.pricing?.totalAmount}
+              Total NPR {booking.pricing?.totalAmount}
             </span>
           </div>
 
@@ -289,7 +289,7 @@ export default function SplitPaymentPage() {
                       className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0"
                     >
                       <span className="font-medium">{name}</span>
-                      <span className="text-gray-600">Rs. {p.amountAssigned}</span>
+                      <span className="text-gray-600">NPR {p.amountAssigned}</span>
                       {p.paymentStatus === 'paid' ? (
                         <span className="text-emerald-600 text-sm flex items-center gap-1">
                           <CheckCircle className="w-4 h-4" /> Paid
@@ -326,7 +326,7 @@ export default function SplitPaymentPage() {
           {!isLeader && myShare && booking.bookingStatus === 'pending' && !expired && (
             <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
               <h2 className="font-semibold text-gray-900 mb-2">Your share</h2>
-              <p className="text-2xl font-bold text-emerald-600 mb-4">Rs. {myShare.amountAssigned}</p>
+              <p className="text-2xl font-bold text-emerald-600 mb-4">NPR {myShare.amountAssigned}</p>
               {myShare.paymentStatus === 'paid' ? (
                 <p className="text-emerald-600 flex items-center gap-2">
                   <CheckCircle className="w-5 h-5" /> You have paid
@@ -344,7 +344,7 @@ export default function SplitPaymentPage() {
                       ) : (
                         <CreditCard className="w-5 h-5" />
                       )}
-                      Pay Rs. {myShare.amountAssigned} with Khalti
+                      Pay NPR {myShare.amountAssigned} with Khalti
                     </button>
                   ) : (
                     <button

@@ -162,7 +162,7 @@ export default function TournamentList() {
                       </span>
                       <span className="inline-flex items-center gap-1 text-gray-600">
                         <BadgeDollarSign className="w-4 h-4" />
-                        Rs. {Number(t.entryFeePerTeam || 0).toLocaleString()}
+                        NPR {Number(t.entryFeePerTeam || 0).toLocaleString()}
                       </span>
                       <span className="inline-flex items-center gap-1 text-gray-600">
                         <LayoutList className="w-4 h-4" />

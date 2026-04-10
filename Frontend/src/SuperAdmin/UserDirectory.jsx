@@ -8,10 +8,24 @@ import ConfirmationModal from '../components/ConfirmationModel';
 import { useConfirmation } from '../hooks/useConfirmation';
 import AdminHeader from '../components/AdminHeader';
 
+const getVisiblePageNumbers = (current, totalPages, maxButtons = 10) => {
+  const total = Math.max(1, totalPages);
+  let start = Math.max(1, current - Math.floor(maxButtons / 2));
+  let end = Math.min(total, start + maxButtons - 1);
+  if (end - start < maxButtons - 1) {
+    start = Math.max(1, end - maxButtons + 1);
+  }
+  const nums = [];
+  for (let i = start; i <= end; i += 1) nums.push(i);
+  return nums;
+};
+
 const UserManagement = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [activeTab, setActiveTab] = useState('players');
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [page, setPage] = useState(1);
   const [roleFilter, setRoleFilter] = useState('all');
 
   const [showEditModal, setShowEditModal] = useState(false);
@@ -23,22 +37,22 @@ const UserManagement = () => {
     role: 'player',
   });
 
-  const { users, loading, fetchUsers, deleteUser, updateUser } = useUserStore();
+  const { users, loading, fetchUsers, deleteUser, updateUser, pagination } = useUserStore();
   
   // Confirmation hook for delete
   const { isOpen, isLoading, config, showConfirmation, hideConfirmation, handleConfirm } = useConfirmation();
 
   useEffect(() => {
-    fetchUsers({ role: roleFilter, search: searchQuery });
-  }, []);
+    const timeoutId = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+      setPage(1);
+    }, 500);
+    return () => clearTimeout(timeoutId);
+  }, [searchQuery]);
 
   useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      fetchUsers({ role: roleFilter, search: searchQuery });
-    }, 500);
-
-    return () => clearTimeout(timeoutId);
-  }, [searchQuery, roleFilter]);
+    fetchUsers({ role: roleFilter, search: debouncedSearch, page });
+  }, [debouncedSearch, roleFilter, page]);
 
   const tabs = [
     { id: 'players', label: 'Players', count: users.length },
@@ -149,7 +163,7 @@ const UserManagement = () => {
               />
               <input
                 type="text"
-                placeholder="Search by name or email..."
+                placeholder="Search by name, email, or phone number..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 text-gray-700 transition-all"
@@ -159,7 +173,10 @@ const UserManagement = () => {
             <div className="w-48">
               <Dropdown
                 value={roleFilter}
-                onChange={setRoleFilter}
+                onChange={(v) => {
+                  setRoleFilter(v);
+                  setPage(1);
+                }}
                 options={roleOptions}
                 placeholder="Filter by role"
                 icon={Filter}
@@ -275,6 +292,35 @@ const UserManagement = () => {
                   )}
                 </tbody>
               </table>
+            </div>
+          )}
+
+          {!loading && (
+            <div className="border-t border-gray-200 bg-white px-4 py-4">
+              <div className="flex flex-wrap items-center justify-center gap-x-1 gap-y-2 sm:justify-end">
+                {getVisiblePageNumbers(pagination.page, pagination.pages).map((num) => (
+                  <button
+                    key={num}
+                    type="button"
+                    onClick={() => setPage(num)}
+                    className={`min-w-[2rem] px-2 py-1 text-sm font-medium transition-colors ${
+                      num === pagination.page
+                        ? 'text-[#f43f5e]'
+                        : 'text-[#0ea5e9] hover:text-sky-600'
+                    }`}
+                  >
+                    {num}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  disabled={pagination.page >= pagination.pages}
+                  onClick={() => setPage((p) => Math.min(pagination.pages, p + 1))}
+                  className="ml-4 text-sm font-medium text-[#0ea5e9] transition-colors hover:text-sky-600 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  Next
+                </button>
+              </div>
             </div>
           )}
         </div>

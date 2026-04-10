@@ -288,18 +288,18 @@ const BookingDetailPage = () => {
                 <div className="space-y-3">
                   <div className="flex justify-between">
                     <span className="text-gray-600">Court Booking</span>
-                    <span className="font-medium">Rs. {booking.pricing.basePrice}</span>
+                    <span className="font-medium">NPR {booking.pricing.basePrice}</span>
                   </div>
                   {booking.pricing.discount > 0 && (
                     <div className="flex justify-between text-green-600">
                       <span>Discount</span>
-                      <span>- Rs. {booking.pricing.discount}</span>
+                      <span>- NPR {booking.pricing.discount}</span>
                     </div>
                   )}
                   <div className="border-t pt-3">
                     <div className="flex justify-between text-lg font-bold">
                       <span>Total Amount</span>
-                      <span className="text-emerald-600">Rs. {booking.pricing.totalAmount}</span>
+                      <span className="text-emerald-600">NPR {booking.pricing.totalAmount}</span>
                     </div>
                   </div>
 
@@ -307,9 +307,9 @@ const BookingDetailPage = () => {
                     <div className="mt-4 rounded-lg bg-amber-50 border border-amber-100 px-3 py-2 text-sm text-amber-950">
                       <p className="font-semibold">Cash split (after game at venue)</p>
                       <p className="mt-1">
-                        Group plans ~<strong>Rs. {booking.venueCashSplit.sharePerPlayer}</strong> per player
+                        Group plans ~<strong>NPR {booking.venueCashSplit.sharePerPlayer}</strong> per player
                         among <strong>{booking.venueCashSplit.splittingPlayerCount}</strong> people (court fee
-                        Rs. {booking.venueCashSplit.courtFeeTotal}). The venue still collects the full court
+                        NPR {booking.venueCashSplit.courtFeeTotal}). The venue still collects the full court
                         fee; players settle shares together.
                       </p>
                     </div>

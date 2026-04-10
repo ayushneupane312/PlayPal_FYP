@@ -198,10 +198,10 @@ const VenuesPage = () => {
                         <Clock className="w-4 h-4" />
                         <span className="text-sm">{venue.courts?.filter(c => c.isActive).length || 0} Courts</span>
                       </div>
-                      {/* ✅ Removed DollarSign icon, showing only Rs. */}
+                      {/* ✅ Removed DollarSign icon, showing only NPR */}
                       <div className="text-emerald-600 font-bold">
                         <span>
-                          Rs. {venue.courts?.find(c => c.isActive)?.pricing?.weekdayRate || 'N/A'}/hr
+                          NPR {venue.courts?.find(c => c.isActive)?.pricing?.weekdayRate || 'N/A'}/hr
                         </span>
                       </div>
                     </div>

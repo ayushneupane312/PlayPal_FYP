@@ -108,7 +108,7 @@ const PaymentCallbackPage = () => {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Amount Paid:</span>
-                    <span className="font-medium text-green-600">Rs. {bookingData.pricing?.totalAmount}</span>
+                    <span className="font-medium text-green-600">NPR {bookingData.pricing?.totalAmount}</span>
                   </div>
                 </div>
               </div>

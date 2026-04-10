@@ -63,7 +63,7 @@ const FutsalDashboard = () => {
       {
         id: 2,
         title: 'Pending Payments',
-        value: `Rs. ${pendingPayments.toLocaleString()}`,
+        value: `NPR ${pendingPayments.toLocaleString()}`,
         subtitle: 'Unpaid booking amount',
         icon: <FaCreditCard />,
         color: 'bg-amber-50 text-amber-600',

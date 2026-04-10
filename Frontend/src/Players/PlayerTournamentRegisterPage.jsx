@@ -159,7 +159,8 @@ export default function PlayerTournamentRegisterPage() {
       const selectedTeam = teams.find((t) => t._id === selectedTeamId);
       if (selectedTeam) {
         const count = (selectedTeam.players?.length ?? 0) + 1;
-        if (count < minPlayers) e.team = `This team has ${count} players. Minimum ${minPlayers} required to register.`;
+        if (count < minPlayers)
+          e.team = `This team has ${count} players. At least ${minPlayers} are required to register.`;
       }
     }
     if (!captainName?.trim()) e.captainName = 'Captain name is required';
@@ -384,7 +385,7 @@ export default function PlayerTournamentRegisterPage() {
 
                   {paymentMethod === 'cash' && (
                     <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-sm text-amber-800">
-                      Pay Rs. {Number(tournament.entryFeePerTeam || 0).toLocaleString()} in cash at the venue on or before {formatDate(tournament.registrationDeadline)}. Mention your team name when paying.
+                      Pay NPR {Number(tournament.entryFeePerTeam || 0).toLocaleString()} in cash at the venue on or before {formatDate(tournament.registrationDeadline)}. Mention your team name when paying.
                     </div>
                   )}
 
@@ -485,7 +486,7 @@ export default function PlayerTournamentRegisterPage() {
                 {[
                   [Calendar, 'Start date', formatDate(tournament.startDate)],
                   [Users, 'Registered', `${registeredTeams} / ${maxTeams} teams`],
-                  [CreditCard, 'Entry fee', `Rs. ${Number(tournament.entryFeePerTeam || 0).toLocaleString()}`],
+                  [CreditCard, 'Entry fee', `NPR ${Number(tournament.entryFeePerTeam || 0).toLocaleString()}`],
                 ].map(([Icon, label, val]) => (
                   <div key={label} className="flex justify-between items-center py-2 text-sm">
                     <span className="flex items-center gap-2 text-gray-500">
@@ -501,7 +502,7 @@ export default function PlayerTournamentRegisterPage() {
                     Prize pool
                   </span>
                   <span className="font-semibold text-emerald-600">
-                    Rs. {Number(tournament.totalPrizePool || 0).toLocaleString()}
+                    NPR {Number(tournament.totalPrizePool || 0).toLocaleString()}
                   </span>
                 </div>
               </div>
@@ -509,7 +510,7 @@ export default function PlayerTournamentRegisterPage() {
               <div className="flex justify-between items-center pt-3 mt-2 border-t border-gray-100">
                 <span className="text-sm font-semibold text-gray-900">Total due</span>
                 <span className="text-lg font-bold text-emerald-600">
-                  Rs. {Number(tournament.entryFeePerTeam || 0).toLocaleString()}
+                  NPR {Number(tournament.entryFeePerTeam || 0).toLocaleString()}
                 </span>
               </div>
             </div>

@@ -27,7 +27,10 @@ export const useUserStore = create((set) => ({
     try {
       const { page = 1, limit = 10, search = '', role = 'all' } = params;
       
-      const queryParams = new URLSearchParams({ page, limit });
+      const queryParams = new URLSearchParams({
+        page: String(page),
+        limit: String(limit),
+      });
       if (search) queryParams.append('search', search);
       if (role && role !== 'all') queryParams.append('role', role);
 

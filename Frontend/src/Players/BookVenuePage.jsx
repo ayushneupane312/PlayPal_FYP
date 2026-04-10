@@ -383,14 +383,14 @@ const BookVenuePage = () => {
                     <p className="text-gray-600 text-sm mb-3">{court.surfaceType}</p>
                     <div className="space-y-1 text-sm">
                       <p className="text-gray-700">
-                        <span className="font-medium">Weekday:</span> Rs. {court.pricing.weekdayRate}/hr
+                        <span className="font-medium">Weekday:</span> NPR {court.pricing.weekdayRate}/hr
                       </p>
                       <p className="text-gray-700">
-                        <span className="font-medium">Weekend:</span> Rs. {court.pricing.weekendRate}/hr
+                        <span className="font-medium">Weekend:</span> NPR {court.pricing.weekendRate}/hr
                       </p>
                       {court.pricing.peakHourRate && (
                         <p className="text-gray-700">
-                          <span className="font-medium">Peak Hour:</span> Rs. {court.pricing.peakHourRate}/hr
+                          <span className="font-medium">Peak Hour:</span> NPR {court.pricing.peakHourRate}/hr
                         </p>
                       )}
                     </div>
@@ -473,7 +473,7 @@ const BookVenuePage = () => {
                                   {slot.startTime} - {slot.endTime}
                                 </div>
                                 <div className="text-emerald-600 font-bold mt-2">
-                                  Rs. {slot.price}
+                                  NPR {slot.price}
                                 </div>
                                 {slot.isPeakHour && (
                                   <span className="inline-block mt-2 px-2 py-1 bg-amber-100 text-amber-700 text-xs rounded">
@@ -631,9 +631,9 @@ const BookVenuePage = () => {
                               <div className="rounded-lg bg-emerald-50 border border-emerald-100 px-3 py-2 text-sm text-emerald-900">
                                 <p className="font-semibold">After the game (at venue)</p>
                                 <p className="mt-1">
-                                  Court fee <strong>Rs. {courtFeeTotal}</strong> ÷{' '}
+                                  Court fee <strong>NPR {courtFeeTotal}</strong> ÷{' '}
                                   <strong>{splittingCount}</strong> players ≈{' '}
-                                  <strong>Rs. {sharePerPlayerPreview}</strong> each
+                                  <strong>NPR {sharePerPlayerPreview}</strong> each
                                 </p>
                               </div>
                             )}
@@ -779,15 +779,15 @@ const BookVenuePage = () => {
                   <div className="border-t pt-3 mt-3">
                     <div className="flex justify-between text-lg">
                       <span className="font-semibold text-gray-900">Total Amount:</span>
-                      <span className="font-bold text-emerald-600">Rs. {selectedSlot?.price}</span>
+                      <span className="font-bold text-emerald-600">NPR {selectedSlot?.price}</span>
                     </div>
                     {paymentMethod === 'cash' && cashSplitEnabled && sharePerPlayerPreview != null && (
                       <div className="mt-3 rounded-lg bg-amber-50 border border-amber-100 px-3 py-2 text-sm text-amber-950">
                         <p className="font-medium">Split after the game (at venue)</p>
                         <p className="mt-1">
-                          ~<strong>Rs. {sharePerPlayerPreview}</strong> per person if{' '}
+                          ~<strong>NPR {sharePerPlayerPreview}</strong> per person if{' '}
                           <strong>{splittingCount}</strong> players share the{' '}
-                          <strong>Rs. {courtFeeTotal}</strong> court fee equally.
+                          <strong>NPR {courtFeeTotal}</strong> court fee equally.
                         </p>
                       </div>
                     )}
@@ -880,7 +880,7 @@ const BookVenuePage = () => {
         onClose={() => setShowConfirmModal(false)}
         onConfirm={confirmAndCreateBooking}
         title="Confirm Booking"
-        message={`Confirm booking at ${venue?.venueName} on ${new Date(selectedDate).toLocaleDateString()} from ${selectedSlot?.startTime} to ${selectedSlot?.endTime} for Rs. ${selectedSlot?.price}?`}
+        message={`Confirm booking at ${venue?.venueName} on ${new Date(selectedDate).toLocaleDateString()} from ${selectedSlot?.startTime} to ${selectedSlot?.endTime} for NPR ${selectedSlot?.price}?`}
         confirmText={paymentMethod === 'khalti' ? 'Confirm & Pay' : 'Confirm Booking'}
         cancelText="Cancel"
         type="info"

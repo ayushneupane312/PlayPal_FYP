@@ -63,7 +63,7 @@ const Dashboard = () => {
   const stats = [
     {
       title: 'Total Revenue',
-      value: '$124,500',
+      value: 'NPR 124,500',
       subtitle: 'vs last month',
       percentage: '+12.5%',
       trend: 'up',
@@ -274,11 +274,11 @@ const Dashboard = () => {
 
                 {/* Y-axis labels */}
                 <div className="absolute left-0 top-0 h-full flex flex-col justify-between text-gray-500 text-xs pr-2">
-                  <span>$10k</span>
-                  <span>$7.5k</span>
-                  <span>$5k</span>
-                  <span>$2.5k</span>
-                  <span>$0k</span>
+                  <span>NPR 100k</span>
+                  <span>NPR 75k</span>
+                  <span>NPR 50k</span>
+                  <span>NPR 25k</span>
+                  <span>NPR 0</span>
                 </div>
 
                 {/* X-axis labels */}

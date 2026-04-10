@@ -316,7 +316,7 @@ const TournamentsPage = () => {
                             <div className="flex items-center gap-1.5">
                               <Trophy className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
                               <span className="font-medium text-amber-600">
-                                Rs. {Number(t.totalPrizePool || 0).toLocaleString()} prize pool
+                                NPR {Number(t.totalPrizePool || 0).toLocaleString()} prize pool
                               </span>
                             </div>
                           )}
@@ -326,7 +326,7 @@ const TournamentsPage = () => {
                         <div className="text-right">
                           <p className="text-xs text-gray-500">Entry fee</p>
                           <p className="text-base font-semibold text-gray-900">
-                            Rs. {Number(t.entryFeePerTeam || 0).toLocaleString()}
+                            NPR {Number(t.entryFeePerTeam || 0).toLocaleString()}
                           </p>
                         </div>
                         <div className="flex flex-col items-end gap-1.5">

@@ -22,7 +22,7 @@ export const useKhaltiStore = create((set, get) => ({
         set({ isLoading: true, error: null, success: false, paymentStatus: null });
         try {
             const response = await axios.post(`${API_URL}/initiate`, {
-                amount,               // in paisa — Rs. 10 = 1000 paisa
+                amount,               // in paisa — NPR 10 = 1000 paisa
                 purchase_order_id,
                 purchase_order_name,
                 customer_info: customer_info || {},

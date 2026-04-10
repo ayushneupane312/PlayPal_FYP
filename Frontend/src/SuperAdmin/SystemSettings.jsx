@@ -1,20 +1,36 @@
 import React, { useEffect, useState } from 'react';
-import { Search, Bell, Settings, Shield, BellRing, Globe, Save } from 'lucide-react';
+import { Settings, Shield, Globe, Save } from 'lucide-react';
 import AdminSidebar from './AdminSidebar';
+import SearchAndNotificationBar from '../components/SearchAndNotificationBar';
+import Dropdown from '../components/DropDown';
+
+const CURRENCY_OPTIONS = [
+  { value: 'NPR (₨)', label: 'NPR (₨)' },
+  { value: 'USD ($)', label: 'USD ($)' },
+  { value: 'EUR (€)', label: 'EUR (€)' },
+  { value: 'GBP (£)', label: 'GBP (£)' },
+];
+
+const TIMEZONE_OPTIONS = [
+  { value: 'UTC', label: 'UTC' },
+  { value: 'EST', label: 'EST' },
+  { value: 'PST', label: 'PST' },
+  { value: 'GMT', label: 'GMT' },
+  { value: 'Asia/Kathmandu', label: 'Asia/Kathmandu' },
+];
 
 const SettingsPage = () => {
   const [collapsed, setCollapsed] = useState(false);
   const [activeTab, setActiveTab] = useState('general');
   const [platformName, setPlatformName] = useState('PlayPal');
   const [supportEmail, setSupportEmail] = useState('support@playpal.com');
-  const [currency, setCurrency] = useState('USD ($)');
+  const [currency, setCurrency] = useState('NPR (₨)');
   const [timezone, setTimezone] = useState('UTC');
   const [maintenanceMode, setMaintenanceMode] = useState(false);
 
   const settingsTabs = [
     { id: 'general', icon: Settings, label: 'General' },
     { id: 'security', icon: Shield, label: 'Security' },
-    { id: 'notifications', icon: BellRing, label: 'Notifications' }
   ];
 
   useEffect(() => {
@@ -27,23 +43,13 @@ const SettingsPage = () => {
       <AdminSidebar collapsed={collapsed} setCollapsed={setCollapsed} />
       
       <div className={`flex-1 ${collapsed ? 'ml-20' : 'ml-64'} transition-all duration-300`}>
-        {/* Header */}
-        <div className="bg-white border-b border-gray-200 px-8 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4 flex-1 max-w-xl">
-            <Search className="text-gray-400" size={20} />
-            <input
-              type="text"
-              placeholder="Search anything..."
-              className="flex-1 outline-none text-gray-700"
-            />
-          </div>
-          <div className="flex items-center gap-4">
-            <button className="relative">
-              <Bell className="text-gray-600" size={20} />
-              <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-white text-xs flex items-center justify-center">5</span>
-            </button>
-            <span className="text-gray-600 text-sm">05:08 AM</span>
-          </div>
+        {/* Search, live notifications & time */}
+        <div className="bg-white border-b border-gray-200 px-8 py-4">
+          <SearchAndNotificationBar
+            searchPlaceholder="Search anything..."
+            showSearch
+            showTime
+          />
         </div>
 
         {/* Main Content */}
@@ -64,9 +70,9 @@ const SettingsPage = () => {
                       <button
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id)}
-                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
+                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
                           activeTab === tab.id
-                            ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30'
+                            ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30 hover:bg-emerald-600'
                             : 'text-gray-700 hover:bg-emerald-50'
                         }`}
                       >
@@ -86,8 +92,8 @@ const SettingsPage = () => {
                   {/* Platform Configuration */}
                   <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                     <div className="flex items-center gap-3 mb-6">
-                      <div className="w-10 h-10 bg-cyan-500/10 rounded-lg flex items-center justify-center">
-                        <Globe className="text-cyan-500" size={20} />
+                      <div className="w-10 h-10 bg-emerald-500/10 rounded-lg flex items-center justify-center">
+                        <Globe className="text-emerald-600" size={20} />
                       </div>
                       <h2 className="text-xl font-bold text-gray-900">Platform Configuration</h2>
                     </div>
@@ -99,7 +105,7 @@ const SettingsPage = () => {
                           type="text"
                           value={platformName}
                           onChange={(e) => setPlatformName(e.target.value)}
-                          className="w-full px-4 py-3 bg-gray-900 text-white rounded-lg outline-none focus:ring-2 focus:ring-cyan-500"
+                          className="w-full px-4 py-3 bg-gray-900 text-white rounded-lg outline-none focus:ring-2 focus:ring-emerald-500"
                         />
                       </div>
 
@@ -109,37 +115,32 @@ const SettingsPage = () => {
                           type="email"
                           value={supportEmail}
                           onChange={(e) => setSupportEmail(e.target.value)}
-                          className="w-full px-4 py-3 bg-gray-900 text-white rounded-lg outline-none focus:ring-2 focus:ring-cyan-500"
+                          className="w-full px-4 py-3 bg-gray-900 text-white rounded-lg outline-none focus:ring-2 focus:ring-emerald-500"
                         />
                       </div>
 
                       <div>
                         <label className="block text-gray-700 font-medium mb-2">Default Currency</label>
-                        <select
+                        <Dropdown
+                          variant="dark"
                           value={currency}
-                          onChange={(e) => setCurrency(e.target.value)}
-                          className="w-full px-4 py-3 bg-gray-900 text-white rounded-lg outline-none focus:ring-2 focus:ring-cyan-500 cursor-pointer"
-                        >
-                          <option>USD ($)</option>
-                          <option>EUR (€)</option>
-                          <option>GBP (£)</option>
-                          <option>NPR (₨)</option>
-                        </select>
+                          onChange={setCurrency}
+                          options={CURRENCY_OPTIONS}
+                          placeholder="Select currency"
+                          size="medium"
+                        />
                       </div>
 
                       <div>
                         <label className="block text-gray-700 font-medium mb-2">Default Timezone</label>
-                        <select
+                        <Dropdown
+                          variant="dark"
                           value={timezone}
-                          onChange={(e) => setTimezone(e.target.value)}
-                          className="w-full px-4 py-3 bg-gray-900 text-white rounded-lg outline-none focus:ring-2 focus:ring-cyan-500 cursor-pointer"
-                        >
-                          <option>UTC</option>
-                          <option>EST</option>
-                          <option>PST</option>
-                          <option>GMT</option>
-                          <option>Asia/Kathmandu</option>
-                        </select>
+                          onChange={setTimezone}
+                          options={TIMEZONE_OPTIONS}
+                          placeholder="Select timezone"
+                          size="medium"
+                        />
                       </div>
                     </div>
                   </div>
@@ -181,7 +182,7 @@ const SettingsPage = () => {
                           <h4 className="font-medium text-gray-900">Two-Factor Authentication</h4>
                           <p className="text-gray-500 text-sm">Require 2FA for all admin accounts</p>
                         </div>
-                        <button className="relative w-14 h-8 rounded-full bg-cyan-500">
+                        <button className="relative w-14 h-8 rounded-full bg-emerald-500">
                           <div className="absolute top-1 right-1 w-6 h-6 bg-white rounded-full" />
                         </button>
                       </div>
@@ -191,7 +192,7 @@ const SettingsPage = () => {
                           <h4 className="font-medium text-gray-900">Email Notifications</h4>
                           <p className="text-gray-500 text-sm">Send email alerts for critical events</p>
                         </div>
-                        <button className="relative w-14 h-8 rounded-full bg-cyan-500">
+                        <button className="relative w-14 h-8 rounded-full bg-emerald-500">
                           <div className="absolute top-1 right-1 w-6 h-6 bg-white rounded-full" />
                         </button>
                       </div>
@@ -201,7 +202,7 @@ const SettingsPage = () => {
                           <h4 className="font-medium text-gray-900">Auto Backup</h4>
                           <p className="text-gray-500 text-sm">Automatically backup database daily</p>
                         </div>
-                        <button className="relative w-14 h-8 rounded-full bg-cyan-500">
+                        <button className="relative w-14 h-8 rounded-full bg-emerald-500">
                           <div className="absolute top-1 right-1 w-6 h-6 bg-white rounded-full" />
                         </button>
                       </div>
@@ -228,78 +229,13 @@ const SettingsPage = () => {
                 </div>
               )}
 
-              {activeTab === 'notifications' && (
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                  <div className="flex items-center gap-3 mb-6">
-                    <div className="w-10 h-10 bg-cyan-500/10 rounded-lg flex items-center justify-center">
-                      <Bell className="text-cyan-500" size={20} />
-                    </div>
-                    <h2 className="text-xl font-bold text-gray-900">Notification Preferences</h2>
-                  </div>
-
-                  <div className="space-y-4">
-                    {/* Fraud Alerts */}
-                    <div className="flex items-center justify-between py-4 border-b border-gray-200">
-                      <div>
-                        <h3 className="text-lg font-semibold text-gray-900 mb-1">Fraud Alerts</h3>
-                        <p className="text-gray-500 text-sm">High-priority fraud detection notifications</p>
-                      </div>
-                      <button className="relative w-14 h-8 rounded-full bg-green-500">
-                        <div className="absolute top-1 right-1 w-6 h-6 bg-white rounded-full shadow-md" />
-                      </button>
-                    </div>
-
-                    {/* New Disputes */}
-                    <div className="flex items-center justify-between py-4 border-b border-gray-200">
-                      <div>
-                        <h3 className="text-lg font-semibold text-gray-900 mb-1">New Disputes</h3>
-                        <p className="text-gray-500 text-sm">Notify when new disputes are filed</p>
-                      </div>
-                      <button className="relative w-14 h-8 rounded-full bg-green-500">
-                        <div className="absolute top-1 right-1 w-6 h-6 bg-white rounded-full shadow-md" />
-                      </button>
-                    </div>
-
-                    {/* User Reports */}
-                    <div className="flex items-center justify-between py-4 border-b border-gray-200">
-                      <div>
-                        <h3 className="text-lg font-semibold text-gray-900 mb-1">User Reports</h3>
-                        <p className="text-gray-500 text-sm">Notifications for user behavior reports</p>
-                      </div>
-                      <button className="relative w-14 h-8 rounded-full bg-green-500">
-                        <div className="absolute top-1 right-1 w-6 h-6 bg-white rounded-full shadow-md" />
-                      </button>
-                    </div>
-
-                    {/* System Alerts */}
-                    <div className="flex items-center justify-between py-4 border-b border-gray-200">
-                      <div>
-                        <h3 className="text-lg font-semibold text-gray-900 mb-1">System Alerts</h3>
-                        <p className="text-gray-500 text-sm">Critical system and performance alerts</p>
-                      </div>
-                      <button className="relative w-14 h-8 rounded-full bg-green-500">
-                        <div className="absolute top-1 right-1 w-6 h-6 bg-white rounded-full shadow-md" />
-                      </button>
-                    </div>
-
-                    {/* Weekly Reports */}
-                    <div className="flex items-center justify-between py-4">
-                      <div>
-                        <h3 className="text-lg font-semibold text-gray-900 mb-1">Weekly Reports</h3>
-                        <p className="text-gray-500 text-sm">Weekly summary email</p>
-                      </div>
-                      <button className="relative w-14 h-8 rounded-full bg-gray-300">
-                        <div className="absolute top-1 left-1 w-6 h-6 bg-white rounded-full shadow-md" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-
               {/* Save Button */}
               <div className="flex justify-end mt-6">
-                <button className="bg-emerald-500 text-white px-6 py-3 rounded-lg hover:bg-emerald-600 transition-colors flex items-center gap-2 font-medium shadow-lg shadow-emerald-500/30">
-                  <Save size={20} />
+                <button
+                  type="button"
+                  className="bg-emerald-500 text-white px-6 py-3 rounded-xl hover:bg-emerald-600 transition-all flex items-center gap-2 font-medium shadow-lg shadow-emerald-500/30 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
+                >
+                  <Save size={20} className="shrink-0" />
                   Save Changes
                 </button>
               </div>

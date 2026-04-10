@@ -320,7 +320,7 @@ function Step3({ data, setData }) {
 
       <Input label="Entry Fee per Team" type="number" value={data.entryFee}
         onChange={v => setData(d => ({ ...d, entryFee: parseInt(v) || 0 }))}
-        prefix="Rs." style={{ marginBottom: 20, maxWidth: 240 }} />
+        prefix="NPR " style={{ marginBottom: 20, maxWidth: 240 }} />
 
       <div style={{ marginBottom: 20 }}>
         <label style={{ color: "#374151", fontSize: 13, fontWeight: 500, display: "block", marginBottom: 10 }}>
@@ -348,10 +348,10 @@ function Step3({ data, setData }) {
       }}>
         <div style={{ color: "#6b7280", fontSize: 13, marginBottom: 6 }}>Potential Prize Pool</div>
         <div style={{ color: "#16a34a", fontSize: 32, fontWeight: 800, marginBottom: 4 }}>
-          Rs. {prizePool.toLocaleString()}
+          NPR {prizePool.toLocaleString()}
         </div>
         <div style={{ color: "#4b5563", fontSize: 13 }}>
-          Based on {data.maxTeams} teams × Rs.{data.entryFee.toLocaleString()} entry fee
+          Based on {data.maxTeams} teams × NPR {data.entryFee.toLocaleString()} entry fee
         </div>
       </div>
     </div>
@@ -411,7 +411,7 @@ function Step4({ data, setData }) {
                 border: "1px solid #e5e7eb", borderRadius: 6,
                 padding: "6px 10px", marginBottom: 8,
               }}>
-                <span style={{ color: "#6b7280", marginRight: 6, fontSize: 13 }}>Rs.</span>
+                <span style={{ color: "#6b7280", marginRight: 6, fontSize: 13 }}>NPR</span>
                 <input
                   type="number" value={p.amount}
                   onChange={e => updatePrize(key, "amount", parseInt(e.target.value) || 0)}
@@ -653,7 +653,7 @@ function Step6({ data, setData }) {
           <InfoRow
             icon={<BadgeDollarSign size={15} color="#6b7280" />}
             label="Entry Fee"
-            value={`Rs. ${data.entryFee.toLocaleString()} / team`}
+            value={`NPR ${data.entryFee.toLocaleString()} / team`}
           />
           <InfoRow
             icon={<Clock3 size={15} color="#6b7280" />}
@@ -672,7 +672,7 @@ function Step6({ data, setData }) {
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <Trophy size={18} color="#16a34a" />
             <span style={{ color: "#15803d", fontWeight: 700, fontSize: 15 }}>
-              Prize Pool: Rs. {(data.maxTeams * data.entryFee).toLocaleString()}
+              Prize Pool: NPR {(data.maxTeams * data.entryFee).toLocaleString()}
             </span>
           </div>
           <span style={{ color: "#6b7280", fontSize: 13 }}>
@@ -697,7 +697,7 @@ function Step6({ data, setData }) {
                   <span style={{ color: "#9ca3af", fontSize: 12 }}>— {p.label}</span>
                 </div>
                 <span style={{ color: "#111827", fontWeight: 700, fontSize: 14 }}>
-                  Rs. {p.amount.toLocaleString()}
+                  NPR {p.amount.toLocaleString()}
                 </span>
               </div>
             ))}

@@ -84,7 +84,7 @@ const Bookings = () => {
               <p className="text-xs text-gray-600">Pending Confirmation</p>
             </div>
             <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
-              <p className="text-2xl font-bold text-gray-900 mb-1">Rs. {stats.total.toLocaleString()}</p>
+              <p className="text-2xl font-bold text-gray-900 mb-1">NPR {stats.total.toLocaleString()}</p>
               <p className="text-xs text-gray-600">Total Amount</p>
             </div>
           </div>
@@ -157,7 +157,7 @@ const Bookings = () => {
                         </div>
                         <div className="text-right">
                           <p className="text-lg font-bold text-gray-900">
-                            Rs. {booking.pricing?.totalAmount?.toLocaleString() || 0}
+                            NPR {booking.pricing?.totalAmount?.toLocaleString() || 0}
                           </p>
                         </div>
                       </div>

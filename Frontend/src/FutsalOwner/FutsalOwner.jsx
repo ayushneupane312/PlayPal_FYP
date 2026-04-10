@@ -17,7 +17,7 @@ export default function FutsalDashboard() {
   
   const [notifications, setNotifications] = useState([
     { id: 1, title: 'New booking request', desc: 'Team Alpha requested Court 1 for tomorrow at 6 PM', time: 'Just now' },
-    { id: 2, title: 'Payment received', desc: 'Rs. 2,500 received for booking #1234', time: '5 min ago' },
+    { id: 2, title: 'Payment received', desc: 'NPR 2,500 received for booking #1234', time: '5 min ago' },
     { id: 3, title: 'Tournament registration', desc: '5 new teams registered for Weekend Cup', time: '1 hour ago' }
   ]);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -117,7 +117,7 @@ export default function FutsalDashboard() {
             team: userName,
             court: b?.court?.name || 'Court',
             time: `${b?.timeSlot?.startTime || '--'} - ${b?.timeSlot?.endTime || '--'}`,
-            price: `Rs. ${Number(b?.pricing?.totalAmount || 0).toLocaleString()}`,
+            price: `NPR ${Number(b?.pricing?.totalAmount || 0).toLocaleString()}`,
             status: status.charAt(0).toUpperCase() + status.slice(1),
             initial: userName.charAt(0).toUpperCase() || 'B'
           };
@@ -126,8 +126,8 @@ export default function FutsalDashboard() {
         const mappedTournaments = (tournamentsRes?.data || []).slice(0, 4).map((t) => ({
           name: t?.name || 'Tournament',
           date: `${new Date(t?.startDate).toLocaleDateString()} - ${new Date(t?.endDate).toLocaleDateString()}`,
-          prize: `Rs. ${Number(t?.totalPrizePool || 0).toLocaleString()}`,
-          entry: `Rs. ${Number(t?.entryFeePerTeam || 0).toLocaleString()}`,
+          prize: `NPR ${Number(t?.totalPrizePool || 0).toLocaleString()}`,
+          entry: `NPR ${Number(t?.entryFeePerTeam || 0).toLocaleString()}`,
           teams: Number(t?.stats?.registeredTeams || 0),
           maxTeams: Number(t?.maxTeams || 0)
         }));
@@ -163,8 +163,8 @@ export default function FutsalDashboard() {
     },
     {
       label: 'Monthly Revenue',
-      value: `Rs. ${(dashboardStats.monthlyRevenue / 100000).toFixed(2)}L`,
-      change: `Rs. ${dashboardStats.monthlyRevenue.toLocaleString()} this month`,
+      value: `NPR ${(dashboardStats.monthlyRevenue / 100000).toFixed(2)}L`,
+      change: `NPR ${dashboardStats.monthlyRevenue.toLocaleString()} this month`,
       icon: DollarSign,
       color: 'bg-green-500'
     },
@@ -249,11 +249,11 @@ export default function FutsalDashboard() {
                 </defs>
                 
                 {/* Y-axis labels */}
-                <text x="30" y="20" className="text-xs fill-gray-500">Rs.28k</text>
-                <text x="30" y="60" className="text-xs fill-gray-500">Rs.21k</text>
-                <text x="30" y="100" className="text-xs fill-gray-500">Rs.14k</text>
-                <text x="30" y="140" className="text-xs fill-gray-500">Rs.7k</text>
-                <text x="30" y="180" className="text-xs fill-gray-500">Rs.0k</text>
+                <text x="30" y="20" className="text-xs fill-gray-500">NPR 28k</text>
+                <text x="30" y="60" className="text-xs fill-gray-500">NPR 21k</text>
+                <text x="30" y="100" className="text-xs fill-gray-500">NPR 14k</text>
+                <text x="30" y="140" className="text-xs fill-gray-500">NPR 7k</text>
+                <text x="30" y="180" className="text-xs fill-gray-500">NPR 0k</text>
 
                 {/* Area chart */}
                 <path

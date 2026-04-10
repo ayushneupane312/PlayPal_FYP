@@ -57,13 +57,13 @@ export default function CheckoutPage() {
           </div>
           <div className="flex justify-between gap-3 pt-2 border-t border-gray-200">
             <span className="text-gray-700 font-semibold">Total</span>
-            <span className="text-gray-900 font-bold">Rs. {booking.totalPrice}</span>
+            <span className="text-gray-900 font-bold">NPR {booking.totalPrice}</span>
           </div>
         </div>
 
         {amountPaisa < 1000 && (
           <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-900 text-sm">
-            Minimum Khalti amount is Rs. 10.
+            Minimum Khalti amount is NPR 10.
           </div>
         )}
 

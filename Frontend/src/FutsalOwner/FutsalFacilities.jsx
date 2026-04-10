@@ -303,7 +303,7 @@ export default function FutsalApp() {
   };
   const [notifications, setNotifications] = useState([
     { id: 1, title: 'New booking request', desc: 'Team Alpha requested Court 1 for tomorrow at 6 PM', time: 'Just now' },
-    { id: 2, title: 'Payment received', desc: 'Rs. 2,500 received for booking #1234', time: '5 min ago' },
+    { id: 2, title: 'Payment received', desc: 'NPR 2,500 received for booking #1234', time: '5 min ago' },
     { id: 3, title: 'Tournament registration', desc: '5 new teams registered for Weekend Cup', time: '1 hour ago' }
   ]);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -329,20 +329,20 @@ export default function FutsalApp() {
 
   const stats = [
     { label: "Today's Bookings", value: '12', change: '+3 from yesterday', icon: Calendar, color: 'bg-blue-500' },
-    { label: 'Monthly Revenue', value: 'Rs. 2.4L', change: '+12% from last month', icon: DollarSign, color: 'bg-green-500' },
+    { label: 'Monthly Revenue', value: 'NPR 2.4L', change: '+12% from last month', icon: DollarSign, color: 'bg-green-500' },
     { label: 'Active Courts', value: '4', change: '2 in maintenance', icon: MapPin, color: 'bg-purple-500' }
   ];
 
   const recentBookings = [
-    { team: 'Team Alpha', court: 'Court 1', time: '6:00 PM - 7:00 PM', price: 'Rs. 2,500', status: 'Confirmed', initial: 'T' },
-    { team: 'Striker FC', court: 'Court 2', time: '7:00 PM - 8:00 PM', price: 'Rs. 2,500', status: 'Pending', initial: 'S' },
-    { team: 'Goal Getters', court: 'Court 3', time: '5:00 PM - 6:00 PM', price: 'Rs. 2,500', status: 'Confirmed', initial: 'G' },
-    { team: 'FC Warriors', court: 'Court 1', time: '8:00 PM - 9:00 PM', price: 'Rs. 2,500', status: 'Confirmed', initial: 'F' }
+    { team: 'Team Alpha', court: 'Court 1', time: '6:00 PM - 7:00 PM', price: 'NPR 2,500', status: 'Confirmed', initial: 'T' },
+    { team: 'Striker FC', court: 'Court 2', time: '7:00 PM - 8:00 PM', price: 'NPR 2,500', status: 'Pending', initial: 'S' },
+    { team: 'Goal Getters', court: 'Court 3', time: '5:00 PM - 6:00 PM', price: 'NPR 2,500', status: 'Confirmed', initial: 'G' },
+    { team: 'FC Warriors', court: 'Court 1', time: '8:00 PM - 9:00 PM', price: 'NPR 2,500', status: 'Confirmed', initial: 'F' }
   ];
 
   const tournaments = [
-    { name: 'Weekend Cup 2024', date: 'Dec 28-29', prize: 'Rs. 50,000', entry: 'Rs. 5,000', teams: 12, maxTeams: 16 },
-    { name: 'New Year Championship', date: 'Jan 1-2', prize: 'Rs. 100,000', entry: 'Rs. 8,000', teams: 8, maxTeams: 16 }
+    { name: 'Weekend Cup 2024', date: 'Dec 28-29', prize: 'NPR 50,000', entry: 'NPR 5,000', teams: 12, maxTeams: 16 },
+    { name: 'New Year Championship', date: 'Jan 1-2', prize: 'NPR 100,000', entry: 'NPR 8,000', teams: 8, maxTeams: 16 }
   ];
 
   const peakHours = [
@@ -610,11 +610,11 @@ export default function FutsalApp() {
                 </linearGradient>
               </defs>
               
-              <text x="30" y="20" className="text-xs fill-gray-500">Rs.28k</text>
-              <text x="30" y="60" className="text-xs fill-gray-500">Rs.21k</text>
-              <text x="30" y="100" className="text-xs fill-gray-500">Rs.14k</text>
-              <text x="30" y="140" className="text-xs fill-gray-500">Rs.7k</text>
-              <text x="30" y="180" className="text-xs fill-gray-500">Rs.0k</text>
+              <text x="30" y="20" className="text-xs fill-gray-500">NPR 28k</text>
+              <text x="30" y="60" className="text-xs fill-gray-500">NPR 21k</text>
+              <text x="30" y="100" className="text-xs fill-gray-500">NPR 14k</text>
+              <text x="30" y="140" className="text-xs fill-gray-500">NPR 7k</text>
+              <text x="30" y="180" className="text-xs fill-gray-500">NPR 0k</text>
 
               <path
                 d="M 80,120 L 150,100 L 220,110 L 290,80 L 360,95 L 430,85 L 500,60 L 570,50 L 640,70 L 640,180 L 80,180 Z"
@@ -1246,7 +1246,7 @@ export default function FutsalApp() {
                 <div className="flex items-center justify-between pt-4 border-t border-gray-200 mb-4">
                   <div className="flex items-center gap-2">
                     <CreditCard className="w-4 h-4 text-gray-600" />
-                    <span className="font-semibold text-gray-900">Rs. {booking.price}</span>
+                    <span className="font-semibold text-gray-900">NPR {booking.price}</span>
                   </div>
                   <span className={`text-sm font-medium ${
                     booking.paymentStatus === 'Paid' ? 'text-green-600' :
@@ -1353,11 +1353,11 @@ export default function FutsalApp() {
                 <div className="grid grid-cols-3 gap-4 mb-4">
                   <div>
                     <p className="text-xs text-gray-500 mb-1">Entry Fee</p>
-                    <p className="font-semibold text-gray-900">Rs. {tournament.entryFee.toLocaleString()}</p>
+                    <p className="font-semibold text-gray-900">NPR {tournament.entryFee.toLocaleString()}</p>
                   </div>
                   <div>
                     <p className="text-xs text-gray-500 mb-1">Prize Pool</p>
-                    <p className="font-semibold text-orange-600">Rs. {tournament.prizePool.toLocaleString()}</p>
+                    <p className="font-semibold text-orange-600">NPR {tournament.prizePool.toLocaleString()}</p>
                   </div>
                   <div>
                     <p className="text-xs text-gray-500 mb-1">Format</p>

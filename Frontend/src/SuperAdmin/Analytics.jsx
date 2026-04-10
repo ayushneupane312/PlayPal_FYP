@@ -8,7 +8,7 @@ const Analytics = () => {
   const stats = [
     {
       title: 'Total Revenue (YTD)',
-      value: '$822,000',
+      value: 'NPR 822,000',
       icon: TrendingUp,
       bgColor: 'bg-blue-500/10',
       iconColor: 'text-blue-500',
@@ -190,11 +190,11 @@ const Analytics = () => {
 
               {/* Y-axis labels */}
               <div className="absolute left-0 top-0 h-full flex flex-col justify-between text-gray-500 text-xs pr-2">
-                <span>$100k</span>
-                <span>$75k</span>
-                <span>$50k</span>
-                <span>$25k</span>
-                <span>$0</span>
+                <span>NPR 100k</span>
+                <span>NPR 75k</span>
+                <span>NPR 50k</span>
+                <span>NPR 25k</span>
+                <span>NPR 0</span>
               </div>
 
               {/* X-axis labels */}
@@ -319,7 +319,7 @@ const Analytics = () => {
                       <p className="text-gray-500 text-xs">{futsal.bookings} bookings</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-green-600 font-bold text-lg">${futsal.revenue.toLocaleString()}</p>
+                      <p className="text-green-600 font-bold text-lg">NPR {futsal.revenue.toLocaleString()}</p>
                       <p className="text-green-500 text-xs">{futsal.trend}</p>
                     </div>
                   </div>

@@ -9,7 +9,9 @@ const Dropdown = ({
   disabled = false,
   icon: Icon,
   className = "",
-  size = "medium" // small, medium, large
+  size = "medium", // small, medium, large
+  /** dark: matches admin dark inputs; list uses solid emerald like primary buttons */
+  variant = "light",
 }) => {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
@@ -33,6 +35,8 @@ const Dropdown = ({
     large: "px-5 py-4 text-lg"
   };
 
+  const isDark = variant === "dark";
+
   return (
     <div ref={ref} className={`relative ${className}`}>
       <button
@@ -41,22 +45,24 @@ const Dropdown = ({
         disabled={disabled}
         className={`
           w-full flex items-center justify-between 
-          border border-gray-200 rounded-xl 
-          bg-white hover:border-gray-300
-          focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 focus:outline-none
+          focus:ring-2 focus:ring-emerald-500 focus:outline-none
           transition-all
           ${sizeClasses[size]}
           ${disabled ? 'opacity-50 cursor-not-allowed bg-gray-100' : 'cursor-pointer'}
+          ${isDark
+            ? 'border border-gray-700 rounded-lg bg-gray-900 hover:border-emerald-600/80 text-white'
+            : 'border border-gray-200 rounded-xl bg-white hover:border-gray-300 focus:border-emerald-500'
+          }
         `}
       >
         <div className="flex items-center gap-3">
           {Icon && <Icon className="w-5 h-5 text-gray-400" />}
-          <span className={value ? "text-gray-900 font-medium" : "text-gray-400"}>
+          <span className={value ? (isDark ? "text-white font-medium" : "text-gray-900 font-medium") : "text-gray-400"}>
             {selectedLabel}
           </span>
         </div>
         <ChevronDown
-          className={`w-4 h-4 text-gray-400 transition-transform ${
+          className={`w-4 h-4 ${isDark ? "text-gray-400" : "text-gray-400"} transition-transform ${
             open ? "rotate-180" : ""
           }`}
         />
@@ -81,9 +87,13 @@ const Dropdown = ({
                   disabled={opt.disabled}
                   className={`
                     w-full text-left px-4 py-2.5 text-sm transition-all
-                    ${value === opt.value
-                      ? "bg-emerald-50 text-emerald-700 font-medium"
-                      : "text-gray-600 hover:bg-gray-100"
+                    ${isDark
+                      ? value === opt.value
+                        ? "bg-emerald-500 text-white font-medium"
+                        : "text-gray-800 hover:bg-emerald-500 hover:text-white"
+                      : value === opt.value
+                        ? "bg-emerald-50 text-emerald-700 font-medium"
+                        : "text-gray-600 hover:bg-gray-100"
                     }
                     ${opt.disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
                   `}

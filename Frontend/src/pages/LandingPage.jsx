@@ -522,10 +522,10 @@ export default function LandingPage() {
                 </p>
                 <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
                   {[
-                    { icon: Trophy, label: "Winner", amt: "Rs. 50,000" },
-                    { icon: Medal, label: "Runner up", amt: "Rs. 25,000" },
-                    { icon: Star, label: "Best Player", amt: "Rs. 10,000" },
-                    { icon: Zap, label: "Best Keeper", amt: "Rs. 5,000" },
+                    { icon: Trophy, label: "Winner", amt: "NPR 50,000" },
+                    { icon: Medal, label: "Runner up", amt: "NPR 25,000" },
+                    { icon: Star, label: "Best Player", amt: "NPR 10,000" },
+                    { icon: Zap, label: "Best Keeper", amt: "NPR 5,000" },
                   ].map((p) => (
                     <div
                       key={p.label}

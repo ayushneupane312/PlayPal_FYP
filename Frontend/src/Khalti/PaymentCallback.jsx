@@ -66,7 +66,7 @@ const PaymentCallback = () => {
                     <h2 style={{ color: '#2e7d32' }}>Payment Successful!</h2>
                     <div style={styles.detailBox}>
                         <p><strong>Transaction ID:</strong> {paymentDetails?.transaction_id}</p>
-                        <p><strong>Amount Paid:</strong> Rs. {paymentDetails?.amount_in_rupees}</p>
+                        <p><strong>Amount Paid:</strong> NPR {paymentDetails?.amount_in_rupees}</p>
                         <p><strong>Order ID:</strong> {searchParams.get('purchase_order_id')}</p>
                     </div>
                     <button

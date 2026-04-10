@@ -4,8 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import PlayerSidebar from '../PlayerSidebar';
 import SearchAndNotificationBar from '../../components/SearchAndNotificationBar';
 import {
-  Users, Zap, Trophy, Search, Plus, Clock,
-  Target, Bell, Swords
+  Users, Zap, Search, Plus, Bell, Swords
 } from 'lucide-react';
 import matchmakingService from '../../store/matchmakingService';
 
@@ -178,26 +177,6 @@ const MatchmakingDashboard = () => {
                 <p className="text-gray-500 text-xs mb-3">{card.desc}</p>
                 <div className={`flex items-center ${card.color} text-sm font-medium`}>
                   {card.cta} <span className="ml-1">→</span>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Quick Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {[
-              { icon: <Users className="w-5 h-5 text-blue-600" />, bg: 'bg-blue-50', value: '247', label: 'Active Players' },
-              { icon: <Trophy className="w-5 h-5 text-emerald-600" />, bg: 'bg-emerald-50', value: '42', label: 'Teams Forming' },
-              { icon: <Clock className="w-5 h-5 text-purple-600" />, bg: 'bg-purple-50', value: '18', label: 'In Queue' },
-              { icon: <Target className="w-5 h-5 text-amber-600" />, bg: 'bg-amber-50', value: '156', label: 'Matches Today' }
-            ].map(stat => (
-              <div key={stat.label} className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-                <div className="flex items-center gap-3">
-                  <div className={`${stat.bg} rounded-lg p-2`}>{stat.icon}</div>
-                  <div>
-                    <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-                    <p className="text-xs text-gray-500">{stat.label}</p>
-                  </div>
                 </div>
               </div>
             ))}

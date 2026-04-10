@@ -294,7 +294,7 @@ export default function BookingsManagementPage() {
                     <div className="flex items-center justify-between pt-4 border-t border-gray-200 mb-4">
                       <div>
                         <div className="text-xs text-gray-600">Amount</div>
-                        <div className="font-semibold text-gray-900">Rs. {booking.pricing.totalAmount}</div>
+                        <div className="font-semibold text-gray-900">NPR {booking.pricing.totalAmount}</div>
                       </div>
                       <div className="text-right">
                         <div className="text-xs text-gray-600">Method</div>
@@ -437,7 +437,7 @@ export default function BookingsManagementPage() {
         onClose={() => setShowConfirmCashDialog(false)}
         onConfirm={handleConfirmCash}
         title="Confirm Cash Payment"
-        message={`Confirm that ${selectedBooking?.playerInfo?.name} has paid Rs. ${selectedBooking?.pricing?.totalAmount} in cash?`}
+        message={`Confirm that ${selectedBooking?.playerInfo?.name} has paid NPR ${selectedBooking?.pricing?.totalAmount} in cash?`}
         confirmText={processing ? 'Confirming...' : 'Yes, Confirm'}
         cancelText="Cancel"
         type="info"
