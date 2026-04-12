@@ -5,6 +5,7 @@ import PlayerSidebar from '../PlayerSidebar';
 import { Users, ArrowLeft, Info, CheckCircle } from 'lucide-react';
 import { showToast } from '../../FutsalOwner/components/Toast';
 import matchmakingService from '../../store/matchmakingService';
+import { RequiredMark } from '../../components/RequiredMark';
 
 const MATCH_FORMATS = [
   { value: '5v5', label: '5 vs 5', players: 5, description: 'Standard futsal format' },
@@ -85,7 +86,7 @@ const CreateTeamPage = () => {
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Team Name <span className="text-red-500">*</span>
+                    Team Name <RequiredMark className="inline" />
                   </label>
                   <input
                     type="text"

@@ -14,6 +14,8 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { showToast } from '../FutsalOwner/components/Toast';
 import { useAuthStore } from '../store/authStore';
+import PhoneInput from '../components/PhoneInput';
+import { getPhoneValidationError } from '../utils/phoneValidation';
 
 const SettingsPage = () => {
   const navigate = useNavigate();
@@ -81,6 +83,11 @@ const SettingsPage = () => {
   const handleSaveChanges = () => {
     (async () => {
       try {
+        const phoneErr = getPhoneValidationError(formData.phoneNumber);
+        if (phoneErr) {
+          showToast.error(phoneErr);
+          return;
+        }
         const name = `${formData.firstName || ''} ${formData.lastName || ''}`.trim();
         const payload = {
           name,
@@ -292,19 +299,14 @@ const SettingsPage = () => {
                   />
                 </div>
 
-                {/* Phone Number */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Phone Number
-                  </label>
-                  <input
-                    type="tel"
-                    name="phoneNumber"
-                    value={formData.phoneNumber}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                  />
-                </div>
+                <PhoneInput
+                  label="Phone Number"
+                  name="phoneNumber"
+                  required
+                  value={formData.phoneNumber}
+                  onChange={handleInputChange}
+                  inputClassName="px-4 py-3 rounded-xl"
+                />
 
                 {/* Location */}
                 <div>

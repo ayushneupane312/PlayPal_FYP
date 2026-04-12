@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useId } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   CalendarDays,
@@ -27,6 +27,7 @@ import Header from "./components/Header";
 import { showToast } from "./components/Toast";
 import axios from "axios";
 import { createTournament } from "../store/tournamentService";
+import { RequiredMark } from "../components/RequiredMark";
 
 const STEPS = [
   { id: 1, label: "Basic Info" },
@@ -124,11 +125,14 @@ function Toggle({ checked, onChange }) {
   );
 }
 
-function Input({ label, value, onChange, placeholder, type = "text", prefix, style }) {
+function Input({ label, value, onChange, placeholder, type = "text", prefix, style, required }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 6, ...style }}>
-      {label && (
-        <label style={{ color: "#374151", fontSize: 13, fontWeight: 500 }}>{label}</label>
+      {label != null && label !== false && (
+        <label style={{ color: "#374151", fontSize: 13, fontWeight: 500, display: "inline-flex", alignItems: "center", gap: 4, flexWrap: "wrap" }}>
+          {label}
+          {required ? <RequiredMark /> : null}
+        </label>
       )}
       <div style={{
         display: "flex", alignItems: "center",
@@ -153,11 +157,14 @@ function Input({ label, value, onChange, placeholder, type = "text", prefix, sty
   );
 }
 
-function Select({ label, value, onChange, options, placeholder }) {
+function Select({ label, value, onChange, options, placeholder, required }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-      {label && (
-        <label style={{ color: "#374151", fontSize: 13, fontWeight: 500 }}>{label}</label>
+      {label != null && label !== false && (
+        <label style={{ color: "#374151", fontSize: 13, fontWeight: 500, display: "inline-flex", alignItems: "center", gap: 4, flexWrap: "wrap" }}>
+          {label}
+          {required ? <RequiredMark /> : null}
+        </label>
       )}
       <select
         value={value}
@@ -184,7 +191,8 @@ function Step1({ data, setData }) {
 
       <div style={{ marginBottom: 20 }}>
         <label style={{ color: "#374151", fontSize: 13, fontWeight: 500, display: "block", marginBottom: 8 }}>
-          Tournament Banner
+          Tournament Banner{" "}
+          <span style={{ color: "#6b7280", fontWeight: 400 }}>(optional)</span>
         </label>
         <div
           style={{
@@ -224,11 +232,14 @@ function Step1({ data, setData }) {
         </div>
       </div>
 
-      <Input label="Tournament Name" value={data.name} onChange={v => setData(d => ({ ...d, name: v }))}
+      <Input label="Tournament Name" required value={data.name} onChange={v => setData(d => ({ ...d, name: v }))}
         placeholder="e.g. PlayPal Champions League 2026" style={{ marginBottom: 16 }} />
 
       <div style={{ marginBottom: 16 }}>
-        <label style={{ color: "#374151", fontSize: 13, fontWeight: 500, display: "block", marginBottom: 6 }}>Description</label>
+        <label style={{ color: "#374151", fontSize: 13, fontWeight: 500, display: "flex", alignItems: "center", gap: 4, marginBottom: 6 }}>
+          Description
+          <RequiredMark />
+        </label>
         <textarea
           value={data.description}
           onChange={e => setData(d => ({ ...d, description: e.target.value }))}
@@ -246,7 +257,10 @@ function Step1({ data, setData }) {
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
         {[["Venue", "venue", "Your registered futsal venue"], ["Location", "location", "Auto-filled from your venue address"]].map(([lbl, key, ph]) => (
           <div key={key} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <label style={{ color: "#374151", fontSize: 13, fontWeight: 500 }}>{lbl}</label>
+            <label style={{ color: "#374151", fontSize: 13, fontWeight: 500, display: "flex", alignItems: "center", gap: 4 }}>
+              {lbl}
+              <RequiredMark />
+            </label>
             <div style={{
               background: "#f9fafb", border: "1px solid #e5e7eb", borderRadius: 8,
               padding: "10px 12px", fontSize: 14, color: data[key] ? "#111827" : "#9ca3af",
@@ -260,12 +274,129 @@ function Step1({ data, setData }) {
   );
 }
 
+/** Custom mini-illustrations for tournament format cards (replaces plain emoji). */
+function TournamentFormatIllustration({ variant, selected }) {
+  const gid = useId().replace(/:/g, "");
+  const stroke = selected ? "#15803d" : "#64748b";
+  const strokeSoft = selected ? "#4ade80" : "#94a3b8";
+  const fillBox = selected ? "#dcfce7" : "#f1f5f9";
+  const fillAccent = selected ? "#bbf7d0" : "#e2e8f0";
+
+  const wrap = (
+    <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+      <defs>
+        <linearGradient id={`tf-bg-${variant}-${gid}`} x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+          <stop stopColor={selected ? "#ecfdf5" : "#f8fafc"} />
+          <stop offset="1" stopColor={selected ? "#d1fae5" : "#f1f5f9"} />
+        </linearGradient>
+      </defs>
+      <rect x="2" y="2" width="60" height="60" rx="16" fill={`url(#tf-bg-${variant}-${gid})`} />
+      <rect x="2" y="2" width="60" height="60" rx="16" stroke={selected ? "#86efac" : "#e2e8f0"} strokeWidth="1" />
+    </svg>
+  );
+
+  if (variant === "knockout") {
+    return (
+      <div style={{ position: "relative", width: 64, height: 64, marginBottom: 12 }}>
+        {wrap}
+        <svg
+          width="64"
+          height="64"
+          viewBox="0 0 64 64"
+          fill="none"
+          style={{ position: "absolute", left: 0, top: 0 }}
+          aria-hidden
+        >
+          <rect x="10" y="12" width="16" height="10" rx="2" fill={fillBox} stroke={stroke} strokeWidth="1.5" />
+          <rect x="38" y="12" width="16" height="10" rx="2" fill={fillBox} stroke={stroke} strokeWidth="1.5" />
+          <path
+            d="M18 22v4M18 26h28M46 22v4M32 26v10"
+            stroke={stroke}
+            strokeWidth="1.75"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <rect x="24" y="36" width="16" height="12" rx="3" fill={fillAccent} stroke={stroke} strokeWidth="1.75" />
+          <path d="M30 40h4M30 43h4" stroke={strokeSoft} strokeWidth="1.25" strokeLinecap="round" />
+        </svg>
+      </div>
+    );
+  }
+
+  if (variant === "group_knockout") {
+    return (
+      <div style={{ position: "relative", width: 64, height: 64, marginBottom: 12 }}>
+        {wrap}
+        <svg
+          width="64"
+          height="64"
+          viewBox="0 0 64 64"
+          fill="none"
+          style={{ position: "absolute", left: 0, top: 0 }}
+          aria-hidden
+        >
+          <rect x="11" y="11" width="11" height="9" rx="2" fill={fillBox} stroke={stroke} strokeWidth="1.35" />
+          <rect x="42" y="11" width="11" height="9" rx="2" fill={fillBox} stroke={stroke} strokeWidth="1.35" />
+          <rect x="11" y="24" width="11" height="9" rx="2" fill={fillBox} stroke={stroke} strokeWidth="1.35" />
+          <rect x="42" y="24" width="11" height="9" rx="2" fill={fillBox} stroke={stroke} strokeWidth="1.35" />
+          <path
+            d="M16.5 33v3.5c0 1 1 2 2 2h27c1 0 2-1 2-2V33"
+            stroke={stroke}
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            fill="none"
+          />
+          <path d="M32 38.5v4" stroke={stroke} strokeWidth="1.5" strokeLinecap="round" />
+          <path
+            d="M26 46h12l-1.5 4h-9L26 46z"
+            fill={fillAccent}
+            stroke={stroke}
+            strokeWidth="1.5"
+            strokeLinejoin="round"
+          />
+          <path d="M29 48.5h6" stroke={strokeSoft} strokeWidth="1.2" strokeLinecap="round" />
+        </svg>
+      </div>
+    );
+  }
+
+  /* round_robin */
+  return (
+    <div style={{ position: "relative", width: 64, height: 64, marginBottom: 12 }}>
+      {wrap}
+      <svg
+        width="64"
+        height="64"
+        viewBox="0 0 64 64"
+        fill="none"
+        style={{ position: "absolute", left: 0, top: 0 }}
+        aria-hidden
+      >
+        <ellipse cx="32" cy="32" rx="22" ry="14" stroke={stroke} strokeWidth="1.25" strokeDasharray="3 3" opacity={0.55} />
+        <circle cx="32" cy="18" r="4.5" fill={fillBox} stroke={stroke} strokeWidth="1.5" />
+        <circle cx="46" cy="32" r="4.5" fill={fillBox} stroke={stroke} strokeWidth="1.5" />
+        <circle cx="32" cy="46" r="4.5" fill={fillBox} stroke={stroke} strokeWidth="1.5" />
+        <circle cx="18" cy="32" r="4.5" fill={fillBox} stroke={stroke} strokeWidth="1.5" />
+        <path
+          d="M35.2 20.2c4.5 2.8 7.3 7.2 7.8 12.2M44.8 35.6c-2.8 4.5-7.2 7.3-12.2 7.8M28.8 43.8c-4.5-2.8-7.3-7.2-7.8-12.2M19.2 28.4c2.8-4.5 7.2-7.3 12.2-7.8"
+          stroke={strokeSoft}
+          strokeWidth="1.35"
+          strokeLinecap="round"
+          fill="none"
+        />
+      </svg>
+    </div>
+  );
+}
+
 // ─── STEP 2 ───────────────────────────────────────────────────────────────────
 function Step2({ data, setData }) {
+  const [hoverFormat, setHoverFormat] = useState(null);
+  const [focusFormat, setFocusFormat] = useState(null);
   const formats = [
-    { id: "knockout", label: "Knockout", sub: "Single elimination bracket", icon: "⚡" },
-    { id: "group_knockout", label: "Group + Knockout", sub: "Group stage followed by knockouts", icon: "🏆" },
-    { id: "round_robin", label: "Round Robin", sub: "Every team plays every other team", icon: "🔄" },
+    { id: "knockout", label: "Knockout", sub: "Single elimination bracket" },
+    { id: "group_knockout", label: "Group + Knockout", sub: "Group stage followed by knockouts" },
+    { id: "round_robin", label: "Round Robin", sub: "Every team plays every other team" },
   ];
   return (
     <div>
@@ -274,31 +405,64 @@ function Step2({ data, setData }) {
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16, marginBottom: 20 }}>
         {[["Start Date", "startDate"], ["End Date", "endDate"], ["Registration Deadline", "regDeadline"]].map(([lbl, key]) => (
-          <Input key={key} label={lbl} type="date" value={data[key]} onChange={v => setData(d => ({ ...d, [key]: v }))} />
+          <Input key={key} label={lbl} type="date" value={data[key]} onChange={v => setData(d => ({ ...d, [key]: v }))} required />
         ))}
       </div>
 
       <Input label="Maximum Teams" type="number" value={data.maxTeams}
         onChange={v => setData(d => ({ ...d, maxTeams: parseInt(v) || 0 }))}
-        style={{ marginBottom: 20, maxWidth: 200 }} />
+        style={{ marginBottom: 20, maxWidth: 200 }} required />
 
       <div>
-        <label style={{ color: "#374151", fontSize: 13, fontWeight: 500, display: "block", marginBottom: 10 }}>
+        <label style={{ color: "#374151", fontSize: 13, fontWeight: 500, display: "flex", alignItems: "center", gap: 4, marginBottom: 10 }}>
           Tournament Format
+          <RequiredMark />
         </label>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
-          {formats.map(f => (
-            <div key={f.id} onClick={() => setData(d => ({ ...d, format: f.id }))} style={{
-              padding: 16, borderRadius: 10, cursor: "pointer",
-              border: data.format === f.id ? "1.5px solid #16a34a" : "1px solid #e5e7eb",
-              background: data.format === f.id ? "#f0fdf4" : "#ffffff",
-              transition: "all 0.2s",
-            }}>
-              <div style={{ fontSize: 22, marginBottom: 6 }}>{f.icon}</div>
-              <div style={{ color: data.format === f.id ? "#15803d" : "#111827", fontWeight: 600, fontSize: 14, marginBottom: 2 }}>{f.label}</div>
-              <div style={{ color: "#6b7280", fontSize: 12 }}>{f.sub}</div>
-            </div>
-          ))}
+          {formats.map(f => {
+            const active = data.format === f.id;
+            const hover = hoverFormat === f.id;
+            const focused = focusFormat === f.id;
+            return (
+              <div
+                key={f.id}
+                role="button"
+                tabIndex={0}
+                aria-pressed={active}
+                aria-label={`${f.label}: ${f.sub}`}
+                onKeyDown={e => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    setData(d => ({ ...d, format: f.id }));
+                  }
+                }}
+                onClick={() => setData(d => ({ ...d, format: f.id }))}
+                onMouseEnter={() => setHoverFormat(f.id)}
+                onMouseLeave={() => setHoverFormat(null)}
+                onFocus={() => setFocusFormat(f.id)}
+                onBlur={() => setFocusFormat(null)}
+                style={{
+                  padding: "18px 16px",
+                  borderRadius: 14,
+                  cursor: "pointer",
+                  border: active ? "2px solid #16a34a" : focused ? "2px solid #86efac" : "1px solid #e5e7eb",
+                  background: active ? "linear-gradient(165deg, #f0fdf4 0%, #ecfdf5 55%, #ffffff 100%)" : "#ffffff",
+                  transition: "box-shadow 0.2s ease, border-color 0.2s ease, transform 0.2s ease",
+                  boxShadow: active
+                    ? "0 8px 24px rgba(22, 163, 74, 0.12), 0 2px 8px rgba(22, 163, 74, 0.06)"
+                    : hover || focused
+                      ? "0 6px 20px rgba(15, 23, 42, 0.08)"
+                      : "0 1px 2px rgba(15, 23, 42, 0.04)",
+                  transform: hover && !active ? "translateY(-2px)" : "none",
+                  outline: "none",
+                }}
+              >
+                <TournamentFormatIllustration variant={f.id} selected={active} />
+                <div style={{ color: active ? "#15803d" : "#111827", fontWeight: 600, fontSize: 14, marginBottom: 4 }}>{f.label}</div>
+                <div style={{ color: active ? "#3f6212" : "#6b7280", fontSize: 12, lineHeight: 1.45 }}>{f.sub}</div>
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>
@@ -320,11 +484,12 @@ function Step3({ data, setData }) {
 
       <Input label="Entry Fee per Team" type="number" value={data.entryFee}
         onChange={v => setData(d => ({ ...d, entryFee: parseInt(v) || 0 }))}
-        prefix="NPR " style={{ marginBottom: 20, maxWidth: 240 }} />
+        prefix="NPR " style={{ marginBottom: 20, maxWidth: 240 }} required />
 
       <div style={{ marginBottom: 20 }}>
-        <label style={{ color: "#374151", fontSize: 13, fontWeight: 500, display: "block", marginBottom: 10 }}>
+        <label style={{ color: "#374151", fontSize: 13, fontWeight: 500, display: "flex", alignItems: "center", gap: 4, marginBottom: 10 }}>
           Payment Method
+          <RequiredMark />
         </label>
         <div style={{ display: "flex", gap: 10 }}>
           {methods.map(m => (
@@ -511,11 +676,13 @@ function Step5({ data, setData }) {
           label={<span style={{ display: "flex", alignItems: "center", gap: 6 }}><Clock3 size={14} color="#4b5563" /><span>Match Duration (minutes)</span></span>}
           type="number" value={data.matchDuration}
           onChange={v => setData(d => ({ ...d, matchDuration: parseInt(v) || 0 }))}
+          required
         />
         <Input
           label={<span style={{ display: "flex", alignItems: "center", gap: 6 }}><PauseCircle size={14} color="#4b5563" /><span>Break Between Matches (minutes)</span></span>}
           type="number" value={data.breakBetween}
           onChange={v => setData(d => ({ ...d, breakBetween: parseInt(v) || 0 }))}
+          required
         />
       </div>
 
@@ -524,11 +691,13 @@ function Step5({ data, setData }) {
           label={<span style={{ display: "flex", alignItems: "center", gap: 6 }}><MapPin size={14} color="#4b5563" /><span>Court</span></span>}
           value={data.court} onChange={v => setData(d => ({ ...d, court: v }))}
           options={courts} placeholder="Select court"
+          required
         />
         <Input
           label={<span style={{ display: "flex", alignItems: "center", gap: 6 }}><CalendarClock size={14} color="#4b5563" /><span>Match Time Slot</span></span>}
           value={data.timeSlot} onChange={v => setData(d => ({ ...d, timeSlot: v }))}
           placeholder="e.g. 06:00–07:00 AM"
+          required
         />
       </div>
 

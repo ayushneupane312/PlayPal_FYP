@@ -1,5 +1,6 @@
 import React from 'react';
 import { Upload, FileText } from 'lucide-react';
+import { RequiredMark } from '../../components/RequiredMark';
 
 export default function FileUpload({ 
   id, 
@@ -14,7 +15,7 @@ export default function FileUpload({
   return (
     <div>
       <label className="block text-sm font-medium text-gray-700 mb-2">
-        {label} {required && <span className="text-red-500">*</span>}
+        {label} {required ? <RequiredMark className="inline" /> : null}
       </label>
       <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-green-500 transition cursor-pointer">
         <input

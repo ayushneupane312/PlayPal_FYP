@@ -17,6 +17,7 @@ import matchmakingService, {
 } from '../../store/matchmakingService';
 import { getAllVenues } from '../../store/venueService';
 import { showToast } from '../../FutsalOwner/components/Toast';
+import { RequiredMark } from '../../components/RequiredMark';
 
 const FORMATS = ['All', '2v2', '5v5', '7v7'];
 
@@ -550,7 +551,7 @@ export default function BrowseOpponentsPage() {
               {/* Select your team */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Challenge with your team <span className="text-red-500">*</span>
+                  Challenge with your team <RequiredMark className="inline" />
                 </label>
                 {myTeams.length === 0 ? (
                   <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-700">

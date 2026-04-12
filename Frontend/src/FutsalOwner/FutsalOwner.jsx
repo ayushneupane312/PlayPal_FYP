@@ -1,14 +1,33 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Calendar, DollarSign, Users, TrendingUp, Clock, Trophy, Bell, Search, Settings, LayoutDashboard, MapPin, CreditCard, BarChart3, Menu, X } from 'lucide-react';
 import FutsalOwnerSidebar from './FutsalOwnerSidebar';
 import Header from '../FutsalOwner/components/Header';
 import { useAuthStore } from '../store/authStore'; // ✅ ADD THIS IMPORT
 import { getVenueInfo } from '../store/venueService';
-import { getOwnerEarnings, getVenueBookings } from '../store/bookingStore';
+import { getVenueBookings } from '../store/bookingStore';
 import { listMyTournaments } from '../store/tournamentService';
 import { showToast } from './components/Toast';
 
+/** Weekly / monthly figures on this page are illustrative only; live earnings stay on the Earnings page. */
+const PLACEHOLDER_MONTHLY_REVENUE = 245000;
+const PLACEHOLDER_WEEKLY_REVENUE = [12000, 15000, 18000, 14000, 21000, 19000, 22000];
+
+function formatBookingStatus(status) {
+  const s = (status || 'pending').toLowerCase();
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+function statusBadgeClass(status) {
+  const s = (status || '').toLowerCase();
+  if (s === 'confirmed' || s === 'completed') return 'bg-green-100 text-green-700';
+  if (s === 'pending') return 'bg-yellow-100 text-yellow-700';
+  if (s === 'rejected' || s === 'cancelled') return 'bg-red-100 text-red-700';
+  return 'bg-gray-100 text-gray-700';
+}
+
 export default function FutsalDashboard() {
+  const navigate = useNavigate();
   // ✅ ADD THIS LINE - Get user from auth store
   const { user } = useAuthStore();
   
@@ -25,10 +44,11 @@ export default function FutsalDashboard() {
   const [loading, setLoading] = useState(true);
   const [dashboardStats, setDashboardStats] = useState({
     todaysBookings: 0,
-    monthlyRevenue: 0,
+    monthlyRevenue: PLACEHOLDER_MONTHLY_REVENUE,
     activeCourts: 0,
     courtsInMaintenance: 0,
-    weeklyRevenue: [0, 0, 0, 0, 0, 0, 0],
+    weeklyRevenue: [...PLACEHOLDER_WEEKLY_REVENUE],
+    weekChartLabels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
     peakHours: [
       { time: '6 AM', bookings: 0 },
       { time: '8 AM', bookings: 0 },
@@ -50,8 +70,7 @@ export default function FutsalDashboard() {
         setLoading(true);
 
         const now = new Date();
-        const today = now.toISOString().split('T')[0];
-        const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+        const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
         const weekDayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
         const weekDays = [];
         for (let i = 6; i >= 0; i -= 1) {
@@ -59,13 +78,15 @@ export default function FutsalDashboard() {
           d.setDate(now.getDate() - i);
           weekDays.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`);
         }
-        const weekRevenueMap = Object.fromEntries(weekDays.map((d) => [d, 0]));
+        const weekChartLabels = weekDays.map((ds) => {
+          const [y, m, day] = ds.split('-').map(Number);
+          return weekDayLabels[new Date(y, m - 1, day).getDay()];
+        });
 
-        const [venueRes, todayBookingsRes, allBookingsRes, earningsRes, tournamentsRes] = await Promise.all([
+        const [venueRes, todayBookingsRes, activityBookingsRes, tournamentsRes] = await Promise.all([
           getVenueInfo().catch(() => null),
-          getVenueBookings({ date: today, limit: 50 }).catch(() => null),
-          getVenueBookings({ limit: 200 }).catch(() => null),
-          getOwnerEarnings().catch(() => null),
+          getVenueBookings({ date: today, limit: 100 }).catch(() => null),
+          getVenueBookings({ limit: 400, sortBy: 'createdAt', sortOrder: 'desc' }).catch(() => null),
           listMyTournaments().catch(() => null)
         ]);
 
@@ -75,20 +96,9 @@ export default function FutsalDashboard() {
 
         const todaysBookings = Array.isArray(todayBookingsRes?.data) ? todayBookingsRes.data.length : 0;
 
-        const paidBookings = earningsRes?.data?.bookings || [];
-        paidBookings.forEach((b) => {
-          const d = new Date(b.bookingDate);
-          const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-          if (weekRevenueMap[key] != null) {
-            weekRevenueMap[key] += Number(b?.pricing?.totalAmount || 0);
-          }
-        });
-        const weeklyRevenue = weekDays.map((d) => weekRevenueMap[d]);
-        const monthlyRevenue = Number(earningsRes?.data?.monthlyEarnings?.[monthKey] || 0);
-
-        const allBookings = allBookingsRes?.data || [];
+        const activityBookings = Array.isArray(activityBookingsRes?.data) ? activityBookingsRes.data : [];
         const hourBuckets = { 6: 0, 8: 0, 10: 0, 12: 0, 14: 0, 16: 0, 18: 0, 20: 0, 22: 0 };
-        allBookings.forEach((b) => {
+        activityBookings.forEach((b) => {
           const startTime = b?.timeSlot?.startTime;
           const hour = Number((startTime || '0:00').split(':')[0]);
           if (Number.isFinite(hour)) {
@@ -110,34 +120,50 @@ export default function FutsalDashboard() {
           { time: '10 PM', bookings: hourBuckets[22] }
         ];
 
-        const mappedRecent = allBookings.slice(0, 5).map((b) => {
-          const userName = b?.user?.name || b?.playerInfo?.name || 'Booking';
-          const status = b?.bookingStatus || 'pending';
+        const mappedRecent = activityBookings.slice(0, 6).map((b) => {
+          const userName = b?.user?.name || b?.playerInfo?.name || 'Guest';
+          const rawStatus = b?.bookingStatus || 'pending';
+          const bookingDate = b?.bookingDate ? new Date(b.bookingDate).toLocaleDateString() : '';
           return {
+            id: b?._id,
             team: userName,
             court: b?.court?.name || 'Court',
-            time: `${b?.timeSlot?.startTime || '--'} - ${b?.timeSlot?.endTime || '--'}`,
-            price: `NPR ${Number(b?.pricing?.totalAmount || 0).toLocaleString()}`,
-            status: status.charAt(0).toUpperCase() + status.slice(1),
+            time: `${bookingDate ? `${bookingDate} · ` : ''}${b?.timeSlot?.startTime || '--'} - ${b?.timeSlot?.endTime || '--'}`,
+            price: `NPR ${Number(b?.pricing?.totalAmount ?? 0).toLocaleString()}`,
+            status: formatBookingStatus(rawStatus),
+            statusClass: statusBadgeClass(rawStatus),
             initial: userName.charAt(0).toUpperCase() || 'B'
           };
         });
 
-        const mappedTournaments = (tournamentsRes?.data || []).slice(0, 4).map((t) => ({
-          name: t?.name || 'Tournament',
-          date: `${new Date(t?.startDate).toLocaleDateString()} - ${new Date(t?.endDate).toLocaleDateString()}`,
-          prize: `NPR ${Number(t?.totalPrizePool || 0).toLocaleString()}`,
-          entry: `NPR ${Number(t?.entryFeePerTeam || 0).toLocaleString()}`,
-          teams: Number(t?.stats?.registeredTeams || 0),
-          maxTeams: Number(t?.maxTeams || 0)
-        }));
+        const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const rawTournaments = Array.isArray(tournamentsRes?.data) ? tournamentsRes.data : [];
+        const upcomingTournaments = rawTournaments
+          .filter((t) => t?.endDate && new Date(t.endDate) >= startOfToday)
+          .sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+
+        const mappedTournaments = upcomingTournaments.slice(0, 4).map((t) => {
+          const maxTeams = Math.max(Number(t?.maxTeams || 0), 1);
+          const teams = Number(t?.stats?.registeredTeams ?? 0);
+          return {
+            id: t?._id,
+            name: t?.name || 'Tournament',
+            date: `${new Date(t?.startDate).toLocaleDateString()} – ${new Date(t?.endDate).toLocaleDateString()}`,
+            prize: `NPR ${Number(t?.totalPrizePool || 0).toLocaleString()}`,
+            entry: `NPR ${Number(t?.entryFeePerTeam || 0).toLocaleString()}`,
+            teams,
+            maxTeams,
+            registrationPct: Math.min(100, Math.round((teams / maxTeams) * 100))
+          };
+        });
 
         setDashboardStats({
           todaysBookings,
-          monthlyRevenue,
+          monthlyRevenue: PLACEHOLDER_MONTHLY_REVENUE,
           activeCourts,
           courtsInMaintenance,
-          weeklyRevenue,
+          weeklyRevenue: [...PLACEHOLDER_WEEKLY_REVENUE],
+          weekChartLabels,
           peakHours
         });
         setRecentBookings(mappedRecent);
@@ -164,7 +190,7 @@ export default function FutsalDashboard() {
     {
       label: 'Monthly Revenue',
       value: `NPR ${(dashboardStats.monthlyRevenue / 100000).toFixed(2)}L`,
-      change: `NPR ${dashboardStats.monthlyRevenue.toLocaleString()} this month`,
+      change: 'Sample figure — open Earnings for actual revenue',
       icon: DollarSign,
       color: 'bg-green-500'
     },
@@ -180,6 +206,19 @@ export default function FutsalDashboard() {
   const peakHours = dashboardStats.peakHours;
 
   const maxBookings = Math.max(...peakHours.map(h => h.bookings), 1);
+
+  const weeklyRevSeries = dashboardStats.weeklyRevenue;
+  const maxWeeklyRev = Math.max(...weeklyRevSeries, 1);
+  const revAxisLabels = [
+    maxWeeklyRev,
+    Math.round(maxWeeklyRev * 0.75),
+    Math.round(maxWeeklyRev * 0.5),
+    Math.round(maxWeeklyRev * 0.25),
+    0
+  ];
+  const fmtRevAxis = (n) => (n >= 1000 ? `NPR ${(n / 1000).toFixed(0)}k` : `NPR ${n}`);
+  const chartXs = [80, 150, 220, 290, 360, 430, 500];
+  const weekLabels = dashboardStats.weekChartLabels;
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -237,7 +276,7 @@ export default function FutsalDashboard() {
           <div className="bg-white rounded-lg shadow p-6">
             <div className="mb-6">
               <h2 className="text-lg font-semibold text-gray-900">Weekly Revenue</h2>
-              <p className="text-sm text-gray-600">Revenue and booking trends</p>
+              <p className="text-sm text-gray-600">Sample trend — last 7 days labeled below; use Earnings for real figures</p>
             </div>
             <div className="h-64">
               <svg viewBox="0 0 700 200" className="w-full h-full">
@@ -247,47 +286,30 @@ export default function FutsalDashboard() {
                     <stop offset="100%" style={{ stopColor: '#10b981', stopOpacity: 0.05 }} />
                   </linearGradient>
                 </defs>
-                
-                {/* Y-axis labels */}
-                <text x="30" y="20" className="text-xs fill-gray-500">NPR 28k</text>
-                <text x="30" y="60" className="text-xs fill-gray-500">NPR 21k</text>
-                <text x="30" y="100" className="text-xs fill-gray-500">NPR 14k</text>
-                <text x="30" y="140" className="text-xs fill-gray-500">NPR 7k</text>
-                <text x="30" y="180" className="text-xs fill-gray-500">NPR 0k</text>
 
-                {/* Area chart */}
-                <path
-                  d={`M 80,${180 - (dashboardStats.weeklyRevenue[0] / (Math.max(...dashboardStats.weeklyRevenue, 1)) * 120)}
-                      L 150,${180 - (dashboardStats.weeklyRevenue[1] / (Math.max(...dashboardStats.weeklyRevenue, 1)) * 120)}
-                      L 220,${180 - (dashboardStats.weeklyRevenue[2] / (Math.max(...dashboardStats.weeklyRevenue, 1)) * 120)}
-                      L 290,${180 - (dashboardStats.weeklyRevenue[3] / (Math.max(...dashboardStats.weeklyRevenue, 1)) * 120)}
-                      L 360,${180 - (dashboardStats.weeklyRevenue[4] / (Math.max(...dashboardStats.weeklyRevenue, 1)) * 120)}
-                      L 430,${180 - (dashboardStats.weeklyRevenue[5] / (Math.max(...dashboardStats.weeklyRevenue, 1)) * 120)}
-                      L 500,${180 - (dashboardStats.weeklyRevenue[6] / (Math.max(...dashboardStats.weeklyRevenue, 1)) * 120)}
-                      L 500,180 L 80,180 Z`}
-                  fill="url(#revenueGradient)"
-                />
-                <path
-                  d={`M 80,${180 - (dashboardStats.weeklyRevenue[0] / (Math.max(...dashboardStats.weeklyRevenue, 1)) * 120)}
-                      L 150,${180 - (dashboardStats.weeklyRevenue[1] / (Math.max(...dashboardStats.weeklyRevenue, 1)) * 120)}
-                      L 220,${180 - (dashboardStats.weeklyRevenue[2] / (Math.max(...dashboardStats.weeklyRevenue, 1)) * 120)}
-                      L 290,${180 - (dashboardStats.weeklyRevenue[3] / (Math.max(...dashboardStats.weeklyRevenue, 1)) * 120)}
-                      L 360,${180 - (dashboardStats.weeklyRevenue[4] / (Math.max(...dashboardStats.weeklyRevenue, 1)) * 120)}
-                      L 430,${180 - (dashboardStats.weeklyRevenue[5] / (Math.max(...dashboardStats.weeklyRevenue, 1)) * 120)}
-                      L 500,${180 - (dashboardStats.weeklyRevenue[6] / (Math.max(...dashboardStats.weeklyRevenue, 1)) * 120)}`}
-                  fill="none"
-                  stroke="#10b981"
-                  strokeWidth="2"
-                />
+                {revAxisLabels.map((val, i) => (
+                  <text key={i} x="8" y={20 + i * 40} className="text-xs fill-gray-500">
+                    {fmtRevAxis(val)}
+                  </text>
+                ))}
 
-                {/* X-axis labels */}
-                <text x="80" y="195" className="text-xs fill-gray-500">Mon</text>
-                <text x="150" y="195" className="text-xs fill-gray-500">Tue</text>
-                <text x="220" y="195" className="text-xs fill-gray-500">Wed</text>
-                <text x="290" y="195" className="text-xs fill-gray-500">Thu</text>
-                <text x="360" y="195" className="text-xs fill-gray-500">Fri</text>
-                <text x="430" y="195" className="text-xs fill-gray-500">Sat</text>
-                <text x="500" y="195" className="text-xs fill-gray-500">Sun</text>
+                {(() => {
+                  const ys = weeklyRevSeries.map((v) => 180 - (v / maxWeeklyRev) * 120);
+                  const lineD = chartXs.map((x, i) => `${i === 0 ? 'M' : 'L'} ${x},${ys[i]}`).join(' ');
+                  const areaD = `${lineD} L ${chartXs[6]},180 L ${chartXs[0]},180 Z`;
+                  return (
+                    <>
+                      <path d={areaD} fill="url(#revenueGradient)" />
+                      <path d={lineD} fill="none" stroke="#10b981" strokeWidth="2" />
+                    </>
+                  );
+                })()}
+
+                {chartXs.map((x, i) => (
+                  <text key={i} x={x - 12} y="195" className="text-xs fill-gray-500">
+                    {weekLabels[i] || ''}
+                  </text>
+                ))}
               </svg>
             </div>
           </div>
@@ -296,7 +318,7 @@ export default function FutsalDashboard() {
           <div className="bg-white rounded-lg shadow p-6">
             <div className="mb-6">
               <h2 className="text-lg font-semibold text-gray-900">Peak Hours</h2>
-              <p className="text-sm text-gray-600">Bookings by time of day</p>
+              <p className="text-sm text-gray-600">Bookings by time of day (latest activity, up to 400 records)</p>
             </div>
             <div className="h-64 flex items-end justify-between gap-2">
               {peakHours.map((hour, idx) => (
@@ -321,11 +343,20 @@ export default function FutsalDashboard() {
                 <h2 className="text-lg font-semibold text-gray-900">Recent Bookings</h2>
                 <p className="text-sm text-gray-600">Latest booking requests</p>
               </div>
-              <button className="text-green-600 text-sm font-medium hover:text-green-700">View All</button>
+              <button
+                type="button"
+                onClick={() => navigate('/futsalowner/booking-management')}
+                className="text-green-600 text-sm font-medium hover:text-green-700"
+              >
+                View All
+              </button>
             </div>
             <div className="divide-y divide-gray-100">
-              {recentBookings.map((booking, idx) => (
-                <div key={idx} className="p-4 flex items-center justify-between hover:bg-gray-50">
+              {recentBookings.length === 0 && !loading && (
+                <div className="p-6 text-sm text-gray-500">No bookings yet.</div>
+              )}
+              {recentBookings.map((booking) => (
+                <div key={booking.id || booking.team} className="p-4 flex items-center justify-between hover:bg-gray-50">
                   <div className="flex items-center gap-4">
                     <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center text-green-600 font-semibold">
                       {booking.initial}
@@ -338,11 +369,7 @@ export default function FutsalDashboard() {
                   <div className="text-right">
                     <div className="text-sm font-medium text-gray-900 mb-1">{booking.time}</div>
                     <div className="text-sm text-gray-600">{booking.price}</div>
-                    <span className={`inline-block mt-1 px-2 py-1 text-xs rounded-full ${
-                      booking.status === 'Confirmed' 
-                        ? 'bg-green-100 text-green-700' 
-                        : 'bg-yellow-100 text-yellow-700'
-                    }`}>
+                    <span className={`inline-block mt-1 px-2 py-1 text-xs rounded-full ${booking.statusClass}`}>
                       {booking.status}
                     </span>
                   </div>
@@ -358,7 +385,11 @@ export default function FutsalDashboard() {
                 <h2 className="text-lg font-semibold text-gray-900">Upcoming Tournaments</h2>
                 <p className="text-sm text-gray-600">Manage your events</p>
               </div>
-              <button className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition">
+              <button
+                type="button"
+                onClick={() => navigate('/futsalowner/Tournaments')}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition"
+              >
                 Create New →
               </button>
             </div>
@@ -366,8 +397,8 @@ export default function FutsalDashboard() {
               {tournaments.length === 0 && (
                 <div className="text-sm text-gray-500">No tournaments found.</div>
               )}
-              {tournaments.map((tournament, idx) => (
-                <div key={idx} className="border border-gray-200 rounded-lg p-4">
+              {tournaments.map((tournament) => (
+                <div key={tournament.id || tournament.name} className="border border-gray-200 rounded-lg p-4">
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-start gap-3">
                       <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
@@ -394,7 +425,7 @@ export default function FutsalDashboard() {
                     <div className="w-full bg-gray-200 rounded-full h-2">
                       <div
                         className="bg-green-500 h-2 rounded-full transition-all"
-                        style={{ width: `${(tournament.teams / tournament.maxTeams) * 100}%` }}
+                        style={{ width: `${tournament.registrationPct}%` }}
                       ></div>
                     </div>
                   </div>

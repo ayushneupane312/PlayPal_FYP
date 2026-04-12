@@ -7,6 +7,9 @@ import { showToast } from '../FutsalOwner/components/Toast';
 import ConfirmationModal from '../components/ConfirmationModel';
 import { useConfirmation } from '../hooks/useConfirmation';
 import AdminHeader from '../components/AdminHeader';
+import PhoneInput from '../components/PhoneInput';
+import { getPhoneValidationError } from '../utils/phoneValidation';
+import { RequiredMark } from '../components/RequiredMark';
 
 const getVisiblePageNumbers = (current, totalPages, maxButtons = 10) => {
   const total = Math.max(1, totalPages);
@@ -79,7 +82,12 @@ const UserManagement = () => {
 
   const handleEditSubmit = async (e) => {
     e.preventDefault();
-    
+    const phoneErr = getPhoneValidationError(editFormData.phone);
+    if (phoneErr) {
+      showToast.error(phoneErr);
+      return;
+    }
+
     try {
       await updateUser(selectedUser._id, editFormData);
       showToast.success(`${editFormData.name} updated successfully!`);
@@ -366,7 +374,7 @@ const UserManagement = () => {
               {/* Name */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Full Name <span className="text-red-500">*</span>
+                  Full Name <RequiredMark className="inline" />
                 </label>
                 <input
                   type="text"
@@ -381,7 +389,7 @@ const UserManagement = () => {
               {/* Email */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Email Address <span className="text-red-500">*</span>
+                  Email Address <RequiredMark className="inline" />
                 </label>
                 <input
                   type="email"
@@ -393,24 +401,18 @@ const UserManagement = () => {
                 />
               </div>
 
-              {/* Phone */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Phone Number
-                </label>
-                <input
-                  type="tel"
-                  value={editFormData.phone}
-                  onChange={(e) => setEditFormData({ ...editFormData, phone: e.target.value })}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                  placeholder="Enter phone number"
-                />
-              </div>
+              <PhoneInput
+                label="Phone Number"
+                required
+                value={editFormData.phone}
+                onValueChange={(v) => setEditFormData({ ...editFormData, phone: v })}
+                hideHint
+              />
 
               {/* Role */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Role <span className="text-red-500">*</span>
+                  Role <RequiredMark className="inline" />
                 </label>
                 <select
                   value={editFormData.role}

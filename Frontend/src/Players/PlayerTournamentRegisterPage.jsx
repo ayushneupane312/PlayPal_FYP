@@ -15,9 +15,12 @@ import {
 } from 'lucide-react';
 import PlayerSidebar from './PlayerSidebar';
 import { showToast } from '../FutsalOwner/components/Toast';
+import PhoneInput from '../components/PhoneInput';
+import { getPhoneValidationError } from '../utils/phoneValidation';
 import { useAuthStore } from '../store/authStore';
 import { getTournamentById, registerTeam } from '../store/tournamentService';
 import { getMyTeams } from '../store/matchmakingService';
+import { RequiredMark } from '../components/RequiredMark';
 
 const DEFAULT_RULES = [
   'Minimum 5, maximum 10 players per team',
@@ -77,7 +80,7 @@ function Field({ label, required, error, children }) {
     <div className="flex flex-col gap-1">
       <label className="text-xs font-medium text-gray-700">
         {label}
-        {required && <span className="text-red-500 ml-0.5">*</span>}
+        {required ? <RequiredMark className="inline ml-0.5" /> : null}
       </label>
       {children}
       {error && (
@@ -164,7 +167,8 @@ export default function PlayerTournamentRegisterPage() {
       }
     }
     if (!captainName?.trim()) e.captainName = 'Captain name is required';
-    if (!captainPhone?.trim()) e.captainPhone = 'Phone number is required';
+    const capPhoneErr = getPhoneValidationError(captainPhone);
+    if (capPhoneErr) e.captainPhone = capPhoneErr;
     if (!captainEmail?.trim() || !captainEmail.includes('@')) e.captainEmail = 'Valid email is required';
     if (paymentMethod !== 'cash' && !txnId?.trim()) e.txnId = 'Transaction ID is required for online payment';
     if (!agreeRules) e.agreeRules = 'You must agree to the tournament rules';
@@ -324,15 +328,15 @@ export default function PlayerTournamentRegisterPage() {
                       className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                     />
                   </Field>
-                  <Field label="Phone number" required error={errors.captainPhone}>
-                    <input
-                      type="tel"
-                      value={captainPhone}
-                      onChange={(e) => setCaptainPhone(e.target.value)}
-                      placeholder="98XXXXXXXX"
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                    />
-                  </Field>
+                  <PhoneInput
+                    label="Phone number"
+                    required
+                    value={captainPhone}
+                    onValueChange={setCaptainPhone}
+                    placeholder="9841234567 or +9779841234567"
+                    hideHint
+                    inputClassName="px-3 py-2.5 text-sm"
+                  />
                   <div className="sm:col-span-2">
                     <Field label="Email address" required error={errors.captainEmail}>
                       <input

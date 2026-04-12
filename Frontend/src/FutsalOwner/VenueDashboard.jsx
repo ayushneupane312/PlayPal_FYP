@@ -10,9 +10,11 @@ import FutsalOwnerSidebar from './FutsalOwnerSidebar';
 import Header from './components/Header';
 import { showToast } from './components/Toast';
 import venueService from '../store/venueService';
+import { useAuthStore } from '../store/authStore';
 
 export default function VenueDashboard() {
   const navigate = useNavigate();
+  const { user } = useAuthStore();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -156,7 +158,9 @@ export default function VenueDashboard() {
   // Use the url or secure_url from the first valid image
   const coverImageUrl = validImages.length > 0 ? getUrl(validImages[0]) : null;
 
-
+  /** DB flag + approved owner application (fixes stale isVerified before re-save) */
+  const isVenueVerified =
+    Boolean(venue.isVerified) || user?.applicationStatus === 'approved';
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -197,14 +201,14 @@ export default function VenueDashboard() {
                     </div>
                   )}
 
-                  {/* Verification Badge */}
+                  {/* Verification Badge — venue.isVerified synced when admin approves owner */}
                   <div className="absolute top-4 right-4">
-                    {venue.isVerified ? (
-                      <span className="bg-blue-500 text-white px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1">
-                        <Award className="w-4 h-4" /> Verified
+                    {isVenueVerified ? (
+                      <span className="bg-[#1877F2] text-white px-3 py-1 rounded-full text-sm font-semibold flex items-center gap-1 shadow-md ring-1 ring-white/30">
+                        <Award className="w-4 h-4 shrink-0" /> Verified
                       </span>
                     ) : (
-                      <span className="bg-yellow-500 text-white px-3 py-1 rounded-full text-sm font-medium">
+                      <span className="bg-amber-500 text-white px-3 py-1 rounded-full text-sm font-medium shadow-sm">
                         Pending Verification
                       </span>
                     )}

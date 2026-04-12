@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Mail, Phone, MapPin, User, Building2, FileText, Image as ImageIcon } from 'lucide-react';
+import { Mail, MapPin, User, Building2, FileText, Image as ImageIcon } from 'lucide-react';
 import { useFutsalOwnerStore } from '../store/futsalOwnerFormStore.js';
 import { useAuthStore } from '../store/authStore.js';
 import { showToast } from './components/Toast';
@@ -10,6 +10,8 @@ import FormInput from './components/FormInput';
 import FormSection from './components/FormSection';
 import FileUpload from './components/FileUpload';
 import ImageUpload from './components/ImageUpload';
+import PhoneInput from '../components/PhoneInput';
+import { getPhoneValidationError } from '../utils/phoneValidation';
 
 export default function FormPage() {
   const navigate = useNavigate();
@@ -131,13 +133,23 @@ export default function FormPage() {
     e.preventDefault();
 
     // Validate required fields
-    if (!formData.fullName || !formData.email || !formData.phone) {
+    if (!formData.fullName || !formData.email) {
       showToast.error('Please fill in all personal information');
       return;
     }
+    const phoneErr = getPhoneValidationError(formData.phone);
+    if (phoneErr) {
+      showToast.error(phoneErr);
+      return;
+    }
 
-    if (!formData.futsalName || !formData.futsalLocation || !formData.businessContact) {
+    if (!formData.futsalName || !formData.futsalLocation) {
       showToast.error('Please fill in all futsal information');
+      return;
+    }
+    const businessPhoneErr = getPhoneValidationError(formData.businessContact);
+    if (businessPhoneErr) {
+      showToast.error(businessPhoneErr);
       return;
     }
 
@@ -274,15 +286,13 @@ export default function FormPage() {
               disabled
             />
 
-            <FormInput
+            <PhoneInput
               label="Phone Number"
               name="phone"
-              type="tel"
               value={formData.phone}
               onChange={handleInputChange}
-              placeholder="+977 9800000000"
-              icon={Phone}
               required
+              placeholder="9841234567 or +9779841234567"
             />
           </FormSection>
 
@@ -320,15 +330,13 @@ export default function FormPage() {
               placeholder="https://maps.google.com/..."
             />
 
-            <FormInput
+            <PhoneInput
               label="Business Contact"
               name="businessContact"
-              type="tel"
               value={formData.businessContact}
               onChange={handleInputChange}
-              placeholder="+977 01-XXXXXXX"
-              icon={Phone}
               required
+              placeholder="9841234567 or +9779841234567"
             />
           </FormSection>
 

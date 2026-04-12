@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   MapPin, ImageIcon, Phone, Mail, Clock, Upload, X, Settings,
   DollarSign, Video, Wifi, Car, Users, Coffee, Shield,
@@ -9,13 +9,15 @@ import FutsalOwnerSidebar from './FutsalOwnerSidebar';
 import Header from './components/Header';
 import { showToast } from './components/Toast';
 import venueService from '../store/venueService';
+import PhoneInput from '../components/PhoneInput';
+import { getPhoneValidationError } from '../utils/phoneValidation';
+import { RequiredMark } from '../components/RequiredMark';
 
 export default function VenuePage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
-  const venueDataLoadedToastShownRef = useRef(false);
 
   // Venue Information
   const [venueInfo, setVenueInfo] = useState({
@@ -101,10 +103,7 @@ export default function VenuePage() {
         if (venueResponse?.success && venueResponse?.data) {
           console.log('✅ Existing venue found! Populating form...');
           populateVenueData(venueResponse.data);
-          if (!venueDataLoadedToastShownRef.current) {
-            showToast.success('Venue data loaded');
-            venueDataLoadedToastShownRef.current = true;
-          }
+          showToast.success('Venue data loaded');
           setInitialLoading(false);
           return;
         }
@@ -307,17 +306,14 @@ export default function VenuePage() {
     if (!venueInfo.name.trim()) errors.push('Venue Name');
     if (!venueInfo.address.trim()) errors.push('Address');
     if (!venueInfo.description.trim()) errors.push('Description');
-    if (!venueInfo.phoneNumber.trim()) errors.push('Phone Number');
+    const phoneValErr = getPhoneValidationError(venueInfo.phoneNumber);
+    if (phoneValErr) errors.push(phoneValErr);
     if (!venueInfo.email.trim()) errors.push('Email');
     if (!venueInfo.openingTime) errors.push('Opening Time');
     if (!venueInfo.closingTime) errors.push('Closing Time');
 
     if (venueInfo.email && !/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/.test(venueInfo.email)) {
       errors.push('Valid Email Address');
-    }
-
-    if (venueInfo.phoneNumber && !/^[0-9+\-() ]{10,}$/.test(venueInfo.phoneNumber)) {
-      errors.push('Valid Phone Number');
     }
 
     if (courts.length === 0) {
@@ -706,7 +702,7 @@ export default function VenuePage() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Venue Name <span className="text-red-500">*</span>
+                        Venue Name <RequiredMark />
                       </label>
                       <input
                         type="text"
@@ -717,7 +713,7 @@ export default function VenuePage() {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Address <span className="text-red-500">*</span>
+                        Address <RequiredMark />
                       </label>
                       <input
                         type="text"
@@ -730,7 +726,7 @@ export default function VenuePage() {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Description <span className="text-red-500">*</span>
+                      Description <RequiredMark />
                     </label>
                     <textarea
                       value={venueInfo.description}
@@ -808,7 +804,9 @@ export default function VenuePage() {
                       <div className="flex items-start justify-between mb-4">
                         <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Court Name</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Court Name <RequiredMark />
+                            </label>
                             <input
                               type="text"
                               value={court.name}
@@ -839,7 +837,9 @@ export default function VenuePage() {
 
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Peak Price (Rs/hr)</label>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Peak Price (Rs/hr) <RequiredMark />
+                          </label>
                           <input
                             type="number"
                             value={court.peakPrice}
@@ -848,7 +848,9 @@ export default function VenuePage() {
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Off-Peak Price (Rs/hr)</label>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Off-Peak Price (Rs/hr) <RequiredMark />
+                          </label>
                           <input
                             type="number"
                             value={court.offPeakPrice}
@@ -1001,21 +1003,17 @@ export default function VenuePage() {
                 </div>
 
                 <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Phone <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={venueInfo.phoneNumber}
-                      onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                    />
-                  </div>
+                  <PhoneInput
+                    label="Phone"
+                    required
+                    value={venueInfo.phoneNumber}
+                    onValueChange={(v) => handleInputChange('phoneNumber', v)}
+                    inputClassName="py-2"
+                  />
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Email <span className="text-red-500">*</span>
+                      Email <RequiredMark />
                     </label>
                     <input
                       type="email"
@@ -1037,7 +1035,9 @@ export default function VenuePage() {
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Opening</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Opening <RequiredMark />
+                      </label>
                       <input
                         type="time"
                         value={venueInfo.openingTime}
@@ -1046,7 +1046,9 @@ export default function VenuePage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Closing</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Closing <RequiredMark />
+                      </label>
                       <input
                         type="time"
                         value={venueInfo.closingTime}
@@ -1057,7 +1059,9 @@ export default function VenuePage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-3">Operating Days</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-3">
+                      Operating Days <RequiredMark />
+                    </label>
                     <div className="flex flex-wrap gap-2">
                       {weekDays.map(day => (
                         <button

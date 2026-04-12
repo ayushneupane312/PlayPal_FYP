@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Calendar, DollarSign, Users, TrendingUp, Clock, Trophy, Bell, Search, Settings, LayoutDashboard, MapPin, CreditCard, BarChart3, Menu, X, Image as ImageIcon, Phone, Mail, Upload, User, Check, Filter, Edit, Eye, Send, ExternalLink } from 'lucide-react';
+import PhoneInput from '../components/PhoneInput';
 
 export default function FutsalApp() {
   const [currentPage, setCurrentPage] = useState('dashboard');
@@ -838,15 +839,14 @@ export default function FutsalApp() {
             </div>
 
             <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
-                <input
-                  type="text"
-                  value={venueInfo.phoneNumber}
-                  onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                />
-              </div>
+              <PhoneInput
+                label="Phone Number"
+                required
+                value={venueInfo.phoneNumber}
+                onValueChange={(v) => handleInputChange('phoneNumber', v)}
+                hideHint
+                inputClassName="focus:ring-green-500"
+              />
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Email Address</label>

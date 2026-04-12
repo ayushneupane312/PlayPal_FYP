@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown, X, Check, Search } from 'lucide-react';
+import { RequiredMark } from './RequiredMark';
 
 const MultiSelectDropdown = ({
   label,
@@ -87,7 +88,7 @@ const MultiSelectDropdown = ({
       {label && (
         <label className="block text-sm font-medium text-gray-700 mb-2">
           {label}
-          {required && <span className="text-red-500 ml-1">*</span>}
+          {required ? <RequiredMark className="inline ml-1" /> : null}
         </label>
       )}
 

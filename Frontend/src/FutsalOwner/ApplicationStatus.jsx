@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Clock, CheckCircle, XCircle, Building2, Mail, Phone, MapPin } from 'lucide-react';
+import { Clock, CheckCircle, XCircle, Building2, Mail, Phone, MapPin, ArrowLeft } from 'lucide-react';
 import { useFutsalOwnerStore } from '../store/futsalOwnerFormStore';
 import { useAuthStore } from '../store/authStore';
 import { showToast } from './components/Toast';
@@ -92,6 +92,16 @@ const ApplicationStatus = () => {
             <div className="max-w-4xl mx-auto">
                 {/* Status Card */}
                 <div className="bg-white rounded-2xl shadow-xl p-8 mb-6">
+                    <div className="mb-6">
+                        <button
+                            type="button"
+                            onClick={() => navigate('/login')}
+                            className="inline-flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-emerald-600 transition-colors"
+                        >
+                            <ArrowLeft className="w-4 h-4" aria-hidden />
+                            Back to login
+                        </button>
+                    </div>
                     <div className="text-center mb-8">
                         <div className="flex justify-center mb-4">
                             {getStatusIcon()}

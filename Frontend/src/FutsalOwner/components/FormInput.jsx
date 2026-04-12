@@ -1,4 +1,5 @@
 import React from 'react';
+import { RequiredMark } from '../../components/RequiredMark';
 
 export default function FormInput({ 
   label, 
@@ -14,7 +15,7 @@ export default function FormInput({
   return (
     <div>
       <label className="block text-sm font-medium text-gray-700 mb-2">
-        {label} {required && <span className="text-red-500">*</span>}
+        {label} {required ? <RequiredMark className="inline" /> : null}
       </label>
       <div className="relative">
         {Icon && (

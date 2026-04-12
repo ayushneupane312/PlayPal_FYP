@@ -1,12 +1,20 @@
 import toast from 'react-hot-toast';
 import { CheckCircle, AlertCircle, Info, AlertTriangle } from 'lucide-react';
 
+/** Default id so the same message replaces an existing toast instead of stacking (e.g. React Strict Mode double effects). */
+function defaultToastId(kind, message) {
+  const s = String(message);
+  const key = s.length > 160 ? `${s.slice(0, 160)}…` : s;
+  return `${kind}:${key}`;
+}
+
 // Reusable toast notification functions
 export const showToast = {
   success: (message, options = {}) => {
+    const { id, ...rest } = options;
     toast.success(message, {
-      duration: options.duration || 4000,
-      position: options.position || 'top-right',
+      duration: rest.duration || 4000,
+      position: rest.position || 'top-right',
       style: {
         background: '#10B981',
         color: '#fff',
@@ -17,14 +25,16 @@ export const showToast = {
         boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
       },
       icon: '',
-      ...options,
+      ...rest,
+      id: id ?? defaultToastId('success', message),
     });
   },
 
   error: (message, options = {}) => {
+    const { id, ...rest } = options;
     toast.error(message, {
-      duration: options.duration || 4000,
-      position: options.position || 'top-right',
+      duration: rest.duration || 4000,
+      position: rest.position || 'top-right',
       style: {
         background: '#EF4444',
         color: '#fff',
@@ -35,14 +45,16 @@ export const showToast = {
         boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
       },
       icon: '❌',
-      ...options,
+      ...rest,
+      id: id ?? defaultToastId('error', message),
     });
   },
 
   info: (message, options = {}) => {
+    const { id, ...rest } = options;
     toast(message, {
-      duration: options.duration || 4000,
-      position: options.position || 'top-right',
+      duration: rest.duration || 4000,
+      position: rest.position || 'top-right',
       style: {
         background: '#3B82F6',
         color: '#fff',
@@ -53,14 +65,16 @@ export const showToast = {
         boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
       },
       icon: 'ℹ️',
-      ...options,
+      ...rest,
+      id: id ?? defaultToastId('info', message),
     });
   },
 
   warning: (message, options = {}) => {
+    const { id, ...rest } = options;
     toast(message, {
-      duration: options.duration || 4000,
-      position: options.position || 'top-right',
+      duration: rest.duration || 4000,
+      position: rest.position || 'top-right',
       style: {
         background: '#F59E0B',
         color: '#fff',
@@ -71,7 +85,8 @@ export const showToast = {
         boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
       },
       icon: '⚠️',
-      ...options,
+      ...rest,
+      id: id ?? defaultToastId('warning', message),
     });
   },
 
