@@ -157,7 +157,18 @@ exports.listMyTournaments = async (req, res) => {
     if (status) query.status = status;
     const tournaments = await Tournament.find(query)
       .populate('venue', 'venueName fullAddress')
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .lean();
+    const ids = tournaments.map((t) => t._id);
+    const counts = await TournamentTeam.aggregate([
+      { $match: { tournament: { $in: ids } } },
+      { $group: { _id: '$tournament', count: { $sum: 1 } } }
+    ]);
+    const countMap = Object.fromEntries(counts.map((c) => [c._id.toString(), c.count]));
+    tournaments.forEach((t) => {
+      t.stats = t.stats || {};
+      t.stats.registeredTeams = countMap[t._id.toString()] ?? 0;
+    });
     return res.status(200).json({ success: true, data: tournaments });
   } catch (err) {
     console.error('List my tournaments error:', err);

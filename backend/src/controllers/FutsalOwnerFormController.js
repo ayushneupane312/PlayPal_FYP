@@ -1,5 +1,6 @@
 const FutsalOwner = require('../models/futsalOwnerForm.js');
 const User = require('../models/UserModel.js');
+const Venue = require('../models/VenueModel');
 const { deleteFromCloudinary } = require('../middlewares/UploadMiddleware');
 
 const { 
@@ -334,6 +335,13 @@ exports.updateFutsalOwnerStatus = async (req, res) => {
                 user.status = 'active'; // ✅ Activate user
             }
             await user.save();
+
+            // Keep venue verification in sync with admin decision (My Venue badge)
+            if (status === 'approved') {
+                await Venue.updateMany({ owner: user._id }, { $set: { isVerified: true } });
+            } else if (status === 'rejected') {
+                await Venue.updateMany({ owner: user._id }, { $set: { isVerified: false } });
+            }
 
             // ✅ Send appropriate email
             let emailSent = false;

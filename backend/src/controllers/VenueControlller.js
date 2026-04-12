@@ -66,6 +66,9 @@ exports.createOrUpdateVenue = async (req, res) => {
     const userId = req.userId;
     const venueData = req.body;
 
+    const ownerUser = await User.findById(userId).select('applicationStatus');
+    const ownerApplicationApproved = ownerUser?.applicationStatus === 'approved';
+
     // Validate required fields
     const requiredFields = [
       'venueName',
@@ -131,6 +134,7 @@ exports.createOrUpdateVenue = async (req, res) => {
     if (venue) {
       // Update existing venue
       Object.assign(venue, venueData);
+      if (ownerApplicationApproved) venue.isVerified = true;
       await venue.save();
 
       return res.status(200).json({
@@ -142,7 +146,8 @@ exports.createOrUpdateVenue = async (req, res) => {
       // Create new venue
       venue = await Venue.create({
         ...venueData,
-        owner: userId
+        owner: userId,
+        isVerified: ownerApplicationApproved
       });
 
       return res.status(201).json({

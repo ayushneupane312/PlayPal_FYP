@@ -1209,7 +1209,7 @@ exports.cancelBooking = async (req, res) => {
 exports.getVenueBookings = async (req, res) => {
   try {
     const userId = req.userId;
-    const { status, date, page = 1, limit = 20 } = req.query;
+    const { status, date, page = 1, limit = 20, sortBy, sortOrder } = req.query;
 
     const venue = await Venue.findOne({ owner: userId });
     if (!venue) {
@@ -1233,9 +1233,16 @@ exports.getVenueBookings = async (req, res) => {
       };
     }
 
+    let sort = { bookingDate: 1, 'timeSlot.startTime': 1 };
+    if (sortBy === 'createdAt') {
+      sort = { createdAt: sortOrder === 'asc' ? 1 : -1 };
+    } else if (sortBy === 'bookingDate' && sortOrder === 'desc') {
+      sort = { bookingDate: -1, 'timeSlot.startTime': -1 };
+    }
+
     const bookings = await Booking.find(query)
       .populate('user', 'name email phone profileImage')
-      .sort({ bookingDate: 1, 'timeSlot.startTime': 1 })
+      .sort(sort)
       .limit(limit * 1)
       .skip((page - 1) * limit);
 
