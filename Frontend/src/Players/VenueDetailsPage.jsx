@@ -12,6 +12,7 @@ import {
 import PlayerSidebar from './PlayerSidebar';
 import { showToast } from '../FutsalOwner/components/Toast';
 import { getVenueById } from '../store/venueService';
+import KhaltiLogo from '../components/KhaltiLogo';
 
 const VenueDetailPage = () => {
   const { id } = useParams();
@@ -58,7 +59,6 @@ const VenueDetailPage = () => {
 
   const paymentMethodIcons = {
     cash: Banknote,
-    khalti: Smartphone,
     bankTransfer: Building2,
     card: CreditCard
   };
@@ -534,10 +534,18 @@ const VenueDetailPage = () => {
                       
                       return (
                         <div key={method} className="flex items-center gap-3 text-gray-700">
-                          <div className="w-8 h-8 bg-emerald-50 rounded-lg flex items-center justify-center">
-                            <Icon className="w-4 h-4 text-emerald-600" />
+                          <div
+                            className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                              method === 'khalti' ? 'bg-gray-100' : 'bg-emerald-50'
+                            }`}
+                          >
+                            {method === 'khalti' ? (
+                              <KhaltiLogo className="w-5 h-5" />
+                            ) : (
+                              <Icon className="w-[1.15rem] h-[1.15rem] text-emerald-600" strokeWidth={2} />
+                            )}
                           </div>
-                          <span>{methodNames[method]}</span>
+                          <span className="text-sm text-gray-800 leading-none py-0.5">{methodNames[method]}</span>
                         </div>
                       );
                     })}

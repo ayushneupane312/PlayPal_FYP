@@ -4,8 +4,9 @@ import {
   MapPin, Star, Clock, Calendar, Users,
   Edit2, Eye, TrendingUp, Image as ImageIcon, Video,
   Phone, Mail, Globe, Facebook, Instagram, Award,
-  Shield, Wifi, Car, Coffee
+  Shield, Wifi, Car, Coffee, Banknote, Building2, CreditCard
 } from 'lucide-react';
+import KhaltiLogo from '../components/KhaltiLogo';
 import FutsalOwnerSidebar from './FutsalOwnerSidebar';
 import Header from './components/Header';
 import { showToast } from './components/Toast';
@@ -473,13 +474,34 @@ export default function VenueDashboard() {
               {venue.paymentMethods && (
                 <div className="bg-white rounded-lg shadow-md p-6">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">Payment Methods</h3>
-                  <div className="space-y-2">
-                    {venue.paymentMethods.cash && <p className="text-sm text-gray-700">💵 Cash</p>}
-                    {venue.paymentMethods.khalti && <p className="text-sm text-gray-700">📱 Khalti</p>}
-                    {venue.paymentMethods.bankTransfer && <p className="text-sm text-gray-700">🏦 Bank Transfer</p>}
-                    {venue.paymentMethods.card && <p className="text-sm text-gray-700">💳 Credit/Debit Card</p>}
+                  <div className="space-y-3">
+                    {[
+                      { key: 'cash', label: 'Cash', Icon: Banknote },
+                      { key: 'khalti', label: 'Khalti', Icon: null },
+                      { key: 'bankTransfer', label: 'Bank Transfer', Icon: Building2 },
+                      { key: 'card', label: 'Credit/Debit Card', Icon: CreditCard }
+                    ].map(({ key, label, Icon }) => {
+                      if (!venue.paymentMethods[key]) return null;
+                      return (
+                        <div key={key} className="flex items-center gap-3 text-gray-700">
+                          <div
+                            className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                              key === 'khalti' ? 'bg-gray-100' : 'bg-emerald-50'
+                            }`}
+                          >
+                            {key === 'khalti' ? (
+                              <KhaltiLogo className="w-5 h-5" />
+                            ) : (
+                              <Icon className="w-[1.15rem] h-[1.15rem] text-emerald-600" strokeWidth={2} />
+                            )}
+                          </div>
+                          <span className="text-sm text-gray-800 leading-none py-0.5">{label}</span>
+                        </div>
+                      );
+                    })}
                     {!venue.paymentMethods.cash &&
-                      !venue.paymentMethods.khalti && !venue.paymentMethods.bankTransfer &&
+                      !venue.paymentMethods.khalti &&
+                      !venue.paymentMethods.bankTransfer &&
                       !venue.paymentMethods.card && (
                         <p className="text-gray-500 text-sm">No payment methods set</p>
                       )}
