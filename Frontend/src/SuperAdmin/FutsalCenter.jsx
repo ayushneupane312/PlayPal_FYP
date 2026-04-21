@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Search, MapPin, Calendar, Star, Clock, Eye, Flag, X } from 'lucide-react';
 import AdminSidebar from './AdminSidebar';
 import SearchAndNotificationBar from '../components/SearchAndNotificationBar';
 import { getAllVenues } from '../store/venueService';
 
 const FutsalCenters = () => {
+  const navigate = useNavigate();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [centers, setCenters] = useState([]);
@@ -310,8 +312,9 @@ const FutsalCenters = () => {
 
                       {/* Actions */}
                       <div className="flex gap-2">
-                        <button 
-                          onClick={() => window.location.href = `/admin/venues/${center._id}`}
+                        <button
+                          type="button"
+                          onClick={() => navigate(`/admin/venues/${center._id}`)}
                           className="flex-1 bg-cyan-500 text-white py-2 px-4 rounded-lg hover:bg-cyan-600 transition-colors flex items-center justify-center gap-2 text-sm font-medium"
                         >
                           <Eye size={16} />

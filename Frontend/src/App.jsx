@@ -141,6 +141,7 @@ function App() {
           
             {/* Admin Routes */}
             <Route path="/admin/futsal-centers" element={<FutsalCenter />} />
+            <Route path="/admin/venues/:id" element={<VenueDetailsPage />} />
             <Route path="/admin/user-management" element={<UserDirectory />} />
             <Route path="/admindashboard" element={<AdminDashboard />} />
             <Route path="/admin/futsalownerapproval" element={<FutsalOwnerApproval/>} />

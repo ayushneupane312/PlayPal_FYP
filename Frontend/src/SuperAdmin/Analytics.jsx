@@ -171,7 +171,7 @@ const Analytics = () => {
       <div className={`flex-1 ${collapsed ? 'ml-20' : 'ml-64'} transition-all duration-300`}>
         <AdminHeader
           title="Perform Analytics"
-          subtitle="Platform earnings from the financial ledger (50% split)"
+          subtitle="Platform earnings from the financial ledger"
           notificationCount={0}
           showNotification={true}
           showTime={true}

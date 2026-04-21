@@ -29,7 +29,7 @@ const AdminSidebar = ({ onCollapseChange }) => {
     const path = location.pathname;
     if (path === "/" || path === "/admindashboard") return "Dashboard";
     if (path.includes("/admin/user-management")) return "User Management";
-    if (path.includes("/admin/futsal-centers")) return "Futsal Centers";
+    if (path.includes("/admin/futsal-centers") || path.startsWith("/admin/venues")) return "Futsal Centers";
     if (path.includes("/admin/futsalownerapproval")) return "Futsal Approval";
     if (path.includes("/admin/analytics")) return "Analytics";
     if (path.includes("/admin/settings")) return "Settings";

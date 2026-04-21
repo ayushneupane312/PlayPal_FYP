@@ -1,6 +1,6 @@
 // src/pages/player/VenueDetailPage.jsx
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import {
   MapPin, Phone, Mail, Clock, Star, Calendar,
   CheckCircle, Users, Wifi, Car, ShowerHead, Coffee, Shield,
@@ -10,6 +10,7 @@ import {
   ChevronRight, ExternalLink
 } from 'lucide-react';
 import PlayerSidebar from './PlayerSidebar';
+import AdminSidebar from '../SuperAdmin/AdminSidebar';
 import { showToast } from '../FutsalOwner/components/Toast';
 import { getVenueById } from '../store/venueService';
 import KhaltiLogo from '../components/KhaltiLogo';
@@ -17,6 +18,9 @@ import KhaltiLogo from '../components/KhaltiLogo';
 const VenueDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const isAdminVenueRoute = location.pathname.startsWith('/admin/venues');
+  const venuesListPath = isAdminVenueRoute ? '/admin/futsal-centers' : '/player/venues';
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [venue, setVenue] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -34,7 +38,7 @@ const VenueDetailPage = () => {
       setVenue(response.data);
     } catch (error) {
       showToast.error('Failed to load venue details');
-      navigate('/player/venues');
+      navigate(venuesListPath);
     } finally {
       setLoading(false);
     }
@@ -86,7 +90,11 @@ const VenueDetailPage = () => {
   if (loading) {
     return (
       <div className="flex min-h-screen bg-gray-50">
-        <PlayerSidebar collapsed={isSidebarCollapsed} setCollapsed={setIsSidebarCollapsed} />
+        {isAdminVenueRoute ? (
+          <AdminSidebar onCollapseChange={setIsSidebarCollapsed} />
+        ) : (
+          <PlayerSidebar onCollapseChange={setIsSidebarCollapsed} />
+        )}
         {/* ✅ FIX: Added proper margin-left */}
         <div className={`flex-1 flex items-center justify-center transition-all duration-300 ${
           isSidebarCollapsed ? 'ml-20' : 'ml-64'
@@ -100,7 +108,11 @@ const VenueDetailPage = () => {
   if (!venue) {
     return (
       <div className="flex min-h-screen bg-gray-50">
-        <PlayerSidebar collapsed={isSidebarCollapsed} setCollapsed={setIsSidebarCollapsed} />
+        {isAdminVenueRoute ? (
+          <AdminSidebar onCollapseChange={setIsSidebarCollapsed} />
+        ) : (
+          <PlayerSidebar onCollapseChange={setIsSidebarCollapsed} />
+        )}
         {/* ✅ FIX: Added proper margin-left */}
         <div className={`flex-1 flex items-center justify-center transition-all duration-300 ${
           isSidebarCollapsed ? 'ml-20' : 'ml-64'
@@ -120,8 +132,11 @@ const VenueDetailPage = () => {
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      
-<PlayerSidebar onCollapseChange={setIsSidebarCollapsed} />
+      {isAdminVenueRoute ? (
+        <AdminSidebar onCollapseChange={setIsSidebarCollapsed} />
+      ) : (
+        <PlayerSidebar onCollapseChange={setIsSidebarCollapsed} />
+      )}
       
 <div 
   className={`flex-1 p-8 transition-all duration-300 ease-in-out ${
@@ -133,11 +148,12 @@ const VenueDetailPage = () => {
         <div className="max-w-7xl mx-auto">
           {/* Back Button - Outside of cards */}
           <button
-            onClick={() => navigate('/player/venues')}
+            type="button"
+            onClick={() => navigate(venuesListPath)}
             className="flex items-center text-gray-600 hover:text-gray-900 mb-6 transition"
           >
             <ArrowLeft className="w-5 h-5 mr-2" />
-            Back to Venues
+            {isAdminVenueRoute ? 'Back to Futsal Centers' : 'Back to Venues'}
           </button>
 
           {/* Main Content Grid */}
@@ -553,14 +569,17 @@ const VenueDetailPage = () => {
                 </div>
               )}
 
-              {/* Book Now Button */}
-              <button
-                onClick={() => navigate(`/player/venue/${venue._id}/book`)}
-                className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg transition flex items-center justify-center gap-2 shadow-lg"
-              >
-                <Calendar className="w-6 h-6" />
-                Book Now
-              </button>
+              {/* Book Now — player flow only */}
+              {!isAdminVenueRoute ? (
+                <button
+                  type="button"
+                  onClick={() => navigate(`/player/venue/${venue._id}/book`)}
+                  className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg transition flex items-center justify-center gap-2 shadow-lg"
+                >
+                  <Calendar className="w-6 h-6" />
+                  Book Now
+                </button>
+              ) : null}
 
               {/* Owner Info */}
               <div className="bg-gradient-to-br from-emerald-50 to-green-50 border border-emerald-200 rounded-lg p-4">
