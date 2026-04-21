@@ -1029,7 +1029,7 @@ exports.getBookingById = async (req, res) => {
 
     // First, find the booking by ID
     const booking = await Booking.findById(id)
-      .populate('venue', 'venueName fullAddress contactInfo media operatingHours')
+      .populate('venue', 'venueName fullAddress contactInfo media operatingHours owner')
       .populate('splitPlayers.userId', 'name email');
 
     if (!booking) {
@@ -1087,6 +1087,23 @@ exports.getBookingById = async (req, res) => {
             break;
           }
         }
+      }
+    }
+
+    // 4) Venue owner (futsal owner — booking management / detail page)
+    if (!isAuthorized && booking.venue) {
+      let venueOwnerId =
+        booking.venue.owner &&
+        (booking.venue.owner._id
+          ? booking.venue.owner._id.toString()
+          : booking.venue.owner.toString());
+      if (!venueOwnerId) {
+        const venueId = booking.venue._id || booking.venue;
+        const v = await Venue.findById(venueId).select('owner').lean();
+        venueOwnerId = v?.owner?.toString();
+      }
+      if (venueOwnerId && venueOwnerId === userIdStr) {
+        isAuthorized = true;
       }
     }
 
@@ -1394,7 +1411,7 @@ exports.getOwnerEarnings = async (req, res) => {
 
     const summary = await getOwnerEarningsSummary(userId, { startDate, endDate });
 
-    if (!summary.venue) {
+    if (!summary.hasVenues) {
       return res.status(404).json({
         success: false,
         message: 'Venue not found',
@@ -1415,12 +1432,15 @@ exports.getOwnerEarnings = async (req, res) => {
       source,
       recentTransactions,
       bookings,
+      venueIds,
+      venue,
+      activeCourtsCount,
+      venueCount,
     } = summary;
 
     res.status(200).json({
       success: true,
       data: {
-        // Net after platform commission (primary figure for owner)
         totalEarnings: ownerNetTotal,
         ownerNetTotal,
         grossTotal,
@@ -1435,6 +1455,10 @@ exports.getOwnerEarnings = async (req, res) => {
         monthlyOwnerNet,
         recentTransactions,
         bookings,
+        venueIds,
+        venue,
+        activeCourtsCount,
+        venueCount,
       },
     });
   } catch (error) {

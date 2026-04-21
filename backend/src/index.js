@@ -86,6 +86,12 @@ app.use('/api/endorsements', endorsementRoutes);
 const paymentRoutes = require('./routes/PaymentRoutes');
 app.use('/api/payment', paymentRoutes);
 
+const adminFinancialRoutes = require('./routes/AdminFinancialRoutes');
+app.use('/api/admin', adminFinancialRoutes);
+
+const adminVenueRoutes = require('./routes/AdminVenueRoutes');
+app.use('/api/admin/venues', adminVenueRoutes);
+
 
 
 
