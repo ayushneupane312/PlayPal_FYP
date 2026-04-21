@@ -5,13 +5,18 @@ import FutsalOwnerSidebar from './FutsalOwnerSidebar';
 import Header from '../FutsalOwner/components/Header';
 import { useAuthStore } from '../store/authStore'; // ✅ ADD THIS IMPORT
 import { getVenueInfo } from '../store/venueService';
-import { getVenueBookings } from '../store/bookingStore';
+import { getVenueBookings, getOwnerEarnings } from '../store/bookingStore';
 import { listMyTournaments } from '../store/tournamentService';
 import { showToast } from './components/Toast';
 
-/** Weekly / monthly figures on this page are illustrative only; live earnings stay on the Earnings page. */
-const PLACEHOLDER_MONTHLY_REVENUE = 245000;
-const PLACEHOLDER_WEEKLY_REVENUE = [12000, 15000, 18000, 14000, 21000, 19000, 22000];
+const OWNER_SHARE = 0.5;
+
+function formatNpr(n) {
+  return `NPR ${Math.round(Number(n) || 0).toLocaleString('en-NP')}`;
+}
+
+/** Fallback when no paid bookings in the window (keeps chart readable). */
+const EMPTY_WEEK_SERIES = [0, 0, 0, 0, 0, 0, 0];
 
 function formatBookingStatus(status) {
   const s = (status || 'pending').toLowerCase();
@@ -44,10 +49,12 @@ export default function FutsalDashboard() {
   const [loading, setLoading] = useState(true);
   const [dashboardStats, setDashboardStats] = useState({
     todaysBookings: 0,
-    monthlyRevenue: PLACEHOLDER_MONTHLY_REVENUE,
+    monthlyOwnerNet: 0,
+    earningsSource: null,
+    earningsLoaded: false,
     activeCourts: 0,
     courtsInMaintenance: 0,
-    weeklyRevenue: [...PLACEHOLDER_WEEKLY_REVENUE],
+    weeklyOwnerShare: [...EMPTY_WEEK_SERIES],
     weekChartLabels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
     peakHours: [
       { time: '6 AM', bookings: 0 },
@@ -83,12 +90,14 @@ export default function FutsalDashboard() {
           return weekDayLabels[new Date(y, m - 1, day).getDay()];
         });
 
-        const [venueRes, todayBookingsRes, activityBookingsRes, tournamentsRes] = await Promise.all([
-          getVenueInfo().catch(() => null),
-          getVenueBookings({ date: today, limit: 100 }).catch(() => null),
-          getVenueBookings({ limit: 400, sortBy: 'createdAt', sortOrder: 'desc' }).catch(() => null),
-          listMyTournaments().catch(() => null)
-        ]);
+        const [venueRes, todayBookingsRes, activityBookingsRes, tournamentsRes, earningsRes] =
+          await Promise.all([
+            getVenueInfo().catch(() => null),
+            getVenueBookings({ date: today, limit: 100 }).catch(() => null),
+            getVenueBookings({ limit: 400, sortBy: 'createdAt', sortOrder: 'desc' }).catch(() => null),
+            listMyTournaments().catch(() => null),
+            getOwnerEarnings().catch(() => null),
+          ]);
 
         const venue = venueRes?.data || venueRes || null;
         const activeCourts = (venue?.courts || []).filter((c) => c?.isActive !== false).length;
@@ -157,12 +166,33 @@ export default function FutsalDashboard() {
           };
         });
 
+        const earningsData = earningsRes?.success ? earningsRes.data : null;
+        const monthlyOwnerNet = Number(earningsData?.monthOwnerNet) || 0;
+        const earningsSource = earningsData?.source || null;
+
+        const bookingDayKey = (b) => {
+          if (!b?.bookingDate) return null;
+          const d = new Date(b.bookingDate);
+          return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        };
+        const paidGross = (b) => Number(b?.pricing?.totalAmount) || 0;
+        const weeklyOwnerShare = weekDays.map((dayStr) =>
+          activityBookings
+            .filter(
+              (b) =>
+                String(b?.payment?.status || '').toLowerCase() === 'paid' && bookingDayKey(b) === dayStr
+            )
+            .reduce((sum, b) => sum + paidGross(b) * OWNER_SHARE, 0)
+        );
+
         setDashboardStats({
           todaysBookings,
-          monthlyRevenue: PLACEHOLDER_MONTHLY_REVENUE,
+          monthlyOwnerNet,
+          earningsSource,
+          earningsLoaded: Boolean(earningsRes?.success),
           activeCourts,
           courtsInMaintenance,
-          weeklyRevenue: [...PLACEHOLDER_WEEKLY_REVENUE],
+          weeklyOwnerShare,
           weekChartLabels,
           peakHours
         });
@@ -188,9 +218,11 @@ export default function FutsalDashboard() {
       color: 'bg-blue-500'
     },
     {
-      label: 'Monthly Revenue',
-      value: `NPR ${(dashboardStats.monthlyRevenue / 100000).toFixed(2)}L`,
-      change: 'Sample figure — open Earnings for actual revenue',
+      label: 'Monthly net (your share)',
+      value: formatNpr(dashboardStats.monthlyOwnerNet),
+      change: dashboardStats.earningsLoaded
+        ? `Same API as Earnings · ${dashboardStats.earningsSource === 'ledger' ? 'ledger' : 'estimate'}`
+        : 'Open Earnings after venue setup',
       icon: DollarSign,
       color: 'bg-green-500'
     },
@@ -207,7 +239,7 @@ export default function FutsalDashboard() {
 
   const maxBookings = Math.max(...peakHours.map(h => h.bookings), 1);
 
-  const weeklyRevSeries = dashboardStats.weeklyRevenue;
+  const weeklyRevSeries = dashboardStats.weeklyOwnerShare;
   const maxWeeklyRev = Math.max(...weeklyRevSeries, 1);
   const revAxisLabels = [
     maxWeeklyRev,
@@ -240,14 +272,22 @@ export default function FutsalDashboard() {
         />
 
         
-        <div className="flex justify-between items-center mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
           <div>
             <h1 className="text-2xl font-bold text-gray-800">Dashboard Overview</h1>
-            {/* ✅ FIXED - Now uses actual user name */}
             <p className="text-gray-500">
-              Welcome back, {user?.name || 'User'}! Here's what's happening at your venue.
+              Welcome back, {user?.name || 'User'}!{" "}
+              {"Here's what's happening at your venue."}
             </p>
           </div>
+          <button
+            type="button"
+            onClick={() => navigate('/EarningsPage')}
+            className="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 transition whitespace-nowrap"
+          >
+            <BarChart3 className="w-4 h-4" />
+            Earnings &amp; payouts
+          </button>
         </div>
       
         {loading && (
@@ -272,11 +312,21 @@ export default function FutsalDashboard() {
 
         {/* Charts Row */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          {/* Weekly Revenue */}
+          {/* Weekly owner share (50% of paid gross, by booking day) */}
           <div className="bg-white rounded-lg shadow p-6">
             <div className="mb-6">
-              <h2 className="text-lg font-semibold text-gray-900">Weekly Revenue</h2>
-              <p className="text-sm text-gray-600">Sample trend — last 7 days labeled below; use Earnings for real figures</p>
+              <h2 className="text-lg font-semibold text-gray-900">Your share (last 7 days)</h2>
+              <p className="text-sm text-gray-600">
+                Paid bookings only — 50% of court gross per day. Matches the policy on the{' '}
+                <button
+                  type="button"
+                  onClick={() => navigate('/EarningsPage')}
+                  className="text-emerald-600 font-medium hover:underline"
+                >
+                  Earnings
+                </button>{' '}
+                page.
+              </p>
             </div>
             <div className="h-64">
               <svg viewBox="0 0 700 200" className="w-full h-full">

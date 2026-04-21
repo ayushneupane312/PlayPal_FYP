@@ -70,6 +70,7 @@ import Analytics from "./SuperAdmin/Analytics.jsx";
 import SystemSettings from "./SuperAdmin/SystemSettings.jsx"
 import ApplicationStatus from "./FutsalOwner/ApplicationStatus.jsx";
 import HelpPage from "./pages/HelpPage.jsx";
+import GlobalSearchPage from "./pages/GlobalSearchPage.jsx";
 import VenueDashboard from "./FutsalOwner/VenueDashboard.jsx";
 import BookingManagementPage from "./FutsalOwner/BookingManagementPage.jsx";
 import OwnerBookingDetailPage from "./FutsalOwner/OwnerBookingDetailPage.jsx";
@@ -118,6 +119,7 @@ function App() {
             <Route path="/reset-password/:token" element={<ResetPassword />} />
             <Route path="/forgetpassword" element={<ForgotPassword />}/>
             <Route path="/verify-email" element={<EmailVerificationPage />} />
+            <Route path="/search" element={<GlobalSearchPage />} />
 
             {/* Futsal Owner Routes */}
             <Route path="/futsalownerdashboard" element={<FutsalOwner/>} />

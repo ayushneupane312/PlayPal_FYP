@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { DollarSign, Users, Calendar, AlertTriangle, Building2, Scale, Activity, TrendingUp, TrendingDown, Clock, CheckCircle, UserCheck, CreditCard, Shield, Loader2, Bell } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useMemo, useId } from 'react';
+import { DollarSign, Users, Calendar, AlertTriangle, Building2, Scale, Activity, TrendingUp, Clock, CheckCircle, UserCheck, Loader2, Bell } from 'lucide-react';
 import AdminSidebar from './AdminSidebar';
 import SearchAndNotificationBar from '../components/SearchAndNotificationBar';
 import notificationService from '../store/notificationService';
+import { fetchAdminEarningsSummary } from '../store/adminAnalyticsService';
 
 function formatNotificationTime(dateStr) {
   const date = new Date(dateStr);
@@ -38,10 +39,73 @@ const typeToStyle = {
   default: { bg: 'bg-cyan-500/10', color: 'text-cyan-500' }
 };
 
+function formatNprTick(value) {
+  const n = Math.round(Number(value) || 0);
+  if (Math.abs(n) >= 100000) return `NPR ${(n / 1000).toFixed(0)}k`;
+  if (Math.abs(n) >= 1000) return `NPR ${(n / 1000).toFixed(n % 1000 === 0 ? 0 : 1)}k`;
+  return `NPR ${n.toLocaleString()}`;
+}
+
+function fmtNpr(n) {
+  return `NPR ${Math.round(Number(n) || 0).toLocaleString()}`;
+}
+
+/** Last 12 calendar months; merge ledger `monthlyPlatform` rows by `YYYY-MM`. */
+function lastTwelveMonthsSeries(monthlyPlatform) {
+  const map = new Map();
+  for (const r of monthlyPlatform || []) {
+    if (!r?.month) continue;
+    map.set(r.month, {
+      revenue: Math.round(Number(r.platformShare) || 0),
+      bookings: Number(r.bookingCount) || 0,
+    });
+  }
+  const now = new Date();
+  const rows = [];
+  for (let i = 11; i >= 0; i -= 1) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    const v = map.get(key) || { revenue: 0, bookings: 0 };
+    rows.push({
+      month: d.toLocaleString('en-US', { month: 'short' }),
+      revenue: v.revenue,
+      bookings: v.bookings,
+    });
+  }
+  return rows;
+}
+
 const Dashboard = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [notificationsLoading, setNotificationsLoading] = useState(true);
+  const [adminSummary, setAdminSummary] = useState(null);
+  const [adminSummaryLoading, setAdminSummaryLoading] = useState(true);
+  const [adminSummaryError, setAdminSummaryError] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetchAdminEarningsSummary();
+        if (!cancelled && res?.success && res?.data) {
+          setAdminSummary(res.data);
+          setAdminSummaryError(null);
+        } else if (!cancelled) setAdminSummaryError(res?.message || 'Could not load dashboard metrics');
+      } catch (e) {
+        if (!cancelled) {
+          setAdminSummaryError(
+            e?.response?.data?.message || e?.message || 'Sign in as admin to load metrics'
+          );
+        }
+      } finally {
+        if (!cancelled) setAdminSummaryLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const fetchNotifications = useCallback(async () => {
     try {
@@ -59,75 +123,243 @@ const Dashboard = () => {
     fetchNotifications();
   }, [fetchNotifications]);
 
-  // Stats data
-  const stats = [
-    {
-      title: 'Total Revenue',
-      value: 'NPR 124,500',
-      subtitle: 'vs last month',
-      percentage: '+12.5%',
-      trend: 'up',
-      icon: DollarSign,
-      bgColor: 'bg-blue-500/10',
-      iconColor: 'text-blue-500'
-    },
-    {
-      title: 'Active Players',
-      value: '8,432',
-      subtitle: 'New this month',
-      percentage: '+8.2%',
-      trend: 'up',
-      icon: Users,
-      bgColor: 'bg-green-500/10',
-      iconColor: 'text-green-500'
-    },
-    {
-      title: 'Active Bookings',
-      value: '1,256',
-      subtitle: 'vs last week',
-      percentage: '-2.4%',
-      trend: 'down',
-      icon: Calendar,
-      bgColor: 'bg-yellow-500/10',
-      iconColor: 'text-yellow-500'
-    },
-
-  ];
-
-  const secondaryStats = [
-    {
-      title: 'Futsal Centers',
-      value: '156',
-      percentage: '+5%',
-      trend: 'up',
-      icon: Building2,
-      bgColor: 'bg-purple-500/10',
-      iconColor: 'text-purple-500'
-    },
-
-    {
-      title: 'Daily Active Users',
-      value: '2,847',
-      percentage: '+18%',
-      trend: 'up',
-      icon: Activity,
-      bgColor: 'bg-cyan-500/10',
-      iconColor: 'text-cyan-500'
+  const stats = useMemo(() => {
+    if (adminSummaryLoading) {
+      return [
+        {
+          title: 'Platform share (50%)',
+          value: '…',
+          subtitle: 'Loading…',
+          icon: DollarSign,
+          bgColor: 'bg-blue-500/10',
+          iconColor: 'text-blue-500',
+          pill: null,
+          pillLoading: true,
+        },
+        {
+          title: 'Gross booking volume',
+          value: '…',
+          subtitle: 'Loading…',
+          icon: TrendingUp,
+          bgColor: 'bg-green-500/10',
+          iconColor: 'text-green-500',
+          pill: null,
+          pillLoading: true,
+        },
+        {
+          title: 'Ledger transactions',
+          value: '…',
+          subtitle: 'Loading…',
+          icon: Calendar,
+          bgColor: 'bg-yellow-500/10',
+          iconColor: 'text-yellow-500',
+          pill: null,
+          pillLoading: true,
+        },
+      ];
     }
-  ];
+    const s = adminSummary;
+    if (!s) {
+      return [
+        {
+          title: 'Platform share (50%)',
+          value: '—',
+          subtitle: adminSummaryError || 'Unavailable',
+          icon: DollarSign,
+          bgColor: 'bg-blue-500/10',
+          iconColor: 'text-blue-500',
+          pill: null,
+          pillLoading: false,
+        },
+        {
+          title: 'Gross booking volume',
+          value: '—',
+          subtitle: adminSummaryError || 'Unavailable',
+          icon: TrendingUp,
+          bgColor: 'bg-green-500/10',
+          iconColor: 'text-green-500',
+          pill: null,
+          pillLoading: false,
+        },
+        {
+          title: 'Ledger transactions',
+          value: '—',
+          subtitle: adminSummaryError || 'Unavailable',
+          icon: Calendar,
+          bgColor: 'bg-yellow-500/10',
+          iconColor: 'text-yellow-500',
+          pill: null,
+          pillLoading: false,
+        },
+      ];
+    }
+    return [
+      {
+        title: 'Platform share (50%)',
+        value: fmtNpr(s.platformTotal),
+        subtitle: 'From financial ledger',
+        icon: DollarSign,
+        bgColor: 'bg-blue-500/10',
+        iconColor: 'text-blue-500',
+        pill: 'Live',
+        pillLoading: false,
+      },
+      {
+        title: 'Gross booking volume',
+        value: fmtNpr(s.grossTotal),
+        subtitle: 'Paid court bookings (sum)',
+        icon: TrendingUp,
+        bgColor: 'bg-green-500/10',
+        iconColor: 'text-green-500',
+        pill: 'Live',
+        pillLoading: false,
+      },
+      {
+        title: 'Ledger transactions',
+        value: String(s.transactionCount ?? 0),
+        subtitle: 'Court booking rows recorded',
+        icon: Calendar,
+        bgColor: 'bg-yellow-500/10',
+        iconColor: 'text-yellow-500',
+        pill: 'Live',
+        pillLoading: false,
+      },
+    ];
+  }, [adminSummary, adminSummaryLoading, adminSummaryError]);
 
+  const secondaryStats = useMemo(() => {
+    if (adminSummaryLoading) {
+      return [
+        { title: 'Owner pool (50%)', value: '…', icon: Scale, bgColor: 'bg-purple-500/10', iconColor: 'text-purple-500', pill: null, pillLoading: true },
+        { title: 'Top venues (ledger)', value: '…', icon: Building2, bgColor: 'bg-cyan-500/10', iconColor: 'text-cyan-500', pill: null, pillLoading: true },
+        { title: 'Peak hour bookings', value: '…', icon: Activity, bgColor: 'bg-orange-500/10', iconColor: 'text-orange-500', pill: null, pillLoading: true },
+      ];
+    }
+    const s = adminSummary;
+    if (!s) {
+      return [
+        { title: 'Owner pool (50%)', value: '—', icon: Scale, bgColor: 'bg-purple-500/10', iconColor: 'text-purple-500', pill: null, pillLoading: false },
+        { title: 'Top venues (ledger)', value: '—', icon: Building2, bgColor: 'bg-cyan-500/10', iconColor: 'text-cyan-500', pill: null, pillLoading: false },
+        { title: 'Peak hour bookings', value: '—', icon: Activity, bgColor: 'bg-orange-500/10', iconColor: 'text-orange-500', pill: null, pillLoading: false },
+      ];
+    }
+    const topN = (s.topVenues || []).length;
+    const peakMax = (s.peakHours || []).reduce((m, h) => Math.max(m, Number(h.bookings) || 0), 0);
+    return [
+      {
+        title: 'Owner pool (50%)',
+        value: fmtNpr(s.ownerPoolTotal),
+        icon: Scale,
+        bgColor: 'bg-purple-500/10',
+        iconColor: 'text-purple-500',
+        pill: 'Live',
+        pillLoading: false,
+      },
+      {
+        title: 'Top venues (ledger)',
+        value: String(topN),
+        icon: Building2,
+        bgColor: 'bg-cyan-500/10',
+        iconColor: 'text-cyan-500',
+        pill: 'Top 10',
+        pillLoading: false,
+      },
+      {
+        title: 'Peak hour bookings',
+        value: String(peakMax),
+        icon: Activity,
+        bgColor: 'bg-orange-500/10',
+        iconColor: 'text-orange-500',
+        pill: 'Peak',
+        pillLoading: false,
+      },
+    ];
+  }, [adminSummary, adminSummaryLoading]);
 
-  // Generate chart data points
-  const generateChartData = () => {
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    return months.map((month, index) => ({
-      month,
-      revenue: 2500 + Math.random() * 8000,
-      bookings: 500 + Math.random() * 2500
-    }));
-  };
+  const chartId = useId().replace(/:/g, '');
 
-  const chartData = generateChartData();
+  const chartRows = useMemo(() => {
+    if (adminSummaryLoading) return null;
+    return lastTwelveMonthsSeries(adminSummary?.monthlyPlatform);
+  }, [adminSummary, adminSummaryLoading]);
+
+  const chartGeometry = useMemo(() => {
+    if (!chartRows?.length) return null;
+    const data = chartRows;
+    const W = 800;
+    const H = 260;
+    const ML = 62;
+    const MR = 54;
+    const MT = 16;
+    const MB = 40;
+    const iw = W - ML - MR;
+    const ih = H - MT - MB;
+    const n = data.length;
+    if (n < 2) return null;
+
+    const revs = data.map((d) => d.revenue);
+    const books = data.map((d) => d.bookings);
+    let revLo = Math.min(...revs);
+    let revHi = Math.max(...revs);
+    let bookLo = Math.min(...books);
+    let bookHi = Math.max(...books);
+
+    const padRange = (lo, hi) => {
+      const span = hi - lo || 1;
+      return [lo - span * 0.06, hi + span * 0.06];
+    };
+    [revLo, revHi] = padRange(revLo, revHi);
+    [bookLo, bookHi] = padRange(bookLo, bookHi);
+    if (!(revHi > revLo)) {
+      revLo = 0;
+      revHi = 1;
+    }
+    if (!(bookHi > bookLo)) {
+      bookLo = 0;
+      bookHi = 1;
+    }
+
+    const xAt = (i) => ML + (i / (n - 1)) * iw;
+    const yRev = (r) => MT + ih * (1 - (r - revLo) / (revHi - revLo));
+    const yBook = (b) => MT + ih * (1 - (b - bookLo) / (bookHi - bookLo));
+
+    const revPoints = data.map((d, i) => ({ x: xAt(i), y: yRev(d.revenue) }));
+    const bookPoints = data.map((d, i) => ({ x: xAt(i), y: yBook(d.bookings) }));
+
+    const revenueLineD = revPoints.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x},${p.y}`).join(' ');
+    const revenueAreaD = `M ${revPoints[0].x},${MT + ih} ${revPoints.map((p) => `L ${p.x},${p.y}`).join(' ')} L ${revPoints[n - 1].x},${MT + ih} Z`;
+    const bookingsLineD = bookPoints.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x},${p.y}`).join(' ');
+
+    const tickYs = [0, 0.25, 0.5, 0.75, 1].map((t) => MT + ih * (1 - t));
+    const revTicks = tickYs.map((y) => {
+      const v = revLo + (1 - (y - MT) / ih) * (revHi - revLo);
+      return { y, label: formatNprTick(v) };
+    });
+    const bookTicks = tickYs.map((y) => {
+      const v = bookLo + (1 - (y - MT) / ih) * (bookHi - bookLo);
+      return { y, label: Math.round(v).toLocaleString() };
+    });
+
+    const gridLines = tickYs.map((y) => ({ y }));
+
+    return {
+      W,
+      H,
+      ML,
+      MR,
+      MT,
+      MB,
+      data,
+      revenueLineD,
+      revenueAreaD,
+      bookingsLineD,
+      revTicks,
+      bookTicks,
+      gridLines,
+      xAt,
+      monthY: MT + ih + 18,
+    };
+  }, [chartRows]);
 
   return (
     <div className="flex bg-gray-50 min-h-screen">
@@ -156,6 +388,12 @@ const Dashboard = () => {
             <p className="text-gray-500">Welcome back, Super Admin</p>
           </div>
 
+          {adminSummaryError && !adminSummaryLoading ? (
+            <div className="mb-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+              {adminSummaryError} — KPI cards below may be incomplete until the API succeeds.
+            </div>
+          ) : null}
+
           {/* Main Stats Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
             {stats.map((stat, index) => {
@@ -166,14 +404,17 @@ const Dashboard = () => {
                     <div className={`w-12 h-12 ${stat.bgColor} rounded-lg flex items-center justify-center`}>
                       <Icon className={stat.iconColor} size={24} />
                     </div>
-                    <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
-                      stat.trend === 'up' 
-                        ? 'bg-green-500/10 text-green-600' 
-                        : 'bg-red-500/10 text-red-600'
-                    }`}>
-                      {stat.trend === 'up' ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
-                      {stat.percentage}
-                    </div>
+                    {stat.pillLoading ? (
+                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-100">
+                        <Loader2 size={16} className="animate-spin text-cyan-500" />
+                      </div>
+                    ) : stat.pill ? (
+                      <div className="flex items-center gap-1 rounded-full bg-gray-100 px-2 py-1 text-xs font-medium text-gray-600">
+                        {stat.pill}
+                      </div>
+                    ) : (
+                      <div className="h-9 w-9" aria-hidden />
+                    )}
                   </div>
                   <p className="text-gray-500 text-sm mb-1">{stat.title}</p>
                   <h3 className="text-2xl font-bold text-gray-900 mb-1">{stat.value}</h3>
@@ -193,14 +434,17 @@ const Dashboard = () => {
                     <div className={`w-12 h-12 ${stat.bgColor} rounded-lg flex items-center justify-center`}>
                       <Icon className={stat.iconColor} size={24} />
                     </div>
-                    <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
-                      stat.trend === 'up' 
-                        ? 'bg-green-500/10 text-green-600' 
-                        : 'bg-red-500/10 text-red-600'
-                    }`}>
-                      {stat.trend === 'up' ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
-                      {stat.percentage}
-                    </div>
+                    {stat.pillLoading ? (
+                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-100">
+                        <Loader2 size={16} className="animate-spin text-cyan-500" />
+                      </div>
+                    ) : stat.pill ? (
+                      <div className="flex items-center gap-1 rounded-full bg-gray-100 px-2 py-1 text-xs font-medium text-gray-600">
+                        {stat.pill}
+                      </div>
+                    ) : (
+                      <div className="h-9 w-9" aria-hidden />
+                    )}
                   </div>
                   <p className="text-gray-500 text-sm mb-1">{stat.title}</p>
                   <h3 className="text-2xl font-bold text-gray-900">{stat.value}</h3>
@@ -216,12 +460,14 @@ const Dashboard = () => {
               <div className="flex items-center justify-between mb-6">
                 <div>
                   <h2 className="text-xl font-bold text-gray-900 mb-1">Revenue Overview</h2>
-                  <p className="text-gray-500 text-sm">Monthly revenue and booking trends</p>
+                  <p className="text-gray-500 text-sm">
+                    Platform share (NPR) and booking counts by month — same source as Analytics
+                  </p>
                 </div>
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 bg-cyan-500 rounded-full"></div>
-                    <span className="text-gray-600 text-sm">Revenue</span>
+                    <span className="text-gray-600 text-sm">Platform NPR</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 bg-green-500 rounded-full"></div>
@@ -230,63 +476,102 @@ const Dashboard = () => {
                 </div>
               </div>
 
-              {/* Chart */}
-              <div className="relative h-64">
-                <svg className="w-full h-full" viewBox="0 0 800 250" preserveAspectRatio="none">
-                  {/* Grid lines */}
-                  <line x1="0" y1="50" x2="800" y2="50" stroke="#e5e7eb" strokeWidth="1" />
-                  <line x1="0" y1="100" x2="800" y2="100" stroke="#e5e7eb" strokeWidth="1" />
-                  <line x1="0" y1="150" x2="800" y2="150" stroke="#e5e7eb" strokeWidth="1" />
-                  <line x1="0" y1="200" x2="800" y2="200" stroke="#e5e7eb" strokeWidth="1" />
+              {/* Chart: dual Y-axis; explicit SVG size + inline fills so it always paints */}
+              <div className="h-64 w-full min-h-[16rem]">
+                {adminSummaryLoading || !chartGeometry ? (
+                  <div className="flex h-full min-h-[16rem] items-center justify-center rounded-lg border border-dashed border-gray-200 bg-gray-50/80">
+                    <div className="flex flex-col items-center gap-2 text-gray-500">
+                      <Loader2 className="h-8 w-8 animate-spin text-cyan-500" />
+                      <span className="text-sm">Loading chart…</span>
+                    </div>
+                  </div>
+                ) : (
+                  <svg
+                    width="100%"
+                    height="256"
+                    className="block max-w-full"
+                    style={{ minHeight: '16rem' }}
+                    viewBox={`0 0 ${chartGeometry.W} ${chartGeometry.H}`}
+                    preserveAspectRatio="xMidYMid meet"
+                    role="img"
+                    aria-label="Monthly platform revenue and booking counts"
+                  >
+                    <defs>
+                      <linearGradient id={`revGrad-${chartId}`} x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" stopColor="#06b6d4" stopOpacity="0.35" />
+                        <stop offset="100%" stopColor="#06b6d4" stopOpacity="0" />
+                      </linearGradient>
+                    </defs>
 
-                  {/* Revenue area chart (cyan) */}
-                  <defs>
-                    <linearGradient id="revenueGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                      <stop offset="0%" stopColor="#06b6d4" stopOpacity="0.4" />
-                      <stop offset="100%" stopColor="#06b6d4" stopOpacity="0" />
-                    </linearGradient>
-                  </defs>
-                  <path
-                    d={`M 0,${250 - (chartData[0].revenue / 100)} ${chartData.map((d, i) => 
-                      `L ${(i * 800) / (chartData.length - 1)},${250 - (d.revenue / 100)}`
-                    ).join(' ')} L 800,250 L 0,250 Z`}
-                    fill="url(#revenueGradient)"
-                  />
-                  <path
-                    d={`M 0,${250 - (chartData[0].revenue / 100)} ${chartData.map((d, i) => 
-                      `L ${(i * 800) / (chartData.length - 1)},${250 - (d.revenue / 100)}`
-                    ).join(' ')}`}
-                    fill="none"
-                    stroke="#06b6d4"
-                    strokeWidth="3"
-                  />
+                    {chartGeometry.gridLines.map((g, i) => (
+                      <line
+                        key={i}
+                        x1={chartGeometry.ML}
+                        y1={g.y}
+                        x2={chartGeometry.W - chartGeometry.MR}
+                        y2={g.y}
+                        stroke="#e5e7eb"
+                        strokeWidth="1"
+                      />
+                    ))}
 
-                  {/* Bookings line (green) */}
-                  <path
-                    d={`M 0,${250 - (chartData[0].bookings / 10)} ${chartData.map((d, i) => 
-                      `L ${(i * 800) / (chartData.length - 1)},${250 - (d.bookings / 10)}`
-                    ).join(' ')}`}
-                    fill="none"
-                    stroke="#10b981"
-                    strokeWidth="3"
-                  />
-                </svg>
+                    <path d={chartGeometry.revenueAreaD} fill={`url(#revGrad-${chartId})`} />
+                    <path
+                      d={chartGeometry.revenueLineD}
+                      fill="none"
+                      stroke="#0891b2"
+                      strokeWidth="2.5"
+                      strokeLinejoin="round"
+                      strokeLinecap="round"
+                    />
+                    <path
+                      d={chartGeometry.bookingsLineD}
+                      fill="none"
+                      stroke="#10b981"
+                      strokeWidth="2.5"
+                      strokeLinejoin="round"
+                      strokeLinecap="round"
+                    />
 
-                {/* Y-axis labels */}
-                <div className="absolute left-0 top-0 h-full flex flex-col justify-between text-gray-500 text-xs pr-2">
-                  <span>NPR 100k</span>
-                  <span>NPR 75k</span>
-                  <span>NPR 50k</span>
-                  <span>NPR 25k</span>
-                  <span>NPR 0</span>
-                </div>
+                    {chartGeometry.revTicks.map((t, i) => (
+                      <text
+                        key={`rl-${i}`}
+                        x={chartGeometry.ML - 6}
+                        y={t.y + 4}
+                        textAnchor="end"
+                        fill="#64748b"
+                        style={{ fontSize: '11px' }}
+                      >
+                        {t.label}
+                      </text>
+                    ))}
+                    {chartGeometry.bookTicks.map((t, i) => (
+                      <text
+                        key={`br-${i}`}
+                        x={chartGeometry.W - chartGeometry.MR + 6}
+                        y={t.y + 4}
+                        textAnchor="start"
+                        fill="#059669"
+                        style={{ fontSize: '11px' }}
+                      >
+                        {t.label}
+                      </text>
+                    ))}
 
-                {/* X-axis labels */}
-                <div className="absolute bottom-0 left-0 w-full flex justify-between text-gray-500 text-xs pt-2">
-                  {chartData.map((d, i) => (
-                    <span key={i}>{d.month}</span>
-                  ))}
-                </div>
+                    {chartGeometry.data.map((d, i) => (
+                      <text
+                        key={`${d.month}-${i}`}
+                        x={chartGeometry.xAt(i)}
+                        y={chartGeometry.monthY}
+                        textAnchor="middle"
+                        fill="#64748b"
+                        style={{ fontSize: '10px' }}
+                      >
+                        {d.month}
+                      </text>
+                    ))}
+                  </svg>
+                )}
               </div>
             </div>
 

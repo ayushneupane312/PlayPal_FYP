@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { showToast } from '../FutsalOwner/components/Toast';
 import { Search, Bell, Users, Calendar, Trophy, AlertCircle, Check, CheckCheck } from 'lucide-react';
 import notificationService from '../store/notificationService';
 
@@ -117,7 +118,16 @@ export default function SearchAndNotificationBar({
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
-    if (onSearch) onSearch(searchValue);
+    const trimmed = searchValue.trim();
+    if (onSearch) {
+      onSearch(searchValue);
+      return;
+    }
+    if (!trimmed) {
+      showToast.info('Type a search term, then press Enter.');
+      return;
+    }
+    navigate(`/search?q=${encodeURIComponent(trimmed)}`);
   };
 
   // Mark a single notification read (called from the tick button)
