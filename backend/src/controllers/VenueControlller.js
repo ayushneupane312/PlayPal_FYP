@@ -1,7 +1,7 @@
 const Venue = require('../models/VenueModel');
 const { deleteFromCloudinary } = require('../middlewares/UploadMiddleware');
 const User = require('../models/UserModel');
-const FutsalOwner = require('../models/futsalOwnerForm');
+const FutsalOwner = require('../models/FutsalOwnerForm');
 
 
 
