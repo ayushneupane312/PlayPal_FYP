@@ -138,3 +138,11 @@ const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
   console.log(`API URL: http://localhost:${PORT}`);
 });
+
+// Keep Render free tier awake — ping self every 14 minutes
+if (process.env.NODE_ENV === 'production') {
+  const SELF_URL = `https://playpal-fyp.onrender.com`;
+  setInterval(() => {
+    require('https').get(`${SELF_URL}/`, () => {}).on('error', () => {});
+  }, 14 * 60 * 1000);
+}
