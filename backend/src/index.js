@@ -19,8 +19,9 @@ const allowedOrigins = new Set([
   'http://localhost:5173',
   'http://localhost:5174',
   'http://localhost:5175',
+  'https://play-pal-fyp.vercel.app',
   process.env.FRONTEND_URL,
-]);
+].filter(Boolean));
 
 app.use(
   cors({
@@ -122,8 +123,9 @@ const io = new Server(server, {
   cors: {
     origin: [
       'http://localhost:5173',
-      process.env.FRONTEND_URL    // ← adds deployed frontend
-    ],
+      'https://play-pal-fyp.vercel.app',
+      process.env.FRONTEND_URL,
+    ].filter(Boolean),
     credentials: true
   }
 });
