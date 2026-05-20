@@ -2,8 +2,8 @@ import axios from 'axios';
 import { getAllVenues, getAllVenuesAdmin } from './venueService';
 import { getVenueBookings, getMyBookings } from './bookingStore';
 
-const USERS_API =
-  import.meta.env.MODE === 'development' ? 'http://localhost:5000/api/users' : '/api/users';
+import API_BASE from '../utils/apiBase';
+const USERS_API = `${API_BASE}/api/users`;
 
 axios.defaults.withCredentials = true;
 

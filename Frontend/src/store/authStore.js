@@ -1,20 +1,10 @@
 import { create } from "zustand";
 import axios from "axios";
+import API_BASE from '../utils/apiBase';
 
-const API_URL =
-  import.meta.env.MODE === "development"
-    ? "http://localhost:5000/auth"
-    : "/auth";
-
-const UPLOAD_URL = import.meta.env.MODE === "development"
-    ? "http://localhost:5000/upload"
-    : "/upload";
-
-/** Image/file uploads (Cloudinary via backend) */
-const UPLOAD_API =
-  import.meta.env.MODE === "development"
-    ? "http://localhost:5000/api/upload"
-    : "/api/upload";
+const API_URL = `${API_BASE}/auth`;
+const UPLOAD_URL = `${API_BASE}/upload`;
+const UPLOAD_API = `${API_BASE}/api/upload`;
 
 axios.defaults.withCredentials = true;
 

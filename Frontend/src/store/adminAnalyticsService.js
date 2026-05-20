@@ -1,7 +1,6 @@
 import axios from 'axios';
 
-const API_BASE =
-  import.meta.env.MODE === 'development' ? 'http://localhost:5000' : '';
+import API_BASE from '../utils/apiBase';
 
 axios.defaults.withCredentials = true;
 
