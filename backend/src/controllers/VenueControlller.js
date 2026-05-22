@@ -1,7 +1,7 @@
 const Venue = require('../models/VenueModel');
 const { deleteFromCloudinary } = require('../middlewares/UploadMiddleware');
 const User = require('../models/UserModel');
-const FutsalOwner = require('../models/futsalOwnerForm');
+const FutsalOwner = require('../models/FutsalOwnerForm.js');
 
 /** Admin card when owner is approved but has not created a Venue in the app yet. */
 function venueCardFromRegistration(fo, user) {

@@ -1,4 +1,4 @@
-const FutsalOwner = require('../models/futsalOwnerForm.js');
+const FutsalOwner = require('../models/FutsalOwnerForm.js');
 const User = require('../models/UserModel.js');
 const Venue = require('../models/VenueModel');
 const { deleteFromCloudinary } = require('../middlewares/UploadMiddleware');
