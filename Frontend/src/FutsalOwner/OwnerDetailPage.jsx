@@ -9,7 +9,8 @@ import {
   User, Eye, Trash2
 } from 'lucide-react';
 import { showToast } from './components/Toast';
-import API_BASE from '../utils/apiBase';
+
+const API_BASE ='http://localhost:5000';
 
 // ─── helpers ──────────────────────────────────────────────
 const isPdf = (url) => !url ? false : url.includes('/raw/upload/') || url.toLowerCase().endsWith('.pdf');

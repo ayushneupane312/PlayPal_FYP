@@ -1,7 +1,8 @@
 import axios from 'axios';
 
-import API_BASE from '../utils/apiBase';
-const API_URL = `${API_BASE}/api/bookings`;
+const API_URL = import.meta.env.MODE === 'development'
+  ? 'http://localhost:5000/api/bookings'
+  : '/api/bookings';
 
 axios.defaults.withCredentials = true;
 

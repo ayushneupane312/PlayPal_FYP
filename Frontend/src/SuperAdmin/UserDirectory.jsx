@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import API_BASE from '../utils/apiBase';
 import { Users, Search, Eye, Trash, Bell, Phone, Mail, Filter, Edit, Plus, X } from 'lucide-react';
 import AdminSidebar from './AdminSidebar';
 import Dropdown from '../components/DropDown';
@@ -135,7 +134,8 @@ const UserManagement = () => {
     if (!candidate) return '';
     if (candidate.startsWith('http://') || candidate.startsWith('https://')) return candidate;
     if (candidate.startsWith('/')) {
-      return `${API_BASE}${candidate}`;
+      const base = import.meta.env.MODE === "development" ? "http://localhost:5000" : "";
+      return `${base}${candidate}`;
     }
     return candidate;
   };

@@ -1,5 +1,4 @@
 import { useState, useEffect, useId } from "react";
-import API_BASE from '../utils/apiBase';
 import { useNavigate } from "react-router-dom";
 import {
   CalendarDays,
@@ -957,7 +956,8 @@ export default function TournamentCreator() {
   useEffect(() => {
     const fetchVenue = async () => {
       try {
-        const res = await axios.get(`${API_BASE}/api/venue/my-venue`, { withCredentials: true });
+        const base = import.meta.env.MODE === "development" ? "http://localhost:5000" : "";
+        const res = await axios.get(`${base}/api/venue/my-venue`, { withCredentials: true });
         if (res.data?.success && res.data.data) {
           const v = res.data.data;
           setData(d => ({ ...d, venue: v.venueName || "", location: v.fullAddress || "" }));
@@ -1012,7 +1012,8 @@ export default function TournamentCreator() {
         showToast.error("Please complete all required fields before publishing.");
         return;
       }
-      const venueRes = await axios.get(`${API_BASE}/api/venue/my-venue`, { withCredentials: true });
+      const base = import.meta.env.MODE === "development" ? "http://localhost:5000" : "";
+      const venueRes = await axios.get(`${base}/api/venue/my-venue`, { withCredentials: true });
       if (!venueRes.data?.success || !venueRes.data.data?._id) {
         showToast.error("Your venue could not be loaded. Please create or update your venue first.");
         return;

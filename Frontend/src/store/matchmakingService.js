@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-import API_BASE from '../utils/apiBase';
+const API_BASE = import.meta.env.MODE === 'development' ? 'http://localhost:5000' : '';
 const TEAM_URL = `${API_BASE}/api/team`;
 const MATCHMAKING_URL = `${API_BASE}/api/matchmaking`;
 

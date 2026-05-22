@@ -1,6 +1,9 @@
 import axios from 'axios';
 
-import API_BASE from '../utils/apiBase';
+// API Configuration - matches backend /api/venue
+const API_BASE = import.meta.env.MODE === 'development'
+  ? 'http://localhost:5000'
+  : '';
 
 const API_URL = `${API_BASE}/api/venue`;
 
