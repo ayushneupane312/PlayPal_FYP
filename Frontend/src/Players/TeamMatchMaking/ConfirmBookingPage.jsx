@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import PlayerSidebar from '../PlayerSidebar';
-import { ArrowLeft, Loader2, Calendar, Clock, MapPin } from 'lucide-react';
+import { ArrowLeft, Loader2, Users, CheckCircle } from 'lucide-react';
 import { getAllVenues } from '../../store/venueService';
 import { getVenueById } from '../../store/venueService';
 import { getAvailableSlots } from '../../store/bookingStore';
@@ -22,9 +22,10 @@ const ConfirmBookingPage = () => {
   const [bookedSlots, setBookedSlots] = useState([]);
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [paymentMethod, setPaymentMethod] = useState('khalti');
-  const [paymentType, setPaymentType] = useState('full'); // 'full' | 'split'
+  const [paymentType, setPaymentType] = useState('full');
   const [loading, setLoading] = useState(false);
   const [createdBooking, setCreatedBooking] = useState(null);
+  const [splitSummary, setSplitSummary] = useState(null);
 
   useEffect(() => {
     (async () => {
@@ -99,15 +100,17 @@ const ConfirmBookingPage = () => {
         duration,
         paymentMethod,
         paymentType,
-        matchId: searchParams.get('matchId') || undefined
+        matchId: searchParams.get('matchId') || undefined,
       });
       const booking = res.data?.booking;
+      const summary = res.data?.splitSummary;
       setCreatedBooking(booking);
-      showToast.success(booking?.paymentType === 'split' ? 'Split booking created. Share the link with your team.' : 'Booking created');
-      if (booking?.paymentType === 'split' && booking?._id) {
-        navigate(`/player/booking/split/${booking._id}`, { replace: true });
-        return;
-      }
+      setSplitSummary(summary);
+      showToast.success(
+        booking?.paymentType === 'split'
+          ? 'Split requests sent to all teammates'
+          : 'Booking created'
+      );
     } catch (e) {
       showToast.error(e.response?.data?.message || 'Failed to create booking');
     } finally {
@@ -115,7 +118,7 @@ const ConfirmBookingPage = () => {
     }
   };
 
-  const handlePayKhalti = async () => {
+  const handlePayKhaltiFull = async () => {
     if (!createdBooking?._id) return;
     try {
       const res = await initiatePayment(createdBooking._id);
@@ -129,13 +132,25 @@ const ConfirmBookingPage = () => {
     }
   };
 
+  const isSplitBooking = createdBooking?.paymentType === 'split';
+  const teamSize = splitSummary?.teamSize || createdBooking?.splitPlayers?.length || 0;
+  const shareAmount =
+    splitSummary?.amountPerPlayer ??
+    createdBooking?.splitPlayers?.[0]?.amountAssigned;
+
   const isSidebarCollapsed = false;
   return (
     <div className="flex min-h-screen bg-gray-50">
       <PlayerSidebar onCollapseChange={() => {}} />
-      <div className={`flex-1 p-6 ${isSidebarCollapsed ? 'ml-20' : 'ml-64'}`} style={{ width: `calc(100% - 16rem)` }}>
+      <div
+        className={`flex-1 p-6 ${isSidebarCollapsed ? 'ml-20' : 'ml-64'}`}
+        style={{ width: `calc(100% - 16rem)` }}
+      >
         <div className="max-w-2xl mx-auto">
-          <button onClick={() => navigate(`/player/teams/${teamId}`)} className="flex items-center text-gray-600 hover:text-gray-900 mb-4">
+          <button
+            onClick={() => navigate(`/player/teams/${teamId}`)}
+            className="flex items-center text-gray-600 hover:text-gray-900 mb-4"
+          >
             <ArrowLeft className="w-5 h-5 mr-2" /> Back to team
           </button>
           <h1 className="text-2xl font-bold text-gray-900 mb-6">Confirm match booking</h1>
@@ -151,7 +166,9 @@ const ConfirmBookingPage = () => {
                 >
                   <option value="">Select venue</option>
                   {venues.map((v) => (
-                    <option key={v._id} value={v._id}>{v.venueName}</option>
+                    <option key={v._id} value={v._id}>
+                      {v.venueName}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -160,12 +177,16 @@ const ConfirmBookingPage = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-1">Court</label>
                   <select
                     value={selectedCourt?._id || ''}
-                    onChange={(e) => setSelectedCourt(venue.courts.find(c => c._id === e.target.value))}
+                    onChange={(e) =>
+                      setSelectedCourt(venue.courts.find((c) => c._id === e.target.value))
+                    }
                     className="w-full border border-gray-300 rounded-lg px-3 py-2"
                   >
                     <option value="">Select court</option>
                     {venue.courts.map((c) => (
-                      <option key={c._id} value={c._id}>{c.name}</option>
+                      <option key={c._id} value={c._id}>
+                        {c.name}
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -195,7 +216,6 @@ const ConfirmBookingPage = () => {
                     </p>
                   </div>
 
-                  {/* Available slots */}
                   {availableSlots.length > 0 ? (
                     <div>
                       <p className="text-xs text-gray-500 mb-1">Available slots</p>
@@ -227,7 +247,6 @@ const ConfirmBookingPage = () => {
                     </p>
                   )}
 
-                  {/* Already booked slots */}
                   {bookedSlots.length > 0 && (
                     <div>
                       <p className="text-xs text-gray-500 mt-2 mb-1">Already booked</p>
@@ -254,15 +273,29 @@ const ConfirmBookingPage = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Payment type</label>
                 <div className="flex gap-4 mb-2">
                   <label className="flex items-center gap-2 cursor-pointer">
-                    <input type="radio" name="paymentType" checked={paymentType === 'full'} onChange={() => setPaymentType('full')} className="rounded" />
+                    <input
+                      type="radio"
+                      name="paymentType"
+                      checked={paymentType === 'full'}
+                      onChange={() => setPaymentType('full')}
+                      className="rounded"
+                    />
                     <span>Full payment (I pay total)</span>
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer">
-                    <input type="radio" name="paymentType" checked={paymentType === 'split'} onChange={() => setPaymentType('split')} className="rounded" />
+                    <input
+                      type="radio"
+                      name="paymentType"
+                      checked={paymentType === 'split'}
+                      onChange={() => setPaymentType('split')}
+                      className="rounded"
+                    />
                     <span>Split payment (each player pays share)</span>
                   </label>
                 </div>
-                <p className="text-xs text-gray-500 mb-2">Split: all players must pay within 30 minutes or booking is cancelled.</p>
+                <p className="text-xs text-gray-500 mb-2">
+                  Split: every teammate pays their own share within 30 minutes or the booking is cancelled.
+                </p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Payment method</label>
@@ -271,23 +304,75 @@ const ConfirmBookingPage = () => {
                   onChange={(e) => setPaymentMethod(e.target.value)}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2"
                 >
-                  <option value="khalti">Khalti</option>
+                  <option value="khalti">Khalti (online)</option>
                   <option value="cash">Cash at venue</option>
                 </select>
               </div>
-              <button type="submit" disabled={loading} className="w-full py-3 bg-emerald-600 text-white rounded-lg font-medium hover:bg-emerald-700 disabled:opacity-50">
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-3 bg-emerald-600 text-white rounded-lg font-medium hover:bg-emerald-700 disabled:opacity-50"
+              >
                 {loading ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : 'Create booking'}
               </button>
             </form>
+          ) : isSplitBooking ? (
+            <div className="bg-white rounded-xl border border-emerald-200 p-6 space-y-4">
+              <div className="flex items-start gap-3">
+                <CheckCircle className="w-8 h-8 text-emerald-600 shrink-0" />
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900">Split booking created</h2>
+                  <p className="text-gray-600 mt-1">
+                    Split payment requests sent to all{' '}
+                    <strong>{teamSize}</strong> teammates. Each player must pay{' '}
+                    <strong>NPR {shareAmount}</strong> from their own account within{' '}
+                    <strong>30 minutes</strong>.
+                  </p>
+                  <p className="text-sm text-gray-500 mt-2 flex items-center gap-2">
+                    <Users className="w-4 h-4" />
+                    You also owe NPR {shareAmount} — pay your share to confirm the slot.
+                  </p>
+                </div>
+              </div>
+              <div className="flex flex-col gap-2">
+                <button
+                  type="button"
+                  onClick={() =>
+                    navigate(`/player/booking/split/${createdBooking._id}`)
+                  }
+                  className="w-full py-3 bg-emerald-600 text-white rounded-lg font-medium hover:bg-emerald-700"
+                >
+                  Pay my share / view progress
+                </button>
+                <button
+                  type="button"
+                  onClick={() => navigate(`/player/teams/${teamId}`)}
+                  className="w-full py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                >
+                  Back to team
+                </button>
+              </div>
+            </div>
           ) : (
             <div className="bg-white rounded-xl border border-gray-200 p-6">
-              <p className="text-gray-700 mb-4">Booking created. {paymentMethod === 'khalti' ? 'Pay with Khalti to confirm.' : 'Pay at venue.'}</p>
+              <p className="text-gray-700 mb-4">
+                Booking created.{' '}
+                {paymentMethod === 'khalti'
+                  ? 'Pay with Khalti to confirm.'
+                  : 'Pay at venue.'}
+              </p>
               {paymentMethod === 'khalti' && (
-                <button onClick={handlePayKhalti} className="w-full py-3 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700">
+                <button
+                  onClick={handlePayKhaltiFull}
+                  className="w-full py-3 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700"
+                >
                   Pay with Khalti
                 </button>
               )}
-              <button onClick={() => navigate(`/player/bookings/${createdBooking._id}`)} className="w-full mt-2 py-2 border border-gray-300 rounded-lg">
+              <button
+                onClick={() => navigate(`/player/bookings/${createdBooking._id}`)}
+                className="w-full mt-2 py-2 border border-gray-300 rounded-lg"
+              >
                 View booking
               </button>
             </div>

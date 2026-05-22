@@ -136,6 +136,12 @@ export const cancelBooking = async (bookingId, reason) => {
 // SPLIT PAYMENT (after matchmaking)
 // ═══════════════════════════════════════════════════════════
 
+/** Pending split shares for logged-in user */
+export const getPendingSplitPayments = async () => {
+  const { data } = await axios.get(`${API_URL}/pending-split-payments`);
+  return data;
+};
+
 /** Initiate Khalti for current user's split share */
 export const initiateSplitPayment = async (bookingId) => {
   const { data } = await axios.post(`${API_URL}/${bookingId}/initiate-split-payment`);
@@ -341,6 +347,7 @@ const bookingStore = {
   getMyBookings,
   getBookingById,
   cancelBooking,
+  getPendingSplitPayments,
   initiateSplitPayment,
   verifySplitPayment,
   payShare,
