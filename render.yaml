@@ -47,11 +47,10 @@ services:
       - key: KHALTI_BASE_URL
         value: https://a.khalti.com/api/v2
 
-  # React (Vite) static site
+  # React (Vite) static site — no `plan` (static sites are always free on Render)
   - type: web
     name: playpal-web
     runtime: static
-    plan: free
     rootDir: Frontend
     buildCommand: npm install && npm run build
     staticPublishPath: ./dist
