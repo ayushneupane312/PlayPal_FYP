@@ -2,10 +2,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PlayerSidebar from '../PlayerSidebar';
-import { Users, ArrowLeft, Trophy, Loader2, Crown, Plus } from 'lucide-react';
+import { Users, ArrowLeft, Trophy, Loader2, Crown, Plus, Trash2, LogOut } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import matchmakingService from '../../store/matchmakingService';
 import { showToast } from '../../FutsalOwner/components/Toast';
+import ConfirmationModal from '../../components/ConfirmationModel';
 
 const STATUS_CONFIG = {
   forming: { label: 'Forming',  bg: 'bg-amber-100',  text: 'text-amber-700',  dot: 'bg-amber-500'  },
@@ -20,6 +21,9 @@ const MyTeamsPage = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [teams, setTeams] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [teamToDelete, setTeamToDelete] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+  const [leavingId, setLeavingId] = useState(null);
 
   const currentUserId = user?._id?.toString?.() || user?.id?.toString?.();
 
@@ -47,6 +51,37 @@ const MyTeamsPage = () => {
   };
 
   const statusCfg   = (s) => STATUS_CONFIG[s]   || STATUS_CONFIG.forming;
+
+  const handleDeleteTeam = async () => {
+    if (!teamToDelete) return;
+    try {
+      setDeleting(true);
+      await matchmakingService.deleteTeam(teamToDelete._id);
+      showToast.success(`"${teamToDelete.name}" has been deleted`);
+      setTeamToDelete(null);
+      await load();
+    } catch (e) {
+      const msg = e.response?.data?.message || 'Failed to delete team';
+      showToast.error(msg);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const handleLeaveTeam = async (team, e) => {
+    e.stopPropagation();
+    if (!window.confirm(`Leave "${team.name}"? You can join or create another team later.`)) return;
+    try {
+      setLeavingId(team._id);
+      await matchmakingService.leaveTeam(team._id);
+      showToast.success(`You left "${team.name}"`);
+      await load();
+    } catch (err) {
+      showToast.error(err.response?.data?.message || 'Failed to leave team');
+    } finally {
+      setLeavingId(null);
+    }
+  };
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -197,15 +232,50 @@ const MyTeamsPage = () => {
                           style={{ width: `${fillPct}%` }}
                         />
                       </div>
-                      <div className="flex justify-between mt-1">
+                      <div className="flex flex-wrap items-center justify-between gap-2 mt-1">
                         <p className="text-xs text-gray-400">
                           {isFull
                             ? '✓ Team full — ready to book!'
                             : `${team.maxPlayers - playerCount} spot${team.maxPlayers - playerCount !== 1 ? 's' : ''} remaining`}
                         </p>
-                        {team.isPublic && (
-                          <p className="text-xs text-gray-400">Public</p>
-                        )}
+                        <div
+                          className="flex flex-wrap items-center gap-2"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {team.isPublic && (
+                            <span className="text-xs text-gray-400">Public</span>
+                          )}
+                          {isLeader && team.status !== 'booked' && (
+                            <button
+                              type="button"
+                              onClick={() => setTeamToDelete(team)}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-red-600 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                              Delete Team
+                            </button>
+                          )}
+                          {isLeader && team.status === 'booked' && (
+                            <span className="text-xs text-amber-600">
+                              Cancel booking to delete
+                            </span>
+                          )}
+                          {!isLeader && team.status !== 'booked' && (
+                            <button
+                              type="button"
+                              onClick={(e) => handleLeaveTeam(team, e)}
+                              disabled={leavingId === team._id}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-gray-600 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 transition disabled:opacity-50"
+                            >
+                              {leavingId === team._id ? (
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              ) : (
+                                <LogOut className="w-3.5 h-3.5" />
+                              )}
+                              Leave Team
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -215,6 +285,22 @@ const MyTeamsPage = () => {
           )}
         </div>
       </div>
+
+      <ConfirmationModal
+        isOpen={!!teamToDelete}
+        onClose={() => !deleting && setTeamToDelete(null)}
+        onConfirm={handleDeleteTeam}
+        title="Delete Team?"
+        message={
+          teamToDelete
+            ? `Permanently delete "${teamToDelete.name}"? All members will be notified. This cannot be undone.`
+            : ''
+        }
+        confirmText={deleting ? 'Deleting…' : 'Delete Team'}
+        cancelText="Cancel"
+        type="danger"
+        isLoading={deleting}
+      />
     </div>
   );
 };

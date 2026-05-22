@@ -100,7 +100,10 @@ export default function SplitPaymentPage() {
       setPaying(true);
       const res = await initiateSplitPayment(bookingId);
       const payUrl = res?.data?.paymentUrl || res?.data?.payment_url;
-      if (payUrl) window.location.href = payUrl;
+      if (payUrl) {
+        sessionStorage.setItem('playpal_split_booking_id', bookingId);
+        window.location.href = payUrl;
+      }
       else showToast.error('Could not start payment');
     } catch (e) {
       showToast.error(e.response?.data?.message || e.message || 'Failed to initiate payment');

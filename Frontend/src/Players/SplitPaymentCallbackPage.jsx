@@ -12,27 +12,43 @@ export default function SplitPaymentCallbackPage() {
   useEffect(() => {
     const run = async () => {
       const pidx = searchParams.get('pidx');
+      const bookingId =
+        searchParams.get('bookingId') ||
+        sessionStorage.getItem('playpal_split_booking_id');
+
       if (!pidx) {
         setStatus('error');
         setMessage('Missing payment reference');
         return;
       }
+
       try {
-        const response = await verifySplitPayment(pidx);
-        const data = response?.data ?? response;
-        if (data?.booking) {
+        const response = await verifySplitPayment(pidx, bookingId);
+        const payload = response?.data ?? response;
+
+        if (response?.success && payload?.booking) {
+          sessionStorage.removeItem('playpal_split_booking_id');
           setStatus('success');
-          setMessage(data.allPaid ? 'All shares paid! Booking confirmed.' : 'Your share has been recorded.');
+          setMessage(
+            payload.allPaid
+              ? 'All shares paid! Booking confirmed.'
+              : 'Your share has been paid successfully.'
+          );
           setTimeout(() => {
-            navigate(`/player/booking/split/${data.booking._id}`, { replace: true });
-          }, 2000);
-        } else {
-          setStatus('error');
-          setMessage(response?.message || 'Verification failed');
+            navigate('/playerdashboard', { replace: true });
+          }, 1500);
+          return;
         }
+
+        setStatus('error');
+        setMessage(response?.message || 'Verification failed');
       } catch (error) {
         setStatus('error');
-        setMessage(error.response?.data?.message || 'Payment verification failed');
+        setMessage(
+          error.response?.data?.message ||
+            error.message ||
+            'Payment verification failed'
+        );
       }
     };
     run();
@@ -51,9 +67,9 @@ export default function SplitPaymentCallbackPage() {
         {status === 'success' && (
           <>
             <CheckCircle className="w-16 h-16 text-emerald-600 mx-auto mb-4" />
-            <h2 className="text-xl font-bold text-gray-900 mb-2">Success</h2>
+            <h2 className="text-xl font-bold text-gray-900 mb-2">Payment successful</h2>
             <p className="text-gray-600">{message}</p>
-            <p className="text-sm text-gray-500 mt-4">Redirecting...</p>
+            <p className="text-sm text-gray-500 mt-4">Redirecting to dashboard…</p>
           </>
         )}
         {status === 'error' && (
@@ -62,10 +78,10 @@ export default function SplitPaymentCallbackPage() {
             <h2 className="text-xl font-bold text-gray-900 mb-2">Verification failed</h2>
             <p className="text-gray-600 mb-4">{message}</p>
             <button
-              onClick={() => navigate('/player/bookings')}
-              className="px-4 py-2 bg-gray-800 text-white rounded-lg"
+              onClick={() => navigate('/playerdashboard')}
+              className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700"
             >
-              Back to bookings
+              Go to dashboard
             </button>
           </>
         )}

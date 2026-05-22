@@ -10,6 +10,8 @@ import PlayerSidebar from './PlayerSidebar';
 import { showToast } from '../FutsalOwner/components/Toast';
 
 import { getBookingById, cancelBooking, getStatusColor, getPaymentStatusColor } from '../store/bookingStore';
+import BookingReceipt from '../components/BookingReceipt';
+import { printBookingReceipt } from '../utils/printReceipt';
 
 const BookingDetailPage = () => {
   const { id } = useParams();
@@ -112,7 +114,8 @@ const BookingDetailPage = () => {
   const showPaymentBadge = booking.payment.status !== booking.bookingStatus;
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <>
+    <div className="no-print flex min-h-screen bg-gray-50">
       <PlayerSidebar onCollapseChange={setIsSidebarCollapsed} />
       
       {/* ✅ FIX: Removed extra padding and increased max-width */}
@@ -365,7 +368,7 @@ const BookingDetailPage = () => {
                 )}
                 
                 <button
-                  onClick={() => window.print()}
+                  onClick={printBookingReceipt}
                   className="w-full px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium flex items-center justify-center gap-2"
                 >
                   <Download className="w-5 h-5" />
@@ -442,6 +445,11 @@ const BookingDetailPage = () => {
         </div>
       )}
     </div>
+
+    <div className="print-only" aria-hidden="true">
+      <BookingReceipt booking={booking} variant="player" />
+    </div>
+    </>
   );
 };
 

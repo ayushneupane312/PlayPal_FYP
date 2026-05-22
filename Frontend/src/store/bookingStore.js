@@ -149,8 +149,11 @@ export const initiateSplitPayment = async (bookingId) => {
 };
 
 /** Verify Khalti split payment (after return from Khalti) */
-export const verifySplitPayment = async (pidx) => {
-  const { data } = await axios.post(`${API_URL}/verify-split-payment`, { pidx });
+export const verifySplitPayment = async (pidx, bookingId) => {
+  const { data } = await axios.post(`${API_URL}/verify-split-payment`, {
+    pidx,
+    bookingId: bookingId || undefined,
+  });
   return data;
 };
 
