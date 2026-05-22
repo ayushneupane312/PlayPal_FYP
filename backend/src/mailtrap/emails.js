@@ -11,17 +11,19 @@ const {
 } = require('./emailTemplates');
 
 const transporter = nodemailer.createTransport({
-    service: 'Gmail',
-    auth: { 
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS 
-    }
+    host: 'smtp-relay.brevo.com',
+    port: 587,
+    secure: false,
+    auth: {
+        user: process.env.BREVO_SENDER_EMAIL,
+        pass: process.env.BREVO_SMTP_KEY,
+    },
 });
 
 const sender = {
-    email: process.env.EMAIL_USER,
-    name: "PlayPal",
-}
+    email: process.env.BREVO_SENDER_EMAIL,
+    name: 'PlayPal',
+};
 
 const sendEmail = async (to, subject, html) => {
     try {

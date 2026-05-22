@@ -36,9 +36,9 @@ services:
         sync: false
       - key: CLOUD_API_SECRET
         sync: false
-      - key: EMAIL_USER
+      - key: BREVO_SENDER_EMAIL
         sync: false
-      - key: EMAIL_PASS
+      - key: BREVO_SMTP_KEY
         sync: false
       - key: ADMIN_EMAIL
         sync: false
