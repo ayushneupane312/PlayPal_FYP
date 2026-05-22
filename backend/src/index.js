@@ -13,6 +13,7 @@ const { initNotificationSocket } = require('./services/notificationService');
 dotenv.config();
 
 const app = express();
+app.set('trust proxy', 1);
 
 // Middleware — allow local dev + FRONTEND_URL (comma-separated) + Render URLs
 const allowedOrigins = new Set([
@@ -40,6 +41,13 @@ app.use(
       if (!origin) return callback(null, true);
       const normalized = origin.replace(/\/$/, '');
       if (allowedOrigins.has(normalized)) return callback(null, true);
+      try {
+        if (new URL(normalized).hostname.endsWith('.onrender.com')) {
+          return callback(null, true);
+        }
+      } catch (_) {
+        /* ignore invalid origin */
+      }
       return callback(new Error(`CORS blocked for origin: ${origin}`));
     },
     credentials: true,

@@ -8,16 +8,12 @@ const verifyToken = async (req, res, next) => {
     if (!token) {
         token = req.cookies.token;
     }
-     console.log("Token found:", token);
-
     if (!token) {
         return res.status(401).json({ success: false, message: "Not authorized to access this route" });
     }
 
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
-        console.log("Decoded token:", decoded);
-
         if (!decoded) {
             return res.status(401).json({ success: false, message: "Not authorized invalid token" });
         }

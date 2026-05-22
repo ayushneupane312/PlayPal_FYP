@@ -61,11 +61,12 @@ const signup = async (req, res) => {
         });
 
         await user.save();
-        generateTokenAndSetCookie(res, user._id, user.tokenVersion ?? 0);
+        const token = generateTokenAndSetCookie(res, user._id, user.tokenVersion ?? 0);
 
         await sendVerificationEmail(user.email, verificationToken);
 
         res.status(201).json({
+            token,
             msg: "User registered successfully. Please verify your email.",
             user: {
                 _id: user._id,
@@ -162,7 +163,7 @@ const login = async (req, res) => {
         }
 
         // ✅ SET TOKEN BEFORE CHECKING FUTSAL OWNER STATUS
-        generateTokenAndSetCookie(res, user._id, user.tokenVersion ?? 0);
+        const token = generateTokenAndSetCookie(res, user._id, user.tokenVersion ?? 0);
         user.lastLogin = new Date();
         sanitizeUserPendingPayments(user);
         await user.save();
@@ -172,6 +173,7 @@ const login = async (req, res) => {
             if (!user.registrationCompleted) {
                 return res.status(200).json({
                     success: false,
+                    token,
                     msg: "Please complete your futsal registration form first",
                     requiresRegistration: true,
                     user: {
@@ -192,6 +194,7 @@ const login = async (req, res) => {
             if (user.applicationStatus === 'pending') {
                 return res.status(200).json({
                     success: false,
+                    token,
                     msg: "Your application is pending admin approval.",
                     applicationStatus: 'pending',
                     user: {
@@ -212,6 +215,7 @@ const login = async (req, res) => {
             if (user.applicationStatus === 'rejected') {
                 return res.status(200).json({
                     success: false,
+                    token,
                     msg: "Your application has been rejected.",
                     applicationStatus: 'rejected',
                     user: {
@@ -238,6 +242,7 @@ const login = async (req, res) => {
 
         return res.status(200).json({
             success: true,
+            token,
             msg: "Logged in successfully",
             user: {    
                 _id: user._id,

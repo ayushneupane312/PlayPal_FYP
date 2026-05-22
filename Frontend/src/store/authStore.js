@@ -1,12 +1,11 @@
 import { create } from "zustand";
 import axios from "axios";
 import API_BASE from "../utils/apiBase.js";
+import { setAuthToken } from "../utils/setupAxios.js";
 
 const API_URL = `${API_BASE}/auth`;
 const UPLOAD_URL = `${API_BASE}/upload`;
 const UPLOAD_API = `${API_BASE}/api/upload`;
-
-axios.defaults.withCredentials = true;
 
 export const useAuthStore = create((set) => ({
   user: null,
@@ -25,6 +24,7 @@ export const useAuthStore = create((set) => ({
         name,
         userType,
       });
+      if (response.data?.token) setAuthToken(response.data.token);
       set({
         user: response.data.user,
         isAuthenticated: true,
@@ -43,6 +43,8 @@ export const useAuthStore = create((set) => ({
     set({ isLoading: true, error: null });
     try {
       const response = await axios.post(`${API_URL}/login`, { email, password });
+
+      if (response.data?.token) setAuthToken(response.data.token);
 
       if (!response.data?.success || !response.data?.user) {
         const err = new Error(response.data?.msg || "Login failed");
@@ -70,6 +72,7 @@ export const useAuthStore = create((set) => ({
     set({ isLoading: true, error: null });
     try {
       await axios.post(`${API_URL}/logout`);
+      setAuthToken(null);
       set({ user: null, isAuthenticated: false, error: null, isLoading: false });
       console.log("Logged out successfully");
     } catch (error) {
@@ -82,6 +85,7 @@ export const useAuthStore = create((set) => ({
         set({ isLoading: true, error: null });
         try {
             const response = await axios.post(`${API_URL}/verify-email`, { code });
+            if (response.data?.token) setAuthToken(response.data.token);
             set({ user: response.data.user, isAuthenticated: true, isLoading: false });
             return response.data;
         } catch (error) {
@@ -97,15 +101,9 @@ export const useAuthStore = create((set) => ({
         timeout: 8000,
       });
       
-      // ✅ DEBUG LOGS ADDED
-      console.log('=== CHECK AUTH DEBUG ===');
-      console.log('User from checkAuth:', response.data.user);
-      console.log('User name:', response.data.user?.name);
-      console.log('User role:', response.data.user?.role);
-      console.log('========================');
-      
       set({ user: response.data.user, isAuthenticated: true, isCheckingAuth: false });
     } catch (error) {
+      setAuthToken(null);
       const isNetworkError = !error.response && (error.code === 'ECONNABORTED' || error.code === 'ERR_NETWORK' || error.code === 'ECONNREFUSED' || error.message?.includes('Network Error'));
       set({
         error: null,

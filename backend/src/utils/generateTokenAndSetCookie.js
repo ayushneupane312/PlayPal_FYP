@@ -9,11 +9,14 @@ const generateTokenAndSetCookie = (res, userId, tokenVersion = 0) => {
     expiresIn: "7d",
   });
 
+  const isProd = process.env.NODE_ENV === "production";
   res.cookie("token", token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production", // true in production, false in dev
-    sameSite: "strict", // Changed from "none" to "strict" for localhost
-    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    secure: isProd,
+    // Cross-origin: frontend (playpal-web) + API (playpal-fyp) need SameSite=None
+    sameSite: isProd ? "none" : "lax",
+    path: "/",
+    maxAge: 7 * 24 * 60 * 60 * 1000,
   });
 
   return token;
