@@ -15,6 +15,7 @@ import {
 
 import PlayerSidebar from "./PlayerSidebar";
 import PlayerHeader from "./PlayerHeader";
+import PendingPaymentsSection from "../components/PendingPaymentsSection";
 import { useAuthStore } from "../store/authStore";
 import { showToast } from "../FutsalOwner/components/Toast";
 import {
@@ -465,6 +466,12 @@ const PlayerProfilePage = () => {
         <PlayerHeader onMenuToggle={() => {}} sidebarOpen={false} />
 
         <div className="max-w-6xl mx-auto pt-6">
+          {isOwnProfile && (
+            <div className="mb-6">
+              <PendingPaymentsSection title="Pending Payments" compact />
+            </div>
+          )}
+
           <div className="flex items-start justify-between gap-4 mb-6">
             <div>
               <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Player Profile</h1>

@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { Search, MapPin, Calendar, Star, Clock, Eye, Flag, X } from 'lucide-react';
 import AdminSidebar from './AdminSidebar';
 import SearchAndNotificationBar from '../components/SearchAndNotificationBar';
-import { getAllVenues } from '../store/venueService';
+import { getAllVenuesAdmin, deleteVenue, flagVenue } from '../store/venueService';
+import { showToast } from '../FutsalOwner/components/Toast';
 
 const FutsalCenters = () => {
   const navigate = useNavigate();
@@ -23,14 +24,13 @@ const FutsalCenters = () => {
       setLoading(true);
       setError(null);
       
-      // Use the service method - it already handles the correct endpoint
-      const response = await getAllVenues({
+      const response = await getAllVenuesAdmin({
         page: 1,
-        limit: 100
+        limit: 100,
+        approvedOnly: true,
+        onePerOwner: true,
       });
 
-      console.log('Fetched venues:', response);
-      
       if (response.success) {
         setCenters(response.data || []);
       } else {
@@ -38,7 +38,7 @@ const FutsalCenters = () => {
       }
     } catch (err) {
       console.error('Error fetching venues:', err);
-      setError('Failed to load futsal centeNPR Please try again.');
+      setError('Failed to load futsal centers. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -87,8 +87,12 @@ const FutsalCenters = () => {
 
   // Helper function to get main image
   const getMainImage = (venue) => {
-    if (venue.media?.images && venue.media.images.length > 0) {
-      return venue.media.images[0].url;
+    if (venue.media?.images?.length > 0) {
+      const first = venue.media.images[0];
+      return typeof first === 'string' ? first : first.url;
+    }
+    if (venue.groundImages?.length > 0) {
+      return venue.groundImages[0];
     }
     return 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=800&h=400&fit=crop';
   };
@@ -112,35 +116,28 @@ const FutsalCenters = () => {
 
   // Handle flag venue
   const handleFlag = async (venueId) => {
-    const confirmed = window.confirm('Are you sure you want to flag this venue for review?');
-    if (confirmed) {
-      try {
-        // TODO: Implement admin flag endpoint in venueService
-        alert('Flag functionality needs to be implemented in backend');
-        // After implementation:
-        // await flagVenue(venueId);
-        // fetchAllVenues();
-      } catch (err) {
-        console.error('Error flagging venue:', err);
-        alert('Failed to flag venue. Please try again.');
-      }
+    const confirmed = window.confirm('Flag this venue for review?');
+    if (!confirmed) return;
+    try {
+      await flagVenue(venueId);
+      showToast.success('Venue flag updated');
+      fetchAllVenues();
+    } catch (err) {
+      showToast.error(err.response?.data?.message || 'Failed to flag venue');
     }
   };
 
-  // Handle delete venue
-  const handleDelete = async (venueId) => {
-    const confirmed = window.confirm('Are you sure you want to delete this venue? This action cannot be undone.');
-    if (confirmed) {
-      try {
-        // TODO: Implement admin delete endpoint in venueService
-        alert('Delete functionality needs to be implemented in backend');
-        // After implementation:
-        // await deleteVenue(venueId);
-        // fetchAllVenues();
-      } catch (err) {
-        console.error('Error deleting venue:', err);
-        alert('Failed to delete venue. Please try again.');
-      }
+  const handleDelete = async (venueId, venueName) => {
+    const confirmed = window.confirm(
+      `Delete "${venueName}"? This cannot be undone.`
+    );
+    if (!confirmed) return;
+    try {
+      await deleteVenue(venueId);
+      showToast.success('Venue deleted');
+      fetchAllVenues();
+    } catch (err) {
+      showToast.error(err.response?.data?.message || 'Failed to delete venue');
     }
   };
 
@@ -168,12 +165,12 @@ const FutsalCenters = () => {
         <div className="p-8">
           <div className="mb-6 flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">Futsal Management</h1>
-              <p className="text-gray-500">Manage and monitor all futsal centers</p>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">Futsal Centers</h1>
+              <p className="text-gray-500">Shows each approved futsal owner (registration or live venue)</p>
             </div>
             {!loading && !error && (
               <div className="text-sm text-gray-600">
-                Total Venues: <span className="font-bold text-cyan-600">{centers.length}</span>
+                Approved centers: <span className="font-bold text-cyan-600">{centers.length}</span>
               </div>
             )}
           </div>
@@ -236,10 +233,19 @@ const FutsalCenters = () => {
                           e.target.src = 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=800&h=400&fit=crop';
                         }}
                       />
-                      {/* Status Badge */}
                       <div className="absolute top-4 right-4">
-                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium border bg-green-500/10 text-green-500 border-green-500/20">
-                          ✓ Approved
+                        <span
+                          className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium border ${
+                            center.isVerified
+                              ? 'bg-green-500/10 text-green-600 border-green-500/20'
+                              : 'bg-amber-500/10 text-amber-700 border-amber-500/20'
+                          }`}
+                        >
+                          {center.isRegistrationOnly
+                            ? '✓ Approved (setup pending)'
+                            : center.isVerified
+                              ? '✓ Approved'
+                              : 'Unverified'}
                         </span>
                       </div>
                     </div>
@@ -247,6 +253,11 @@ const FutsalCenters = () => {
                     {/* Content */}
                     <div className="p-6">
                       <h3 className="text-xl font-bold text-gray-900 mb-2">{center.venueName}</h3>
+                      {center.isRegistrationOnly && (
+                        <p className="text-xs text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-2 py-1 mb-2 inline-block">
+                          Owner approved — complete venue profile not submitted yet
+                        </p>
+                      )}
                       <div className="flex items-center gap-2 text-gray-600 text-sm mb-4">
                         <MapPin size={16} />
                         <span className="line-clamp-1">{center.fullAddress}</span>
@@ -314,26 +325,38 @@ const FutsalCenters = () => {
                       <div className="flex gap-2">
                         <button
                           type="button"
-                          onClick={() => navigate(`/admin/venues/${center._id}`)}
+                          onClick={() => {
+                            if (center.isRegistrationOnly && center.futsalOwnerRef) {
+                              navigate(`/futsalownerdetails/${center.futsalOwnerRef}`);
+                            } else {
+                              navigate(`/admin/venues/${center._id}`);
+                            }
+                          }}
                           className="flex-1 bg-cyan-500 text-white py-2 px-4 rounded-lg hover:bg-cyan-600 transition-colors flex items-center justify-center gap-2 text-sm font-medium"
                         >
                           <Eye size={16} />
                           View Details
                         </button>
-                        <button 
-                          onClick={() => handleFlag(center._id)}
-                          className="bg-yellow-500/10 text-yellow-600 py-2 px-3 rounded-lg hover:bg-yellow-500/20 transition-colors"
-                          title="Flag venue for review"
-                        >
-                          <Flag size={16} />
-                        </button>
-                        <button 
-                          onClick={() => handleDelete(center._id)}
-                          className="bg-red-500/10 text-red-600 py-2 px-3 rounded-lg hover:bg-red-500/20 transition-colors"
-                          title="Delete venue"
-                        >
-                          <X size={16} />
-                        </button>
+                        {!center.isRegistrationOnly && (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => handleFlag(center._id)}
+                              className="bg-yellow-500/10 text-yellow-600 py-2 px-3 rounded-lg hover:bg-yellow-500/20 transition-colors"
+                              title="Flag venue for review"
+                            >
+                              <Flag size={16} />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDelete(center._id, center.venueName)}
+                              className="bg-red-500/10 text-red-600 py-2 px-3 rounded-lg hover:bg-red-500/20 transition-colors"
+                              title="Delete venue"
+                            >
+                              <X size={16} />
+                            </button>
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>

@@ -100,7 +100,10 @@ export default function SplitPaymentPage() {
       setPaying(true);
       const res = await initiateSplitPayment(bookingId);
       const payUrl = res?.data?.paymentUrl || res?.data?.payment_url;
-      if (payUrl) window.location.href = payUrl;
+      if (payUrl) {
+        sessionStorage.setItem('playpal_split_booking_id', bookingId);
+        window.location.href = payUrl;
+      }
       else showToast.error('Could not start payment');
     } catch (e) {
       showToast.error(e.response?.data?.message || e.message || 'Failed to initiate payment');
@@ -274,10 +277,52 @@ export default function SplitPaymentPage() {
             </div>
           )}
 
+          {myShare && booking.bookingStatus === 'pending' && !expired && (
+            <div className="bg-white rounded-xl border border-emerald-200 p-6 mb-6">
+              <h2 className="font-semibold text-gray-900 mb-2">Your share</h2>
+              <p className="text-2xl font-bold text-emerald-600 mb-1">
+                NPR {myShare.amountAssigned}
+              </p>
+              <p className="text-sm text-gray-500 mb-4">
+                Pay from your own account. Booking confirms when all {totalSplitPlayers} players have paid.
+              </p>
+              {myShare.paymentStatus === 'paid' ? (
+                <p className="text-emerald-600 flex items-center gap-2">
+                  <CheckCircle className="w-5 h-5" /> You have paid your share
+                </p>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  {booking.payment?.method === 'khalti' ? (
+                    <button
+                      onClick={handlePayKhalti}
+                      disabled={paying}
+                      className="w-full py-3 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 disabled:opacity-50 flex items-center justify-center gap-2"
+                    >
+                      {paying ? (
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                      ) : (
+                        <CreditCard className="w-5 h-5" />
+                      )}
+                      Pay NPR {myShare.amountAssigned} with Khalti
+                    </button>
+                  ) : (
+                    <button
+                      onClick={handleMarkCashPaid}
+                      disabled={paying}
+                      className="w-full py-3 bg-gray-700 text-white rounded-lg font-medium hover:bg-gray-800 disabled:opacity-50"
+                    >
+                      I&apos;ve paid my cash share
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
           {isLeader && booking.bookingStatus === 'pending' && (
             <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
               <h2 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                <Users className="w-5 h-5" /> Players & payment
+                <Users className="w-5 h-5" /> Team payment progress
               </h2>
               <ul className="space-y-3">
                 {splitList.map((p) => {
@@ -320,43 +365,6 @@ export default function SplitPaymentPage() {
                   Cancel booking
                 </button>
               </div>
-            </div>
-          )}
-
-          {!isLeader && myShare && booking.bookingStatus === 'pending' && !expired && (
-            <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
-              <h2 className="font-semibold text-gray-900 mb-2">Your share</h2>
-              <p className="text-2xl font-bold text-emerald-600 mb-4">NPR {myShare.amountAssigned}</p>
-              {myShare.paymentStatus === 'paid' ? (
-                <p className="text-emerald-600 flex items-center gap-2">
-                  <CheckCircle className="w-5 h-5" /> You have paid
-                </p>
-              ) : (
-                <div className="flex flex-col gap-2">
-                  {booking.payment?.method === 'khalti' ? (
-                    <button
-                      onClick={handlePayKhalti}
-                      disabled={paying}
-                      className="w-full py-3 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 disabled:opacity-50 flex items-center justify-center gap-2"
-                    >
-                      {paying ? (
-                        <Loader2 className="w-5 h-5 animate-spin" />
-                      ) : (
-                        <CreditCard className="w-5 h-5" />
-                      )}
-                      Pay NPR {myShare.amountAssigned} with Khalti
-                    </button>
-                  ) : (
-                    <button
-                      onClick={handleMarkCashPaid}
-                      disabled={paying}
-                      className="w-full py-3 bg-gray-700 text-white rounded-lg font-medium hover:bg-gray-800 disabled:opacity-50"
-                    >
-                      I&apos;ve paid cash
-                    </button>
-                  )}
-                </div>
-              )}
             </div>
           )}
 

@@ -14,8 +14,9 @@ import PlayerSidebar from './PlayerSidebar';
 import PlayerHeader from './PlayerHeader';
 import { useAuthStore } from '../store/authStore';
 import { showToast } from '../FutsalOwner/components/Toast';
-import { getMyBookings } from '../store/bookingStore';
+import { getMyBookings, getPendingSplitPayments } from '../store/bookingStore';
 import matchmakingService from '../store/matchmakingService';
+import PendingPaymentsSection from '../components/PendingPaymentsSection';
 
 const FutsalDashboard = () => {
   const navigate = useNavigate();
@@ -26,6 +27,7 @@ const FutsalDashboard = () => {
   const [bookings, setBookings] = useState([]);
   const [teams, setTeams] = useState([]);
   const [pendingInviteCount, setPendingInviteCount] = useState(0);
+  const [pendingSplitTotal, setPendingSplitTotal] = useState(0);
   const { user } = useAuthStore();
 
   const filterToLimit = {
@@ -41,9 +43,7 @@ const FutsalDashboard = () => {
       return !Number.isNaN(bookingDate.getTime()) && bookingDate >= now;
     });
 
-    const pendingPayments = bookings
-      .filter((b) => b?.payment?.status !== 'paid')
-      .reduce((sum, b) => sum + (b?.pricing?.totalAmount || 0), 0);
+    const pendingPayments = pendingSplitTotal;
 
     const teamSlots = teams.reduce((sum, t) => {
       const maxPlayers = Number(t?.maxPlayers || 0);
@@ -64,7 +64,7 @@ const FutsalDashboard = () => {
         id: 2,
         title: 'Pending Payments',
         value: `NPR ${pendingPayments.toLocaleString()}`,
-        subtitle: 'Unpaid booking amount',
+        subtitle: 'Your unpaid split shares',
         icon: <FaCreditCard />,
         color: 'bg-amber-50 text-amber-600',
       },
@@ -85,7 +85,7 @@ const FutsalDashboard = () => {
         color: 'bg-purple-50 text-purple-600',
       },
     ];
-  }, [bookings, pendingInviteCount, teams]);
+  }, [bookings, pendingInviteCount, teams, pendingSplitTotal]);
 
   const upcomingBookings = useMemo(() => {
     const now = new Date();
@@ -106,15 +106,20 @@ const FutsalDashboard = () => {
     try {
       setLoading(true);
       const limit = filterToLimit[timeFilter] || 15;
-      const [bookingsRes, teamsRes, invitesRes] = await Promise.all([
+      const [bookingsRes, teamsRes, invitesRes, pendingRes] = await Promise.all([
         getMyBookings({ page: 1, limit }),
         matchmakingService.getMyTeams(),
-        matchmakingService.getMyInvitations()
+        matchmakingService.getMyInvitations(),
+        getPendingSplitPayments().catch(() => ({ data: [] })),
       ]);
 
       setBookings(bookingsRes?.data || []);
       setTeams(teamsRes?.data || []);
       setPendingInviteCount((invitesRes?.data || []).length);
+      const pendingList = pendingRes?.data || [];
+      setPendingSplitTotal(
+        pendingList.reduce((sum, p) => sum + (Number(p.amountDue) || 0), 0)
+      );
     } catch (error) {
       showToast.error(error?.message || 'Failed to load dashboard data');
       setBookings([]);
@@ -214,6 +219,10 @@ const FutsalDashboard = () => {
               </div>
             </div>
           ))}
+        </div>
+
+        <div className="mb-6">
+          <PendingPaymentsSection />
         </div>
 
         {/* Team Actions */}

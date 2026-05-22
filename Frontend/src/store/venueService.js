@@ -212,7 +212,7 @@ export const searchVenues = async (searchTerm, additionalParams = {}) => {
 export const flagVenue = async (venueId, reason = '') => {
   try {
     const { data } = await axios.patch(
-      `${API_BASE}/admin/venues/${venueId}/flag`,
+      `${API_BASE}/api/admin/venues/${venueId}/flag`,
       { reason },
       { withCredentials: true }
     );
@@ -229,7 +229,7 @@ export const flagVenue = async (venueId, reason = '') => {
 export const updateVenueStatus = async (venueId, statusData) => {
   try {
     const { data } = await axios.patch(
-      `${API_BASE}/admin/venues/${venueId}/status`,
+      `${API_BASE}/api/admin/venues/${venueId}/status`,
       statusData,
       { withCredentials: true }
     );
@@ -246,7 +246,7 @@ export const updateVenueStatus = async (venueId, statusData) => {
 export const deleteVenue = async (venueId) => {
   try {
     const { data } = await axios.delete(
-      `${API_BASE}/admin/venues/${venueId}`,
+      `${API_BASE}/api/admin/venues/${venueId}`,
       { withCredentials: true }
     );
     return data;
@@ -261,7 +261,7 @@ export const deleteVenue = async (venueId) => {
  */
 export const getAllVenuesAdmin = async (params = {}) => {
   try {
-    const { data } = await axios.get(`${API_BASE}/admin/venues`, { 
+    const { data } = await axios.get(`${API_BASE}/api/admin/venues`, { 
       params,
       withCredentials: true 
     });

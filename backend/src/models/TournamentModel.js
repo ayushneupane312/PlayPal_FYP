@@ -82,7 +82,10 @@ const tournamentSchema = new mongoose.Schema({
   stats: {
     registeredTeams: { type: Number, default: 0 },
     totalRevenue: { type: Number, default: 0 }
-  }
+  },
+
+  /** When true, tournament cannot be deleted (demo / viva showcase) */
+  isDemoProtected: { type: Boolean, default: false },
 }, { timestamps: true });
 
 tournamentSchema.index({ startDate: 1 });

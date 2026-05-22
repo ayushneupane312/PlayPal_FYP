@@ -1,15 +1,18 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { Download, Loader2 } from "lucide-react";
 import { getTournamentById, getRegisteredTeams } from "../../store/tournamentService";
 import { showToast } from "../components/Toast";
+import { exportSchedulePdf, slugifyFileName } from "../../utils/exportSchedulePdf";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
-const MATCH_W = 140;
-const MATCH_H = 54;
-const SLOT_H = 27;
-const GAP = 14;
-const ROUND_GAP = 60;
-const LABEL_H = 22;
+const MATCH_W = 176;
+const MATCH_H = 64;
+const SLOT_H = 32;
+const GAP = 24;
+const ROUND_GAP = 96;
+const LABEL_H = 28;
+const NAME_MAX_LEN = 22;
 const TEAM_TOKEN_SEP = "|||";
 
 const DEFAULT_TEAMS = [
@@ -68,7 +71,8 @@ const autobye = (bracket) => {
 
 const computePositions = (roundsArr) => {
   const pos = [];
-  const r0ys = roundsArr[0].map((_, i) => i * (MATCH_H + GAP * 3) + 20);
+  const rowStep = MATCH_H + GAP * 4;
+  const r0ys = roundsArr[0].map((_, i) => i * rowStep + 36);
   pos.push(r0ys);
   for (let r = 1; r < roundsArr.length; r++) {
     const prev = pos[r - 1];
@@ -154,20 +158,31 @@ const MatchBox = ({ m, x, y, onPick }) => {
             <circle cx={x + 10} cy={sy + SLOT_H / 2} r="3.5"
               fill={isWinner ? "#22c55e" : isBye ? "#94a3b8" : "#d1d5db"} />
             {/* Name */}
-            <text x={x + 20} y={sy + SLOT_H / 2 + 4}
-              fontSize="11" fontFamily="sans-serif"
-              fontWeight={isWinner ? "500" : "400"}
-              fill={
-                isWinner ? "#14532d"
-                  : isBye || isEmpty ? "#94a3b8"
-                  : isLoser ? "#9ca3af"
-                  : "#374151"
-              }>
-              {isBye ? "Bye" : isEmpty ? "—" : (() => {
-                const name = decodeTeamName(t) || "";
-                return name.length > 14 ? name.slice(0, 13) + "…" : name;
-              })()}
-            </text>
+            {(() => {
+              const fullName = isBye ? "Bye" : isEmpty ? "—" : (decodeTeamName(t) || "");
+              const shortName =
+                fullName.length > NAME_MAX_LEN
+                  ? fullName.slice(0, NAME_MAX_LEN - 1) + "…"
+                  : fullName;
+              return (
+                <>
+                  {fullName && fullName !== "—" && fullName !== "Bye" && (
+                    <title>{fullName}</title>
+                  )}
+                  <text x={x + 20} y={sy + SLOT_H / 2 + 4}
+                    fontSize="12" fontFamily="sans-serif"
+                    fontWeight={isWinner ? "600" : "400"}
+                    fill={
+                      isWinner ? "#14532d"
+                        : isBye || isEmpty ? "#94a3b8"
+                        : isLoser ? "#9ca3af"
+                        : "#374151"
+                    }>
+                    {shortName}
+                  </text>
+                </>
+              );
+            })()}
             {/* Clickable overlay */}
             {t && t !== "BYE" && !m.w && (
               <rect x={x} y={sy} width={MATCH_W} height={SLOT_H}
@@ -187,15 +202,21 @@ const MatchBox = ({ m, x, y, onPick }) => {
 const TrophyBox = ({ x, y, winner }) => {
   const won = winner && winner !== "BYE";
   const winnerName = won ? decodeTeamName(winner) : "";
+  const boxW = 100;
   return (
     <g>
-      <rect x={x} y={y} width="72" height={MATCH_H} rx="6"
+      <rect x={x} y={y} width={boxW} height={MATCH_H} rx="8"
         fill={won ? "#f0fdf4" : "#f9fafb"}
-        stroke={won ? "#22c55e" : "#e5e7eb"} strokeWidth="1" />
-      <text x={x + 8} y={y + 18} fontSize="14">🏆</text>
-      <text x={x + 8} y={y + 38} fontSize="10" fontFamily="sans-serif"
-        fontWeight="500" fill={won ? "#14532d" : "#94a3b8"}>
-        {won ? (winnerName.length > 8 ? winnerName.slice(0, 7) + "…" : winnerName) : "?"}
+        stroke={won ? "#22c55e" : "#e5e7eb"} strokeWidth="1.2" />
+      <text x={x + boxW / 2} y={y + 22} textAnchor="middle" fontSize="18">🏆</text>
+      {won && <title>{winnerName}</title>}
+      <text x={x + boxW / 2} y={y + 46} textAnchor="middle" fontSize="11" fontFamily="sans-serif"
+        fontWeight="600" fill={won ? "#14532d" : "#94a3b8"}>
+        {won
+          ? winnerName.length > 14
+            ? winnerName.slice(0, 13) + "…"
+            : winnerName
+          : "Champion"}
       </text>
     </g>
   );
@@ -242,10 +263,18 @@ const SingleBracket = ({ bracket, onPick }) => {
       {/* Round labels + match boxes */}
       {bracket.map((rnd, r) => {
         const x = r * (MATCH_W + ROUND_GAP) + ROUND_GAP / 2;
-        const lbl = r === 0 ? "Round 1"
-          : r === rounds - 1 ? "Final"
-          : r === rounds - 2 ? "Semi-final"
-          : `Round ${r + 1}`;
+        const lbl =
+          r === 0 && rnd.length >= 8
+            ? "Round of 16"
+            : r === 0
+              ? "Round 1"
+              : r === rounds - 1
+                ? "Final"
+                : r === rounds - 2
+                  ? "Semi-final"
+                  : rnd.length === 4
+                    ? "Quarter-final"
+                    : `Round ${r + 1}`;
         return (
           <g key={r}>
             <SvgText x={x + MATCH_W / 2} y={14} bold>{lbl}</SvgText>
@@ -257,7 +286,7 @@ const SingleBracket = ({ bracket, onPick }) => {
       })}
       {/* Trophy */}
       <TrophyBox
-        x={(rounds - 1) * (MATCH_W + ROUND_GAP) + ROUND_GAP / 2 + MATCH_W + 30}
+        x={(rounds - 1) * (MATCH_W + ROUND_GAP) + ROUND_GAP / 2 + MATCH_W + 40}
         y={positions[rounds - 1][0] + LABEL_H}
         winner={champion} />
     </svg>
@@ -466,9 +495,13 @@ export default function TournamentBracket() {
   const [tournamentName, setTournamentName] = useState("Tournament");
   const [leaderContacts, setLeaderContacts] = useState([]);
   const [shareCopied, setShareCopied] = useState(false);
+  const [pdfLoading, setPdfLoading] = useState(false);
+  const pdfExportRef = useRef(null);
+  const bracketPanelRef = useRef(null);
   const isTournamentMode = Boolean(id);
   const shownErrorRef = useRef(false);
-  const doubleSided = teams.length > 8;
+  /** Double-sided layout overlaps for 13+ teams; use horizontal scroll single bracket */
+  const doubleSided = teams.length > 8 && teams.length <= 12;
 
   const buildBracket = useCallback((teamList) => {
     const sh = shuffleArr(teamList);
@@ -630,6 +663,47 @@ export default function TournamentBracket() {
     return { url: scheduleUrl, text };
   };
 
+  const handleDownloadPdf = async () => {
+    if (!bracket.length) {
+      showToast.error("Generate the bracket first, then download the PDF.");
+      return;
+    }
+    const root = pdfExportRef.current;
+    if (!root) {
+      showToast.error("Could not prepare PDF export.");
+      return;
+    }
+
+    const panel = bracketPanelRef.current;
+    const prevMax = panel?.style.maxHeight;
+    const prevOverflowY = panel?.style.overflowY;
+    const prevOverflowX = panel?.style.overflowX;
+
+    try {
+      setPdfLoading(true);
+      if (panel) {
+        panel.style.maxHeight = "none";
+        panel.style.overflowY = "visible";
+        panel.style.overflowX = "visible";
+      }
+      await new Promise((r) => setTimeout(r, 150));
+
+      const fileName = `${slugifyFileName(tournamentName)}-Schedule.pdf`;
+      await exportSchedulePdf(root, fileName);
+      showToast.success("PDF downloaded — share it with team leaders.");
+    } catch (error) {
+      console.error("PDF export failed:", error);
+      showToast.error("Failed to create PDF. Try again after the bracket is fully visible.");
+    } finally {
+      if (panel) {
+        panel.style.maxHeight = prevMax || "";
+        panel.style.overflowY = prevOverflowY || "";
+        panel.style.overflowX = prevOverflowX || "";
+      }
+      setPdfLoading(false);
+    }
+  };
+
   const handleShareSchedule = async () => {
     const payload = getSharePayload();
     try {
@@ -683,8 +757,35 @@ export default function TournamentBracket() {
         {tournamentName} - Tournament Bracket
       </h2>
       {isTournamentMode && (
-        <div style={{ marginBottom: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
+        <div style={{ marginBottom: 12, display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
           <button
+            type="button"
+            onClick={handleDownloadPdf}
+            disabled={pdfLoading || bracket.length === 0}
+            style={{
+              height: 34,
+              padding: "0 14px",
+              borderRadius: 8,
+              border: "1px solid #1d4ed8",
+              background: pdfLoading ? "#93c5fd" : "#2563eb",
+              color: "#fff",
+              fontSize: 12,
+              fontWeight: 600,
+              cursor: pdfLoading || bracket.length === 0 ? "not-allowed" : "pointer",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+            }}
+          >
+            {pdfLoading ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Download className="w-4 h-4" />
+            )}
+            {pdfLoading ? "Creating PDF…" : "Download PDF"}
+          </button>
+          <button
+            type="button"
             onClick={handleShareSchedule}
             style={{
               height: 34,
@@ -695,16 +796,45 @@ export default function TournamentBracket() {
               color: "#14532d",
               fontSize: 12,
               fontWeight: 600,
-              cursor: "pointer"
+              cursor: "pointer",
             }}
           >
-            {shareCopied ? "Copied ✓" : "Share Schedule"}
+            {shareCopied ? "Copied ✓" : "Share link"}
           </button>
-          <span style={{ fontSize: 11, color: "#6b7280", alignSelf: "center" }}>
-            Share with team leaders via link, email, or messaging apps.
+          <span style={{ fontSize: 11, color: "#6b7280" }}>
+            Download a PDF to email or message team leaders. Use Share link for the live page URL.
           </span>
         </div>
       )}
+
+      {/* PDF export capture area (teams + bracket + contacts) */}
+      <div
+        ref={pdfExportRef}
+        style={{
+          background: "#ffffff",
+          borderRadius: 12,
+        }}
+      >
+      <div
+        style={{
+          padding: "0 0 8px",
+          borderBottom: pdfExportRef ? "none" : undefined,
+        }}
+      >
+        <div
+          style={{
+            padding: "12px 16px 0",
+            display: isTournamentMode ? "block" : "none",
+          }}
+        >
+          <h3 style={{ margin: "0 0 4px", fontSize: 16, fontWeight: 700, color: "#111827" }}>
+            {tournamentName}
+          </h3>
+          <p style={{ margin: 0, fontSize: 11, color: "#6b7280" }}>
+            Fixture schedule · {teams.length} teams · Generated {new Date().toLocaleString()}
+          </p>
+        </div>
+      </div>
 
       {/* Input section */}
       <div style={{
@@ -774,15 +904,33 @@ export default function TournamentBracket() {
 
       {/* Bracket */}
       {bracket.length > 0 && (
-        <div style={{ overflowX: "auto", paddingBottom: 8 }}>
-          {doubleSided
-            ? <DoubleBracket bracket={bracket} onPick={handlePick} />
-            : <SingleBracket bracket={bracket} onPick={handlePick} />}
+        <div
+          ref={bracketPanelRef}
+          style={{
+            background: "#fff",
+            border: "1px solid #e5e7eb",
+            borderRadius: 12,
+            padding: "20px 24px 28px",
+            overflowX: "auto",
+            overflowY: "auto",
+            maxHeight: "calc(100vh - 220px)",
+          }}
+        >
+          <p style={{ fontSize: 12, color: "#6b7280", margin: "0 0 16px" }}>
+            {teams.length >= 13
+              ? "Scroll horizontally to view the full bracket. Hover a team name to see the full label."
+              : "Click a team slot to mark the winner. Hover for full team names."}
+          </p>
+          <div style={{ minWidth: doubleSided ? undefined : "min(100%, 1100px)", paddingBottom: 12 }}>
+            {doubleSided
+              ? <DoubleBracket bracket={bracket} onPick={handlePick} />
+              : <SingleBracket bracket={bracket} onPick={handlePick} />}
+          </div>
         </div>
       )}
 
       {/* Legend */}
-      <div style={{ display: "flex", gap: 16, marginTop: 12, flexWrap: "wrap" }}>
+      <div style={{ display: "flex", gap: 16, marginTop: 12, flexWrap: "wrap", padding: "0 16px 12px" }}>
         {[
           { color: "#22c55e", label: "Winner (click slot to select)" },
           { color: "#94a3b8", label: "Bye (auto-advances)" },
@@ -793,6 +941,35 @@ export default function TournamentBracket() {
             {label}
           </div>
         ))}
+      </div>
+
+      {isTournamentMode && leaderContacts.length > 0 && (
+        <div style={{ padding: "8px 16px 20px", borderTop: "1px solid #e5e7eb" }}>
+          <h4 style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: "#111827" }}>
+            Team leaders (contact)
+          </h4>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
+            <thead>
+              <tr style={{ background: "#f3f4f6", textAlign: "left" }}>
+                <th style={{ padding: "6px 8px", border: "1px solid #e5e7eb" }}>Team</th>
+                <th style={{ padding: "6px 8px", border: "1px solid #e5e7eb" }}>Leader</th>
+                <th style={{ padding: "6px 8px", border: "1px solid #e5e7eb" }}>Email</th>
+                <th style={{ padding: "6px 8px", border: "1px solid #e5e7eb" }}>Phone</th>
+              </tr>
+            </thead>
+            <tbody>
+              {leaderContacts.map((c, idx) => (
+                <tr key={idx}>
+                  <td style={{ padding: "6px 8px", border: "1px solid #e5e7eb" }}>{c.teamName}</td>
+                  <td style={{ padding: "6px 8px", border: "1px solid #e5e7eb" }}>{c.leaderName}</td>
+                  <td style={{ padding: "6px 8px", border: "1px solid #e5e7eb" }}>{c.email || "—"}</td>
+                  <td style={{ padding: "6px 8px", border: "1px solid #e5e7eb" }}>{c.phone || "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
       </div>
     </div>
   );

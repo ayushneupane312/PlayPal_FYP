@@ -3,10 +3,19 @@ const User = require('../models/UserModel');
 const Match = require('../models/MatchModel');
 const Booking = require('../models/BookingModel');
 const Venue = require('../models/VenueModel');
+const TeamMatchQueue = require('../models/TeamMatchQueueModel');
 const { calculateSplit } = require('../utils/splitPayment');
 const { notifyUser } = require('../services/notificationService');
+const { syncPendingPaymentsFromBooking } = require('../services/pendingPaymentService');
 
 const MAX_PLAYERS_BY_FORMAT = { '5v5': 5, '6v6': 6, '7v7': 7, '2v2': 2, '1v1': 1 };
+
+/** Resolve player user id (handles populate null when user was deleted). */
+function playerUserId(player) {
+  const u = player?.user;
+  if (u == null) return null;
+  return (u._id || u).toString();
+}
 const SPLIT_PAYMENT_DEADLINE_MINUTES = 30;
 const INVITE_EXPIRY_MINUTES = 30;
 
@@ -75,10 +84,13 @@ exports.getTeamById = async (req, res) => {
 
     // Allow viewing if you are a member OR if you have a pending invite
     const isMember =
-      team.leader._id.toString() === userId ||
-      team.players.some(p => p.user._id.toString() === userId);
+      team.leader?._id?.toString() === userId ||
+      team.players.some((p) => playerUserId(p) === userId);
     const hasPendingInvite = team.joinRequests.some(
-      r => r.user._id.toString() === userId && r.status === 'pending' && r.type === 'invite'
+      (r) =>
+        r.user?._id?.toString() === userId &&
+        r.status === 'pending' &&
+        r.type === 'invite'
     );
 
     if (!isMember && !hasPendingInvite) {
@@ -560,50 +572,89 @@ exports.confirmBooking = async (req, res) => {
       }
     }
 
-    // Collect all unique players (both teams, if match is linked) to notify
-    const notifiedIds = new Set([userId]);
-    const collectFromTeam = (t) => {
-      if (!t) return;
-      const leaderStr = (t.leader && t.leader._id ? t.leader._id : t.leader)?.toString?.();
-      if (leaderStr && !notifiedIds.has(leaderStr)) notifiedIds.add(leaderStr);
-      (t.players || []).forEach(p => {
-        const id = (p.user && p.user._id ? p.user._id : p.user)?.toString?.();
-        if (id && !notifiedIds.has(id)) notifiedIds.add(id);
-      });
-    };
+    const courtName = court.name;
+    const dateLabel = date.toLocaleDateString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+    });
 
-    if (linkedMatch) {
-      const fullMatch = await Match.findById(linkedMatch._id)
-        .populate('teamA', 'name leader players')
-        .populate('teamB', 'name leader players');
-      collectFromTeam(fullMatch.teamA);
-      collectFromTeam(fullMatch.teamB);
+    if (isSplit && splitPlayers.length > 0) {
+      const bookingForSync = await Booking.findById(booking._id).populate('venue', 'venueName');
+      await syncPendingPaymentsFromBooking(bookingForSync);
+
+      for (const entry of splitPlayers) {
+        const memberId = entry.userId.toString();
+        await notifyUser(memberId, {
+          title: 'Split Payment Required',
+          message: `You owe NPR ${entry.amountAssigned} for ${courtName} on ${dateLabel}. Pay within 30 minutes.`,
+          type: 'split_payment_due',
+          link: `/player/booking/split/${booking._id}`,
+          meta: {
+            bookingId: booking._id,
+            teamId,
+            amountAssigned: entry.amountAssigned,
+            matchId: linkedMatch ? linkedMatch._id : undefined,
+          },
+        });
+      }
     } else {
-      collectFromTeam(team);
-    }
+      const notifiedIds = new Set([userId]);
+      const collectFromTeam = (t) => {
+        if (!t) return;
+        const leaderStr = (t.leader && t.leader._id ? t.leader._id : t.leader)?.toString?.();
+        if (leaderStr && !notifiedIds.has(leaderStr)) notifiedIds.add(leaderStr);
+        (t.players || []).forEach((p) => {
+          const id = (p.user && p.user._id ? p.user._id : p.user)?.toString?.();
+          if (id && !notifiedIds.has(id)) notifiedIds.add(id);
+        });
+      };
 
-    const idsToNotify = Array.from(notifiedIds).filter(id => id !== userId);
-    for (const memberId of idsToNotify) {
-      await notifyUser(memberId, {
-        title: isSplit ? 'Split Payment Required' : 'Match booking confirmed',
-      message: isSplit
-        ? `Your team "${team.name}" has a booked match. Please complete your split payment within 30 minutes.`
-        : `A match for your team "${team.name}" has been booked by the leader.`,
-        type: 'booking_created',
-        link: `/player/bookings/${booking._id}`,
-        meta: { bookingId: booking._id, teamId, matchId: linkedMatch ? linkedMatch._id : undefined }
-      });
+      if (linkedMatch) {
+        const fullMatch = await Match.findById(linkedMatch._id)
+          .populate('teamA', 'name leader players')
+          .populate('teamB', 'name leader players');
+        collectFromTeam(fullMatch.teamA);
+        collectFromTeam(fullMatch.teamB);
+      } else {
+        collectFromTeam(team);
+      }
+
+      const idsToNotify = Array.from(notifiedIds).filter((id) => id !== userId);
+      for (const memberId of idsToNotify) {
+        await notifyUser(memberId, {
+          title: 'Match booking confirmed',
+          message: `A match for your team "${team.name}" has been booked by the leader.`,
+          type: 'booking_created',
+          link: `/player/bookings/${booking._id}`,
+          meta: { bookingId: booking._id, teamId, matchId: linkedMatch ? linkedMatch._id : undefined },
+        });
+      }
     }
 
     const populatedBooking = await Booking.findById(booking._id)
       .populate('venue', 'venueName fullAddress contactInfo')
       .populate('splitPlayers.userId', 'name email');
+    const perPlayerAmount =
+      isSplit && splitPlayers.length > 0 ? splitPlayers[0].amountAssigned : null;
+
     return res.status(201).json({
       success: true,
       message: isSplit
-        ? 'Split booking created. All players must pay their share within 30 minutes.'
+        ? `Split payment requests sent to all ${splitPlayers.length} teammates. Each player must pay their share within 30 minutes.`
         : 'Booking created. Complete payment to confirm.',
-      data: { booking: populatedBooking, team }
+      data: {
+        booking: populatedBooking,
+        team,
+        splitSummary: isSplit
+          ? {
+              teamSize: splitPlayers.length,
+              amountPerPlayer: perPlayerAmount,
+              amounts: splitPlayers.map((p) => p.amountAssigned),
+              deadlineMinutes: SPLIT_PAYMENT_DEADLINE_MINUTES,
+            }
+          : null,
+      },
     });
   } catch (err) {
     console.error('Confirm booking error:', err);
@@ -645,7 +696,7 @@ exports.leaveTeam = async (req, res) => {
     if (!teamId) return res.status(400).json({ success: false, message: 'teamId required' });
     const team = await Team.findById(teamId).populate('leader', 'name');
     if (!team) return res.status(404).json({ success: false, message: 'Team not found' });
-    const memberIndex = team.players.findIndex(p => p.user.toString() === userId);
+    const memberIndex = team.players.findIndex((p) => playerUserId(p) === userId);
     if (memberIndex < 0) return res.status(400).json({ success: false, message: 'You are not in this team' });
     team.players.splice(memberIndex, 1);
     if (team.leader._id.toString() === userId && team.players.length > 0) {
@@ -701,7 +752,7 @@ exports.kickMember = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Cannot remove players from a team with an active booking.' });
     }
 
-    const memberIndex = team.players.findIndex(p => p.user.toString() === kickUserId);
+    const memberIndex = team.players.findIndex((p) => playerUserId(p) === kickUserId);
     if (memberIndex < 0) {
       return res.status(404).json({ success: false, message: 'Player not found in this team' });
     }
@@ -752,21 +803,26 @@ exports.deleteTeam = async (req, res) => {
       });
     }
 
-    // Notify all members before deleting
+    const leaderId = team.leader.toString();
     const memberIds = team.players
-      .map(p => (p.user?._id || p.user).toString())
-      .filter(mid => mid !== userId);
+      .map((p) => playerUserId(p))
+      .filter((mid) => mid && mid !== leaderId);
 
     for (const memberId of memberIds) {
-      await notifyUser(memberId, {
-        title: 'Team Disbanded',
-        message: `The team "${team.name}" has been deleted by the leader.`,
-        type: 'team_join_result',
-        link: '/player/matchmaking',
-        meta: { teamId: id }
-      });
+      try {
+        await notifyUser(memberId, {
+          title: 'Team Disbanded',
+          message: `The team "${team.name}" has been deleted by the leader.`,
+          type: 'team_join_result',
+          link: '/player/matchmaking',
+          meta: { teamId: id }
+        });
+      } catch (notifyErr) {
+        console.warn('Delete team: notification skipped for', memberId, notifyErr.message);
+      }
     }
 
+    await TeamMatchQueue.deleteMany({ team: id });
     await Team.findByIdAndDelete(id);
     return res.status(200).json({ success: true, message: `Team "${team.name}" has been deleted.` });
   } catch (err) {
