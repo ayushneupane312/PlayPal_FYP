@@ -12,6 +12,10 @@ Frontend/.env.local
 Frontend/.env.development
 Frontend/.env.production
 
+# Vercel (not used — deploy via Render)
+vercel.json
+.vercel/
+
 # Build output
 dist/
 dist-ssr/

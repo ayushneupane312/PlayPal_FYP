@@ -1,5 +1,7 @@
 # Deploy PlayPal on Render (CI/CD)
 
+Deployment is **Render only** (no Vercel). Use `render.yaml` and the steps below.
+
 ## Pipeline overview
 
 | Step | What happens |
