@@ -1,9 +1,8 @@
 import { create } from "zustand";
 import axios from "axios";
+import API_BASE from "../utils/apiBase.js";
 
-const API_URL = import.meta.env.MODE === "development" 
-  ? "http://localhost:5000/api/users"
-  : "/api/users";
+const API_URL = `${API_BASE}/api/users`;
 
 axios.defaults.withCredentials = true;
 

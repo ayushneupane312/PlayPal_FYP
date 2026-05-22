@@ -10,6 +10,7 @@ import AdminHeader from '../components/AdminHeader';
 import PhoneInput from '../components/PhoneInput';
 import { getPhoneValidationError } from '../utils/phoneValidation';
 import { RequiredMark } from '../components/RequiredMark';
+import API_BASE from '../utils/apiBase.js';
 
 const getVisiblePageNumbers = (current, totalPages, maxButtons = 10) => {
   const total = Math.max(1, totalPages);
@@ -134,7 +135,7 @@ const UserManagement = () => {
     if (!candidate) return '';
     if (candidate.startsWith('http://') || candidate.startsWith('https://')) return candidate;
     if (candidate.startsWith('/')) {
-      const base = import.meta.env.MODE === "development" ? "http://localhost:5000" : "";
+      const base = API_BASE;
       return `${base}${candidate}`;
     }
     return candidate;

@@ -1,6 +1,6 @@
 import axios from 'axios';
+import API_BASE from '../utils/apiBase.js';
 
-const API_BASE = import.meta.env.MODE === 'development' ? 'http://localhost:5000' : '';
 const NOTIFICATION_URL = `${API_BASE}/api/notifications`;
 
 axios.defaults.withCredentials = true;

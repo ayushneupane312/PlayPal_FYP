@@ -1,9 +1,8 @@
 import { create } from 'zustand';
 import axios from 'axios';
+import API_BASE from '../utils/apiBase.js';
 
-const API_URL = import.meta.env.MODE === 'development'
-    ? 'http://localhost:5000/futsal-owners'
-    : '/futsal-owners';
+const API_URL = `${API_BASE}/futsal-owners`;
 
 axios.defaults.withCredentials = true;
 

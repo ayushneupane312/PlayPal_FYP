@@ -1,9 +1,8 @@
 import { create } from 'zustand';
 import axios from 'axios';
+import API_BASE from '../utils/apiBase.js';
 
-const API_URL = import.meta.env.MODE === 'development'
-    ? 'http://localhost:5000/api/payment'
-    : '/api/payment';
+const API_URL = `${API_BASE}/api/payment`;
 
 axios.defaults.withCredentials = true;
 

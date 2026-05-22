@@ -1,20 +1,10 @@
 import { create } from "zustand";
 import axios from "axios";
+import API_BASE from "../utils/apiBase.js";
 
-const API_URL =
-  import.meta.env.MODE === "development"
-    ? "http://localhost:5000/auth"
-    : "/auth";
-
-const UPLOAD_URL = import.meta.env.MODE === "development"
-    ? "http://localhost:5000/upload"
-    : "/upload";
-
-/** Image/file uploads (Cloudinary via backend) */
-const UPLOAD_API =
-  import.meta.env.MODE === "development"
-    ? "http://localhost:5000/api/upload"
-    : "/api/upload";
+const API_URL = `${API_BASE}/auth`;
+const UPLOAD_URL = `${API_BASE}/upload`;
+const UPLOAD_API = `${API_BASE}/api/upload`;
 
 axios.defaults.withCredentials = true;
 
@@ -53,15 +43,13 @@ export const useAuthStore = create((set) => ({
     set({ isLoading: true, error: null });
     try {
       const response = await axios.post(`${API_URL}/login`, { email, password });
-      
-      // ✅ DEBUG LOGS ADDED
-      console.log('=== LOGIN DEBUG ===');
-      console.log('Response from backend:', response.data.user);
-      console.log('Email logged in:', email);
-      console.log('User name:', response.data.user.name);
-      console.log('User role:', response.data.user.role);
-      console.log('==================');
-      
+
+      if (!response.data?.success || !response.data?.user) {
+        const err = new Error(response.data?.msg || "Login failed");
+        err.response = { data: response.data };
+        throw err;
+      }
+
       set({
         isAuthenticated: true,
         user: response.data.user,
