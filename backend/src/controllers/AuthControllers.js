@@ -8,6 +8,7 @@ const {
     sendPasswordResetSuccessEmail, 
     sendPasswordResetEmail
 } = require("../mailtrap/emails");
+const { sanitizeUserPendingPayments } = require("../services/pendingPaymentService");
 
 // ------------------- SIGNUP -------------------
 const signup = async (req, res) => {
@@ -163,6 +164,7 @@ const login = async (req, res) => {
         // ✅ SET TOKEN BEFORE CHECKING FUTSAL OWNER STATUS
         generateTokenAndSetCookie(res, user._id, user.tokenVersion ?? 0);
         user.lastLogin = new Date();
+        sanitizeUserPendingPayments(user);
         await user.save();
 
         // ✅ FUTSAL OWNER SPECIFIC CHECKS (after setting token)
@@ -229,6 +231,7 @@ const login = async (req, res) => {
 
             if (user.applicationStatus === 'approved' && user.status !== 'active') {
                 user.status = 'active';
+                sanitizeUserPendingPayments(user);
                 await user.save();
             }
         }

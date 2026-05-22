@@ -5,6 +5,7 @@ const Booking = require('../models/BookingModel');
 const Venue = require('../models/VenueModel');
 const { calculateSplit } = require('../utils/splitPayment');
 const { notifyUser } = require('../services/notificationService');
+const { syncPendingPaymentsFromBooking } = require('../services/pendingPaymentService');
 
 const MAX_PLAYERS_BY_FORMAT = { '5v5': 5, '6v6': 6, '7v7': 7, '2v2': 2, '1v1': 1 };
 const SPLIT_PAYMENT_DEADLINE_MINUTES = 30;
@@ -560,50 +561,89 @@ exports.confirmBooking = async (req, res) => {
       }
     }
 
-    // Collect all unique players (both teams, if match is linked) to notify
-    const notifiedIds = new Set([userId]);
-    const collectFromTeam = (t) => {
-      if (!t) return;
-      const leaderStr = (t.leader && t.leader._id ? t.leader._id : t.leader)?.toString?.();
-      if (leaderStr && !notifiedIds.has(leaderStr)) notifiedIds.add(leaderStr);
-      (t.players || []).forEach(p => {
-        const id = (p.user && p.user._id ? p.user._id : p.user)?.toString?.();
-        if (id && !notifiedIds.has(id)) notifiedIds.add(id);
-      });
-    };
+    const courtName = court.name;
+    const dateLabel = date.toLocaleDateString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+    });
 
-    if (linkedMatch) {
-      const fullMatch = await Match.findById(linkedMatch._id)
-        .populate('teamA', 'name leader players')
-        .populate('teamB', 'name leader players');
-      collectFromTeam(fullMatch.teamA);
-      collectFromTeam(fullMatch.teamB);
+    if (isSplit && splitPlayers.length > 0) {
+      const bookingForSync = await Booking.findById(booking._id).populate('venue', 'venueName');
+      await syncPendingPaymentsFromBooking(bookingForSync);
+
+      for (const entry of splitPlayers) {
+        const memberId = entry.userId.toString();
+        await notifyUser(memberId, {
+          title: 'Split Payment Required',
+          message: `You owe NPR ${entry.amountAssigned} for ${courtName} on ${dateLabel}. Pay within 30 minutes.`,
+          type: 'split_payment_due',
+          link: `/player/booking/split/${booking._id}`,
+          meta: {
+            bookingId: booking._id,
+            teamId,
+            amountAssigned: entry.amountAssigned,
+            matchId: linkedMatch ? linkedMatch._id : undefined,
+          },
+        });
+      }
     } else {
-      collectFromTeam(team);
-    }
+      const notifiedIds = new Set([userId]);
+      const collectFromTeam = (t) => {
+        if (!t) return;
+        const leaderStr = (t.leader && t.leader._id ? t.leader._id : t.leader)?.toString?.();
+        if (leaderStr && !notifiedIds.has(leaderStr)) notifiedIds.add(leaderStr);
+        (t.players || []).forEach((p) => {
+          const id = (p.user && p.user._id ? p.user._id : p.user)?.toString?.();
+          if (id && !notifiedIds.has(id)) notifiedIds.add(id);
+        });
+      };
 
-    const idsToNotify = Array.from(notifiedIds).filter(id => id !== userId);
-    for (const memberId of idsToNotify) {
-      await notifyUser(memberId, {
-        title: isSplit ? 'Split Payment Required' : 'Match booking confirmed',
-      message: isSplit
-        ? `Your team "${team.name}" has a booked match. Please complete your split payment within 30 minutes.`
-        : `A match for your team "${team.name}" has been booked by the leader.`,
-        type: 'booking_created',
-        link: `/player/bookings/${booking._id}`,
-        meta: { bookingId: booking._id, teamId, matchId: linkedMatch ? linkedMatch._id : undefined }
-      });
+      if (linkedMatch) {
+        const fullMatch = await Match.findById(linkedMatch._id)
+          .populate('teamA', 'name leader players')
+          .populate('teamB', 'name leader players');
+        collectFromTeam(fullMatch.teamA);
+        collectFromTeam(fullMatch.teamB);
+      } else {
+        collectFromTeam(team);
+      }
+
+      const idsToNotify = Array.from(notifiedIds).filter((id) => id !== userId);
+      for (const memberId of idsToNotify) {
+        await notifyUser(memberId, {
+          title: 'Match booking confirmed',
+          message: `A match for your team "${team.name}" has been booked by the leader.`,
+          type: 'booking_created',
+          link: `/player/bookings/${booking._id}`,
+          meta: { bookingId: booking._id, teamId, matchId: linkedMatch ? linkedMatch._id : undefined },
+        });
+      }
     }
 
     const populatedBooking = await Booking.findById(booking._id)
       .populate('venue', 'venueName fullAddress contactInfo')
       .populate('splitPlayers.userId', 'name email');
+    const perPlayerAmount =
+      isSplit && splitPlayers.length > 0 ? splitPlayers[0].amountAssigned : null;
+
     return res.status(201).json({
       success: true,
       message: isSplit
-        ? 'Split booking created. All players must pay their share within 30 minutes.'
+        ? `Split payment requests sent to all ${splitPlayers.length} teammates. Each player must pay their share within 30 minutes.`
         : 'Booking created. Complete payment to confirm.',
-      data: { booking: populatedBooking, team }
+      data: {
+        booking: populatedBooking,
+        team,
+        splitSummary: isSplit
+          ? {
+              teamSize: splitPlayers.length,
+              amountPerPlayer: perPlayerAmount,
+              amounts: splitPlayers.map((p) => p.amountAssigned),
+              deadlineMinutes: SPLIT_PAYMENT_DEADLINE_MINUTES,
+            }
+          : null,
+      },
     });
   } catch (err) {
     console.error('Confirm booking error:', err);

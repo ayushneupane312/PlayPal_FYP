@@ -100,8 +100,42 @@ const userSchema = new mongoose.Schema({
         type: Date
     },
 
+    // Split bookings: each member's outstanding share (synced from Booking.splitPlayers)
+    pendingPayments: [{
+        bookingId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Booking',
+            required: true,
+        },
+        courtName: { type: String, default: '' },
+        venueName: { type: String, default: '' },
+        date: { type: Date },
+        startTime: { type: String, default: '' },
+        endTime: { type: String, default: '' },
+        amountDue: { type: Number, required: true, min: 0 },
+        deadline: { type: Date },
+        paymentStatus: {
+            type: String,
+            enum: ['pending', 'paid'],
+            default: 'pending',
+        },
+    }],
+
 }, {
     timestamps: true,
+});
+
+// Keep only active pending split rows (drops cancelled/paid/expired legacy data)
+userSchema.pre('save', function (next) {
+    if (Array.isArray(this.pendingPayments)) {
+        const now = new Date();
+        this.pendingPayments = this.pendingPayments.filter((p) => {
+            if (!p || p.paymentStatus !== 'pending') return false;
+            if (p.deadline && new Date(p.deadline) <= now) return false;
+            return true;
+        });
+    }
+    next();
 });
 
 // Hash password before saving

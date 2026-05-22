@@ -17,7 +17,8 @@ const {
   getOwnerEarnings,
   initiateSplitPayment,
   verifySplitPayment,
-  payShare
+  payShare,
+  getMyPendingSplitPayments
 } = require('../controllers/BookingController');
 
 // ═══════════════════════════════════════════════════════════
@@ -42,6 +43,9 @@ router.post('/payment/verify', verifyToken, verifyPayment);
 
 // Get user's bookings
 router.get('/my-bookings', verifyToken, getMyBookings);
+
+// Pending split shares for logged-in user
+router.get('/pending-split-payments', verifyToken, getMyPendingSplitPayments);
 
 // ═══════════════════════════════════════════════════════════
 // FUTSAL OWNER ROUTES (must be before /:id so /owner/bookings is not matched as :id)
