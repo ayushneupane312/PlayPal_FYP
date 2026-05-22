@@ -107,7 +107,8 @@ const bookingSchema = new mongoose.Schema({
     amountAssigned: { type: Number, required: true, min: 0 },
     paymentStatus: { type: String, enum: ['pending', 'paid'], default: 'pending' },
     paidAt: Date,
-    transactionId: String
+    transactionId: String,
+    khaltiPidx: String,
   }],
 
   // Booking status

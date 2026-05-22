@@ -157,7 +157,7 @@ exports.listMyTournaments = async (req, res) => {
     if (status) query.status = status;
     const tournaments = await Tournament.find(query)
       .populate('venue', 'venueName fullAddress')
-      .sort({ createdAt: -1 })
+      .sort({ isDemoProtected: -1, createdAt: -1 })
       .lean();
     const ids = tournaments.map((t) => t._id);
     const counts = await TournamentTeam.aggregate([
@@ -439,6 +439,39 @@ exports.getFixtures = async (req, res) => {
   } catch (err) {
     console.error('Get fixtures error:', err);
     return res.status(500).json({ success: false, message: 'Failed to fetch fixtures' });
+  }
+};
+
+/** Delete tournament (owner only). Demo-protected tournaments cannot be removed. */
+exports.deleteTournament = async (req, res) => {
+  try {
+    const { id: tournamentId } = req.params;
+    const tournament = await Tournament.findById(tournamentId);
+    if (!tournament) {
+      return res.status(404).json({ success: false, message: 'Tournament not found' });
+    }
+
+    if (tournament.isDemoProtected) {
+      return res.status(403).json({
+        success: false,
+        message: 'Demo tournament cannot be deleted.',
+      });
+    }
+
+    await assertOwner(req, tournament.venue);
+
+    await TournamentMatch.deleteMany({ tournament: tournamentId });
+    await TournamentTeam.deleteMany({ tournament: tournamentId });
+    await PlayerTournamentStats.deleteMany({ tournament: tournamentId });
+    await Tournament.findByIdAndDelete(tournamentId);
+
+    return res.status(200).json({ success: true, message: 'Tournament deleted' });
+  } catch (err) {
+    if (err.statusCode) {
+      return res.status(err.statusCode).json({ success: false, message: err.message });
+    }
+    console.error('Delete tournament error:', err);
+    return res.status(500).json({ success: false, message: 'Failed to delete tournament' });
   }
 };
 

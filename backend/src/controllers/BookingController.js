@@ -21,6 +21,31 @@ const {
 // HELPER FUNCTIONS
 // ═══════════════════════════════════════════════════════════
 
+/** Parse split purchase order id (split:bookingId:userId or split_bookingId_userId) */
+function parseSplitPurchaseOrderId(purchaseOrderId) {
+  if (!purchaseOrderId) return null;
+  const raw = String(purchaseOrderId).trim();
+
+  if (raw.startsWith('split:')) {
+    const parts = raw.split(':');
+    if (parts.length >= 3) {
+      return {
+        bookingId: parts[1],
+        payUserId: parts.slice(2).join(':'),
+      };
+    }
+  }
+
+  if (raw.startsWith('split_')) {
+    const parts = raw.split('_');
+    if (parts[0] === 'split' && parts.length >= 3) {
+      return { bookingId: parts[1], payUserId: parts[2] };
+    }
+  }
+
+  return null;
+}
+
 function generateTimeSlots(startTime, endTime, intervalHours = 1) {
   const slots = [];
   const [startHour, startMin] = startTime.split(':').map(Number);
@@ -675,7 +700,9 @@ exports.initiateSplitPayment = async (req, res) => {
     }
 
     const user = await User.findById(userId);
-    const purchaseOrderId = `split:${bookingId}:${userId}`;
+    const bookingIdStr = booking._id.toString();
+    const purchaseOrderId = `split_${bookingIdStr}_${userId}`;
+    const frontendBase = (process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/$/, '');
     const paymentData = {
       amount: amountInPaisa,
       purchaseOrderId,
@@ -685,7 +712,7 @@ exports.initiateSplitPayment = async (req, res) => {
         email: user.email,
         phone: user.phone || '9800000000'
       },
-      returnUrl: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/player/booking/split-payment-callback`,
+      returnUrl: `${frontendBase}/player/booking/split-payment-callback?bookingId=${bookingIdStr}`,
       websiteUrl: process.env.FRONTEND_URL || 'http://localhost:5173',
       productDetails: [
         {
@@ -699,6 +726,14 @@ exports.initiateSplitPayment = async (req, res) => {
     };
 
     const paymentResponse = await khaltiService.initiatePayment(paymentData);
+
+    const playerIndex = booking.splitPlayers.findIndex(
+      (p) => (p.userId && p.userId._id ? p.userId._id.toString() : p.userId.toString()) === userId
+    );
+    if (playerIndex >= 0) {
+      booking.splitPlayers[playerIndex].khaltiPidx = paymentResponse.pidx;
+      await booking.save();
+    }
 
     res.status(200).json({
       success: true,
@@ -725,8 +760,8 @@ exports.initiateSplitPayment = async (req, res) => {
  */
 exports.verifySplitPayment = async (req, res) => {
   try {
-    const { pidx } = req.body;
-    const userId = req.userId;
+    const { pidx, bookingId: bookingIdFromClient } = req.body;
+    const userId = req.userId?.toString?.() || String(req.userId);
 
     if (!pidx) {
       return res.status(400).json({ success: false, message: 'pidx is required' });
@@ -740,31 +775,81 @@ exports.verifySplitPayment = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Payment failed or not verified' });
     }
 
-    const purchaseOrderId = verification.data?.purchase_order_id || verification.purchase_order_id;
-    if (!purchaseOrderId || !purchaseOrderId.startsWith('split:')) {
-      return res.status(400).json({ success: false, message: 'Invalid split payment reference' });
-    }
-    const [, bookingId, payUserId] = purchaseOrderId.split(':');
-    if (payUserId !== userId) {
-      return res.status(403).json({ success: false, message: 'Unauthorized' });
+    let booking = null;
+
+    // Primary: match stored pidx on this user's split share
+    booking = await Booking.findOne({
+      paymentType: 'split',
+      ...(bookingIdFromClient ? { _id: bookingIdFromClient } : {}),
+      splitPlayers: {
+        $elemMatch: {
+          userId,
+          khaltiPidx: String(pidx),
+        },
+      },
+    });
+
+    // Fallback: parse purchase_order_id from Khalti (split_bookingId_userId)
+    if (!booking) {
+      const purchaseOrderId =
+        verification.data?.purchase_order_id ||
+        verification.data?.purchase_order ||
+        verification.purchase_order_id;
+      const parsed = parseSplitPurchaseOrderId(purchaseOrderId);
+      if (parsed) {
+        if (parsed.payUserId.toString() !== userId) {
+          return res.status(403).json({ success: false, message: 'Unauthorized' });
+        }
+        booking = await Booking.findById(parsed.bookingId);
+      }
     }
 
-    const booking = await Booking.findById(bookingId);
-    if (!booking || booking.paymentType !== 'split' || booking.bookingStatus !== 'pending') {
-      return res.status(404).json({ success: false, message: 'Booking not found or not pending' });
+    // Fallback: any split row with this pidx (then verify user is on the booking)
+    if (!booking) {
+      const byPidx = await Booking.findOne({
+        paymentType: 'split',
+        'splitPlayers.khaltiPidx': String(pidx),
+      });
+      if (
+        byPidx &&
+        byPidx.splitPlayers.some((p) => (p.userId && p.userId.toString()) === userId)
+      ) {
+        booking = byPidx;
+      }
+    }
+
+    // Fallback: client-sent bookingId
+    if (!booking && bookingIdFromClient) {
+      booking = await Booking.findOne({
+        _id: bookingIdFromClient,
+        paymentType: 'split',
+        'splitPlayers.userId': userId,
+      });
+    }
+
+    if (!booking || booking.paymentType !== 'split') {
+      return res.status(404).json({ success: false, message: 'Split booking not found' });
+    }
+
+    if (!['pending', 'confirmed'].includes(booking.bookingStatus)) {
+      return res.status(400).json({ success: false, message: 'Booking is no longer active' });
     }
 
     const playerIndex = booking.splitPlayers.findIndex(
-      p => (p.userId && p.userId.toString()) === userId
+      (p) => (p.userId && p.userId.toString()) === userId
     );
     if (playerIndex === -1) {
       return res.status(403).json({ success: false, message: 'You are not in this split booking' });
     }
     if (booking.splitPlayers[playerIndex].paymentStatus === 'paid') {
+      const populated = await Booking.findById(booking._id)
+        .populate('venue', 'venueName fullAddress contactInfo')
+        .populate('splitPlayers.userId', 'name email');
+      const allPaid = populated.splitPlayers.every((p) => p.paymentStatus === 'paid');
       return res.status(200).json({
         success: true,
         message: 'Share already marked paid',
-        data: { booking }
+        data: { booking: populated, allPaid },
       });
     }
 

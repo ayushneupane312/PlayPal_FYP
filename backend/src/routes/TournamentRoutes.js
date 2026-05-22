@@ -9,7 +9,8 @@ const {
   registerTeam,
   generateFixtures,
   getFixtures,
-  getRegisteredTeams
+  getRegisteredTeams,
+  deleteTournament
 } = require('../controllers/TournamentController');
 
 router.use(verifyToken);
@@ -23,6 +24,7 @@ router.post('/', createTournament);
 router.post('/:id/register', registerTeam);
 router.post('/:id/fixtures/generate', generateFixtures);
 router.get('/:id/fixtures', getFixtures);
+router.delete('/:id', deleteTournament);
 
 module.exports = router;
 

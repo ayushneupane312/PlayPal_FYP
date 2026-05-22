@@ -232,12 +232,14 @@ exports.getAllFutsalOwners = async (req, res) => {
             pending: 0,
             approved: 0,
             rejected: 0,
-            total: total
+            total: 0
         };
 
         counts.forEach(item => {
             statusCounts[item._id] = item.count;
         });
+        statusCounts.total =
+            statusCounts.pending + statusCounts.approved + statusCounts.rejected;
 
         res.status(200).json({
             success: true,

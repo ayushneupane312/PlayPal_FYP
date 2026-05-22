@@ -3,7 +3,46 @@ const { deleteFromCloudinary } = require('../middlewares/UploadMiddleware');
 const User = require('../models/UserModel');
 const FutsalOwner = require('../models/futsalOwnerForm');
 
+/** Admin card when owner is approved but has not created a Venue in the app yet. */
+function venueCardFromRegistration(fo, user) {
+  const images = (fo.groundImages || []).map((url, i) => ({
+    url,
+    publicId: fo.groundImagePublicIds?.[i] || '',
+  }));
 
+  return {
+    _id: user?._id ? `reg-${fo._id}` : String(fo._id),
+    futsalOwnerRef: fo._id,
+    isRegistrationOnly: true,
+    venueName: fo.futsalName,
+    fullAddress: fo.futsalLocation,
+    googleMapLink: fo.googleMapLink || '',
+    isVerified: true,
+    isActive: false,
+    description: 'Approved registration — full venue profile pending in owner dashboard.',
+    contactInfo: {
+      phone: fo.phone || fo.businessContact,
+      email: fo.email,
+    },
+    owner: user
+      ? {
+          _id: user._id,
+          name: user.name || fo.fullName,
+          email: user.email || fo.email,
+          phone: user.phone || fo.phone,
+          applicationStatus: 'approved',
+        }
+      : {
+          name: fo.fullName,
+          email: fo.email,
+          phone: fo.phone,
+        },
+    media: { images },
+    courts: [],
+    operatingHours: [],
+    stats: { totalBookings: 0, averageRating: 0, totalReviews: 0 },
+  };
+}
 
 // Get futsal owner's registration data (for auto-fill)
 exports.getMyFutsalOwnerData = async (req, res) => {
@@ -375,6 +414,8 @@ exports.getAllVenuesAdmin = async (req, res) => {
       city,
       isActive,
       isVerified,
+      approvedOnly = 'true',
+      onePerOwner = 'true',
       page = 1,
       limit = 20
     } = req.query;
@@ -387,6 +428,88 @@ exports.getAllVenuesAdmin = async (req, res) => {
 
     if (typeof isVerified !== 'undefined') {
       query.isVerified = isVerified === 'true';
+    }
+
+    // Futsal Centers: match Futsal Approval (approved registrations + their venues)
+    if (approvedOnly === 'true') {
+      const approvedRegistrations = await FutsalOwner.find({ status: 'approved' })
+        .sort({ createdAt: -1 })
+        .lean();
+
+      let rows = [];
+
+      for (const fo of approvedRegistrations) {
+        let user = await User.findOne({ futsalOwnerRef: fo._id }).select(
+          'name email phone applicationStatus role status'
+        );
+        if (!user) {
+          user = await User.findOne({
+            email: fo.email.toLowerCase().trim(),
+            role: 'futsalowner',
+          }).select('name email phone applicationStatus role status');
+        }
+
+        if (user && user.applicationStatus !== 'approved') {
+          user.applicationStatus = 'approved';
+          user.status = 'active';
+          await user.save();
+        }
+
+        if (user) {
+          let venue = await Venue.findOne({ owner: user._id }).sort({ createdAt: -1 });
+          if (venue) {
+            if (!venue.isVerified) {
+              venue.isVerified = true;
+              await venue.save();
+            }
+            const populated = await Venue.findById(venue._id)
+              .populate('owner', 'name email phone applicationStatus')
+              .select('-__v')
+              .lean();
+            populated.isRegistrationOnly = false;
+            rows.push(populated);
+            continue;
+          }
+        }
+
+        rows.push(venueCardFromRegistration(fo, user));
+      }
+
+      if (city) {
+        const cityRegex = new RegExp(city, 'i');
+        rows = rows.filter(
+          (r) =>
+            cityRegex.test(r.fullAddress || '') ||
+            cityRegex.test(r.address?.city || '')
+        );
+      }
+
+      if (search) {
+        const searchRegex = new RegExp(search, 'i');
+        rows = rows.filter(
+          (r) =>
+            searchRegex.test(r.venueName || '') ||
+            searchRegex.test(r.fullAddress || '') ||
+            searchRegex.test(r.owner?.name || '') ||
+            searchRegex.test(r.owner?.email || '')
+        );
+      }
+
+      const total = rows.length;
+      const pageNum = Math.max(1, parseInt(page, 10) || 1);
+      const limitNum = Math.max(1, parseInt(limit, 10) || 20);
+      const start = (pageNum - 1) * limitNum;
+      const paged = rows.slice(start, start + limitNum);
+
+      return res.status(200).json({
+        success: true,
+        data: paged,
+        pagination: {
+          total,
+          page: pageNum,
+          pages: Math.ceil(total / limitNum) || 0,
+        },
+      });
     }
 
     if (city) {
@@ -402,14 +525,24 @@ exports.getAllVenuesAdmin = async (req, res) => {
       ];
     }
 
-    const venues = await Venue.find(query)
-      .populate('owner', 'name email phone')
+    let venues = await Venue.find(query)
+      .populate('owner', 'name email phone applicationStatus')
       .select('-__v')
+      .sort({ createdAt: -1 })
       .limit(limit * 1)
-      .skip((page - 1) * limit)
-      .sort({ createdAt: -1 });
+      .skip((page - 1) * limit);
 
-    const total = await Venue.countDocuments(query);
+    if (onePerOwner === 'true') {
+      const seenOwners = new Set();
+      venues = venues.filter((v) => {
+        const ownerId = (v.owner?._id || v.owner)?.toString();
+        if (!ownerId || seenOwners.has(ownerId)) return false;
+        seenOwners.add(ownerId);
+        return true;
+      });
+    }
+
+    const total = venues.length;
 
     res.status(200).json({
       success: true,
@@ -417,7 +550,7 @@ exports.getAllVenuesAdmin = async (req, res) => {
       pagination: {
         total,
         page: parseInt(page),
-        pages: Math.ceil(total / limit)
+        pages: Math.ceil(total / limit) || 0
       }
     });
   } catch (error) {
