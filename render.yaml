@@ -1,0 +1,65 @@
+# PlayPal FYP — Render Blueprint (CI/CD via Git auto-deploy)
+# Apply: https://dashboard.render.com/blueprint/new?repo=https://github.com/ayushneupane312/PlayPal_FYP
+#
+# Existing service: update Dashboard to match backend settings below, or sync this Blueprint.
+
+services:
+  # Express API + Socket.io
+  - type: web
+    name: PlayPal_FYP
+    runtime: node
+    plan: free
+    region: oregon
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGO_URI
+        sync: false
+      - key: JWT_SECRET_KEY
+        sync: false
+      - key: FRONTEND_URL
+        value: https://playpal-web.onrender.com
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+      - key: CLOUD_NAME
+        sync: false
+      - key: CLOUD_API
+        sync: false
+      - key: CLOUD_API_SECRET
+        sync: false
+      - key: EMAIL_USER
+        sync: false
+      - key: EMAIL_PASS
+        sync: false
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: KHALTI_SECRET_KEY
+        sync: false
+      - key: KHALTI_BASE_URL
+        value: https://a.khalti.com/api/v2
+
+  # React (Vite) static site
+  - type: web
+    name: playpal-web
+    runtime: static
+    plan: free
+    rootDir: Frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
+    autoDeploy: true
+    envVars:
+      - key: VITE_API_URL
+        value: https://playpal-fyp.onrender.com
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

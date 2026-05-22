@@ -14,19 +14,32 @@ dotenv.config();
 
 const app = express();
 
-// Middleware
+// Middleware — allow local dev + FRONTEND_URL (comma-separated) + Render URLs
 const allowedOrigins = new Set([
   'http://localhost:5173',
   'http://localhost:5174',
   'http://localhost:5175',
 ]);
 
+const addOrigin = (url) => {
+  if (!url) return;
+  const trimmed = url.trim().replace(/\/$/, '');
+  if (trimmed) allowedOrigins.add(trimmed);
+};
+
+if (process.env.FRONTEND_URL) {
+  process.env.FRONTEND_URL.split(',').forEach(addOrigin);
+}
+if (process.env.RENDER_EXTERNAL_URL) {
+  addOrigin(process.env.RENDER_EXTERNAL_URL);
+}
+
 app.use(
   cors({
     origin(origin, callback) {
-      // Allow non-browser clients (curl/postman) with no Origin header
       if (!origin) return callback(null, true);
-      if (allowedOrigins.has(origin)) return callback(null, true);
+      const normalized = origin.replace(/\/$/, '');
+      if (allowedOrigins.has(normalized)) return callback(null, true);
       return callback(new Error(`CORS blocked for origin: ${origin}`));
     },
     credentials: true,
@@ -96,7 +109,10 @@ app.use('/api/admin/venues', adminVenueRoutes);
 
 
 
-// Default route
+app.get('/health', (req, res) => {
+  res.status(200).json({ ok: true, service: 'playpal-api' });
+});
+
 app.get('/', (req, res) => res.send('PlayPal API is running!'));
 
 // Error handling - ADD DETAILED LOGGING
@@ -116,18 +132,32 @@ startAutoCancelJob();
 // Create HTTP server & Socket.io
 const server = http.createServer(app);
 
+const socketCorsOrigins = Array.from(allowedOrigins);
+
 const io = new Server(server, {
   cors: {
-    origin: 'http://localhost:5173',
-    credentials: true
-  }
+    origin: socketCorsOrigins.length ? socketCorsOrigins : ['http://localhost:5173'],
+    credentials: true,
+  },
 });
 
 // Initialize notification socket handlers
 initNotificationSocket(io);
 
-// Start server
 const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => {
-  console.log(`API URL: http://localhost:${PORT}`);
+const HOST = '0.0.0.0';
+
+server.listen(PORT, HOST, () => {
+  console.log(`PlayPal API listening on ${HOST}:${PORT}`);
+  if (process.env.RENDER_EXTERNAL_URL) {
+    console.log(`Public URL: ${process.env.RENDER_EXTERNAL_URL}`);
+  }
 });
+
+// Keep free-tier Render instance warm (optional; set ENABLE_SELF_PING=true)
+if (process.env.ENABLE_SELF_PING === 'true' && process.env.RENDER_EXTERNAL_URL) {
+  const pingUrl = `${process.env.RENDER_EXTERNAL_URL.replace(/\/$/, '')}/health`;
+  setInterval(() => {
+    fetch(pingUrl).catch(() => {});
+  }, 14 * 60 * 1000);
+}
