@@ -58,10 +58,12 @@ Copy the full list from `backend/.env.example`. Set secrets in **Environment** o
 
 ### Verification emails (Brevo)
 
+Render often **blocks SMTP** (`Connection timeout`). Use the **HTTP API** instead:
+
 1. [Brevo](https://app.brevo.com) → **Senders** → verify `BREVO_SENDER_EMAIL` (e.g. `playpal602@gmail.com`)
-2. **SMTP & API** → copy **SMTP key** (`xsmtpsib-...`) into Render `BREVO_SMTP_KEY`
-3. If sends fail, set `BREVO_SMTP_LOGIN` to the SMTP login email shown in Brevo (often your Brevo account email)
-4. Check **Render → PlayPal_FYP → Logs** for `Verification email failed` or `Verification email sent`
+2. **SMTP & API** → **API Keys** → create key (`xkeysib-...`) → Render env **`BREVO_API_KEY`**
+3. Keep `BREVO_SENDER_EMAIL` and `BREVO_SMTP_KEY` optional for local SMTP
+4. Logs should show `[email] Brevo API ok →` (not `Connection timeout`)
 
 ---
 
