@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [main]
 
+# Required so checkout can read the repo (especially on private repositories)
+permissions:
+  contents: read
+
 jobs:
   backend:
     name: Backend
@@ -14,7 +18,10 @@ jobs:
       run:
         working-directory: backend
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
@@ -32,7 +39,10 @@ jobs:
       run:
         working-directory: Frontend
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
