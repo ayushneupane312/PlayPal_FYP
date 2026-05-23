@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { useEffect } from "react";
-import { useAuthStore } from "./store/authStore"; 
+import { useAuthStore } from "./store/authStore";
+import ProtectedRoute from "./components/ProtectedRoute"; 
 
 import LoginPage from "./pages/LoginPage"
 import LandingPage from "./pages/LandingPage";
@@ -140,13 +141,13 @@ function App() {
             <Route path="/futsalowner/booking-management/:id" element={<OwnerBookingDetailPage/>}/>
           
             {/* Admin Routes */}
-            <Route path="/admin/futsal-centers" element={<FutsalCenter />} />
-            <Route path="/admin/venues/:id" element={<VenueDetailsPage />} />
-            <Route path="/admin/user-management" element={<UserDirectory />} />
-            <Route path="/admindashboard" element={<AdminDashboard />} />
-            <Route path="/admin/futsalownerapproval" element={<FutsalOwnerApproval/>} />
-            <Route path="/admin/analytics" element={<Analytics/>}/>
-            <Route path="/admin/settings" element={<SystemSettings/>}/>
+            <Route path="/admin/futsal-centers" element={<ProtectedRoute roles={["admin"]}><FutsalCenter /></ProtectedRoute>} />
+            <Route path="/admin/venues/:id" element={<ProtectedRoute roles={["admin"]}><VenueDetailsPage /></ProtectedRoute>} />
+            <Route path="/admin/user-management" element={<ProtectedRoute roles={["admin"]}><UserDirectory /></ProtectedRoute>} />
+            <Route path="/admindashboard" element={<ProtectedRoute roles={["admin"]}><AdminDashboard /></ProtectedRoute>} />
+            <Route path="/admin/futsalownerapproval" element={<ProtectedRoute roles={["admin"]}><FutsalOwnerApproval /></ProtectedRoute>} />
+            <Route path="/admin/analytics" element={<ProtectedRoute roles={["admin"]}><Analytics /></ProtectedRoute>} />
+            <Route path="/admin/settings" element={<ProtectedRoute roles={["admin"]}><SystemSettings /></ProtectedRoute>} />
 
             {/* Player Routes */}
             <Route path="/playerdashboard" element={<PlayerDashboard/>}/>

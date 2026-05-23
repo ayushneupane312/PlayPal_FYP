@@ -4,6 +4,7 @@ import AdminSidebar from './AdminSidebar';
 import SearchAndNotificationBar from '../components/SearchAndNotificationBar';
 import notificationService from '../store/notificationService';
 import { fetchAdminEarningsSummary } from '../store/adminAnalyticsService';
+import { useAuthStore } from '../store/authStore';
 
 function formatNotificationTime(dateStr) {
   const date = new Date(dateStr);
@@ -76,6 +77,7 @@ function lastTwelveMonthsSeries(monthlyPlatform) {
 }
 
 const Dashboard = () => {
+  const { user } = useAuthStore();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [notificationsLoading, setNotificationsLoading] = useState(true);
@@ -385,7 +387,7 @@ const Dashboard = () => {
           {/* Header */}
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Dashboard Overview</h1>
-            <p className="text-gray-500">Welcome back, Super Admin</p>
+            <p className="text-gray-500">Welcome back, {user?.name || 'Admin'}</p>
           </div>
 
           {adminSummaryError && !adminSummaryLoading ? (
