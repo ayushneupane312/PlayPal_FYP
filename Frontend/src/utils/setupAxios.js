@@ -21,11 +21,21 @@ export function loadAuthToken() {
   return token;
 }
 
-axios.interceptors.request.use((config) => {
+function attachAuthHeader(config) {
   const token = sessionStorage.getItem(TOKEN_KEY);
-  if (token && !config.headers.Authorization) {
+  if (!token) return config;
+  if (!config.headers) config.headers = {};
+  if (typeof config.headers.set === 'function') {
+    config.headers.set('Authorization', `Bearer ${token}`);
+  } else {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  return config;
+}
+
+axios.interceptors.request.use((config) => {
+  attachAuthHeader(config);
+  config.withCredentials = true;
   return config;
 });
 
