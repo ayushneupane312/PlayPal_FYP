@@ -53,7 +53,7 @@ const signup = async (req, res) => {
             email: email.toLowerCase().trim(),
             password: password,
             verificationToken,
-            verificationTokenExpires: Date.now() + 10 * 60 * 1000,
+            verificationTokenExpires: Date.now() + 24 * 60 * 60 * 1000,
             role: userType,
             isVerified: false,
             applicationStatus: 'none',
@@ -110,7 +110,9 @@ const verifyEmail = async (req, res) => {
           }
         await user.save();
 
-        await sendWelcomeEmail(user.email, user.name);
+        sendWelcomeEmail(user.email, user.name).catch((err) => {
+            console.error('Welcome email failed:', err?.message || err);
+        });
 
         res.status(200).json({
             success: true,
@@ -124,6 +126,37 @@ const verifyEmail = async (req, res) => {
     } catch (error) {
         console.error("VerifyEmail error:", error);
         res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+// ------------------- RESEND VERIFICATION CODE -------------------
+const resendVerificationEmail = async (req, res) => {
+    try {
+        const user = await User.findById(req.userId);
+        if (!user) {
+            return res.status(404).json({ success: false, msg: 'User not found' });
+        }
+        if (user.isVerified) {
+            return res.status(400).json({ success: false, msg: 'Email is already verified' });
+        }
+
+        const verificationToken = Math.floor(100000 + Math.random() * 900000).toString();
+        user.verificationToken = verificationToken;
+        user.verificationTokenExpires = Date.now() + 24 * 60 * 60 * 1000;
+        await user.save();
+
+        await sendVerificationEmail(user.email, verificationToken);
+
+        return res.status(200).json({
+            success: true,
+            msg: 'Verification code sent. Check your inbox and spam folder.',
+        });
+    } catch (error) {
+        console.error('Resend verification error:', error?.message || error);
+        return res.status(500).json({
+            success: false,
+            msg: 'Could not send email. Check Brevo sender/SMTP settings on the server.',
+        });
     }
 };
 
@@ -533,6 +566,7 @@ const getAllStore = async (req, res) => {
 module.exports = {
     signup,
     verifyEmail,
+    resendVerificationEmail,
     login,
     logout,
     checkAuth,

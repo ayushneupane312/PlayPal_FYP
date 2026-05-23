@@ -2,44 +2,39 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useAuthStore } from "../store/authStore";
-import toast from "react-hot-toast";
+import { showToast } from "../FutsalOwner/components/Toast";
 
 const EmailVerificationPage = () => {
   const [code, setCode] = useState(["", "", "", "", "", ""]);
   const inputRefs = useRef([]);
   const navigate = useNavigate();
 
-  const { error, isLoading, verifyEmail } = useAuthStore();
+  const { user, error, isLoading, verifyEmail, resendVerification } = useAuthStore();
 
   const handleChange = (index, value) => {
     const newCode = [...code];
 
-    // Handle pasted content
     if (value.length > 1) {
       const pastedCode = value.slice(0, 6).split("");
       for (let i = 0; i < 6; i++) {
         newCode[i] = pastedCode[i] || "";
       }
       setCode(newCode);
-
-      // Focus on the last non-empty input or the first empty one
       const lastFilledIndex = newCode.findLastIndex((digit) => digit !== "");
       const focusIndex = lastFilledIndex < 5 ? lastFilledIndex + 1 : 5;
-      inputRefs.current[focusIndex].focus();
+      inputRefs.current[focusIndex]?.focus();
     } else {
       newCode[index] = value;
       setCode(newCode);
-
-      // Move focus to the next input field if value is entered
       if (value && index < 5) {
-        inputRefs.current[index + 1].focus();
+        inputRefs.current[index + 1]?.focus();
       }
     }
   };
 
   const handleKeyDown = (index, e) => {
     if (e.key === "Backspace" && !code[index] && index > 0) {
-      inputRefs.current[index - 1].focus();
+      inputRefs.current[index - 1]?.focus();
     }
   };
 
@@ -48,14 +43,22 @@ const EmailVerificationPage = () => {
     const verificationCode = code.join("");
     try {
       await verifyEmail(verificationCode);
+      showToast.success("Email verified successfully");
       navigate("/");
-      toast.success("Email verified successfully");
-    } catch (error) {
-      console.log(error);
+    } catch (err) {
+      showToast.error(err.response?.data?.message || err.response?.data?.msg || "Invalid or expired code");
     }
   };
 
-  // Auto submit when all fields are filled
+  const handleResend = async () => {
+    try {
+      const data = await resendVerification();
+      showToast.success(data?.msg || "Verification code sent");
+    } catch (err) {
+      showToast.error(err.response?.data?.msg || "Could not send email. Try again later.");
+    }
+  };
+
   useEffect(() => {
     if (code.every((digit) => digit !== "")) {
       handleSubmit(new Event("submit"));
@@ -73,8 +76,14 @@ const EmailVerificationPage = () => {
         <h2 className="text-3xl font-bold mb-6 text-center bg-gradient-to-r from-green-400 to-emerald-500 text-transparent bg-clip-text">
           Verify Your Email
         </h2>
-        <p className="text-center text-gray-300 mb-6">
-          Enter the 6-digit code sent to your email address.
+        <p className="text-center text-gray-300 mb-2">
+          Enter the 6-digit code sent to
+        </p>
+        <p className="text-center text-emerald-400 font-medium mb-4">
+          {user?.email || "your email"}
+        </p>
+        <p className="text-center text-gray-500 text-sm mb-6">
+          Check spam/promotions. Sender: playpal602@gmail.com (Brevo)
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -84,6 +93,7 @@ const EmailVerificationPage = () => {
                 key={index}
                 ref={(el) => (inputRefs.current[index] = el)}
                 type="text"
+                inputMode="numeric"
                 maxLength="6"
                 value={digit}
                 onChange={(e) => handleChange(index, e.target.value)}
@@ -92,7 +102,7 @@ const EmailVerificationPage = () => {
               />
             ))}
           </div>
-          {error && <p className="text-red-500 font-semibold mt-2">{error}</p>}
+          {error && <p className="text-red-500 font-semibold mt-2 text-sm">{error}</p>}
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
@@ -103,8 +113,18 @@ const EmailVerificationPage = () => {
             {isLoading ? "Verifying..." : "Verify Email"}
           </motion.button>
         </form>
+
+        <button
+          type="button"
+          onClick={handleResend}
+          disabled={isLoading}
+          className="mt-4 w-full text-sm text-emerald-400 hover:text-emerald-300 disabled:opacity-50"
+        >
+          Didn&apos;t get the code? Resend email
+        </button>
       </motion.div>
     </div>
   );
 };
+
 export default EmailVerificationPage;

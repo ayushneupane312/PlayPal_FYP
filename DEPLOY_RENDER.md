@@ -54,6 +54,15 @@ Deployment is **Render only** (no Vercel). Push to `main` → GitHub Actions CI 
 
 Copy the full list from `backend/.env.example`. Set secrets in **Environment** on Render, not in the repo.
 
+**Super admin (Atlas):** `admin@playpal.com` / `Admin@1`
+
+### Verification emails (Brevo)
+
+1. [Brevo](https://app.brevo.com) → **Senders** → verify `BREVO_SENDER_EMAIL` (e.g. `playpal602@gmail.com`)
+2. **SMTP & API** → copy **SMTP key** (`xsmtpsib-...`) into Render `BREVO_SMTP_KEY`
+3. If sends fail, set `BREVO_SMTP_LOGIN` to the SMTP login email shown in Brevo (often your Brevo account email)
+4. Check **Render → PlayPal_FYP → Logs** for `Verification email failed` or `Verification email sent`
+
 ---
 
 ## Service 2 — Frontend static site (`playpal-web`)
