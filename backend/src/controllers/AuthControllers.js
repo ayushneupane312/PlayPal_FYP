@@ -63,9 +63,12 @@ const signup = async (req, res) => {
         await user.save();
         const token = generateTokenAndSetCookie(res, user._id, user.tokenVersion ?? 0);
 
-        await sendVerificationEmail(user.email, verificationToken);
+        // Do not await — Brevo SMTP can take 60s+ on Render and blocks the HTTP response
+        sendVerificationEmail(user.email, verificationToken).catch((err) => {
+            console.error("Verification email failed (signup still OK):", err?.message || err);
+        });
 
-        res.status(201).json({
+        return res.status(201).json({
             token,
             msg: "User registered successfully. Please verify your email.",
             user: {

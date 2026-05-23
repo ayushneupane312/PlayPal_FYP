@@ -5,6 +5,7 @@ import { Link, useNavigate } from "react-router-dom";
 import PasswordStrengthMeter from "../components/PasswordStrengthMeter";
 import { useAuthStore } from "../store/authStore"; 
 import Input from "../components/Input";
+import { showToast } from "../FutsalOwner/components/Toast";
 
 const SignUpPage = () => {
   const [name, setName] = useState("");
@@ -38,12 +39,12 @@ const SignUpPage = () => {
     }
 
     try {
-      console.log(email, password, name, userType);
       await signup(email, password, name, userType);
+      showToast.success("Account created! Check your email for the verification code.");
       navigate("/verify-email");
-    } catch (error) {
-      console.log(error);
-      // Error is already handled in the store
+    } catch (err) {
+      const msg = err.response?.data?.msg || "Signup failed. Please try again.";
+      showToast.error(msg);
     }
   };
 

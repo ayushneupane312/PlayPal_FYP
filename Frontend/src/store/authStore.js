@@ -18,12 +18,11 @@ export const useAuthStore = create((set) => ({
   signup: async (email, password, name, userType) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await axios.post(`${API_URL}/signup`, {
-        email,
-        password,
-        name,
-        userType,
-      });
+      const response = await axios.post(
+        `${API_URL}/signup`,
+        { email, password, name, userType },
+        { timeout: 30000 }
+      );
       if (response.data?.token) setAuthToken(response.data.token);
       set({
         user: response.data.user,
