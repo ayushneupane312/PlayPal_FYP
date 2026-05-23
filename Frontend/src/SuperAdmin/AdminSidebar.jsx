@@ -10,7 +10,6 @@ import {
   Settings, 
   ChevronLeft,
   ChevronRight,
-  CircleDot,
   LogOut
 } from 'lucide-react';
 import ConfirmationModal from '../components/ConfirmationModel';
@@ -141,8 +140,12 @@ const AdminSidebar = ({ onCollapseChange }) => {
                 isCollapsed ? 'justify-center' : 'space-x-3'
               } hover:opacity-80 transition-opacity w-full`}
             >
-              <div className="w-10 h-10 bg-gradient-to-r from-green-400 to-emerald-500 rounded-lg flex items-center justify-center flex-shrink-0">
-                <CircleDot className="text-white w-6 h-6" />
+              <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 bg-black">
+                <img
+                  src="/logo.png"
+                  alt="PlayPal logo"
+                  className="w-full h-full object-contain"
+                />
               </div>
               {!isCollapsed && (
                 <div>
