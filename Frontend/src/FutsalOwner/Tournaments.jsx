@@ -1023,7 +1023,7 @@ export default function TournamentCreator() {
       if (data.bannerFile) {
         const formData = new FormData();
         formData.append("file", data.bannerFile);
-        const uploadRes = await axios.post(`${base}/api/upload/file`, formData, {
+        const uploadRes = await axios.post(`${API_BASE}/api/upload/file`, formData, {
           headers: { "Content-Type": "multipart/form-data" },
           withCredentials: true,
         });
