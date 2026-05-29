@@ -250,7 +250,6 @@ const UserManagement = () => {
                             </div>
                             <div>
                               <div className="font-semibold text-gray-900">{user.name}</div>
-                              <div className="text-xs text-gray-500">{user._id}</div>
                             </div>
                           </div>
                         </td>
